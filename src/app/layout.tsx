@@ -7,10 +7,7 @@ import { entities } from './config/entities';
 import Navbar from './components/Navbar'; // Import the Navbar component
 import { Menu } from 'lucide-react'; // Import a menu icon for mobile toggle
 
-export const metadata = {
-  title: 'Resto Admin Dashboard',
-  description: 'Efficiently manage your restaurant operations.',
-};
+// metadata export has been moved to src/app/head.tsx
 
 export default function RootLayout({
   children,
@@ -55,14 +52,15 @@ export default function RootLayout({
         {/* Overlay for mobile when sidebar is open */}
         {/*
           - fixed inset-0: Covers the entire viewport
-          - bg-black bg-opacity-50: Semi-transparent black background
+          - style={{ backgroundColor: 'rgba(51, 51, 51, 0.2)' }}: Sets the custom dark grey with 20% opacity
           - z-40: Below the sidebar but above other content
           - md:hidden: Hidden on medium screens and up
           - onClick: Closes the sidebar when clicked
         */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            className="fixed inset-0 z-40 md:hidden"
+            style={{ backgroundColor: 'rgba(51, 51, 51, 0.2)' }} // Custom color with transparency
             onClick={() => setSidebarOpen(false)}
             aria-hidden="true" // Hide from accessibility tree as it's just an overlay
           ></div>

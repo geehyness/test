@@ -168,10 +168,17 @@ export default function Navbar() {
   // State to manage open/closed sub-menus
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
+  const toggleMenu = (menuName: string) => {
+    setOpenMenus(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }));
+  };
+
   return (
-    // Removed w-64, added h-full to ensure it takes full height of its parent (the fixed div in layout.tsx)
     <nav className="bg-gray-800 text-white p-4 h-full overflow-y-auto shadow-lg">
-      <h2 className="text-3xl font-extrabold mb-8 text-yellow-300">Resto Admin</h2>
+      {/* Added text-left to ensure title is left-aligned */}
+      <h2 className="text-3xl font-extrabold mb-8 text-yellow-300 text-left">Resto Admin</h2>
       <ul>
         {dashboardMenu.map((menuItem) => (
           <li key={menuItem.name} className="mb-2">
@@ -179,10 +186,11 @@ export default function Navbar() {
               <>
                 <button
                   onClick={() => toggleMenu(menuItem.name)}
-                  className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors duration-200
+                  className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors duration-200 text-left
                     ${pathname.startsWith(menuItem.href) ? 'bg-yellow-600 text-white' : 'hover:bg-gray-700 hover:text-yellow-300'}
                     focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50`}
                 >
+                  {/* Text is already on the left due to justify-between and block span */}
                   <span className="capitalize text-lg font-semibold">{menuItem.name}</span>
                   <svg
                     className={`w-4 h-4 transform transition-transform duration-200 ${openMenus[menuItem.name] ? 'rotate-90' : ''}`}
@@ -200,7 +208,7 @@ export default function Navbar() {
                       <li key={subMenu.name} className="mb-1">
                         <Link href={subMenu.href}>
                           <span
-                            className={`block px-3 py-1 rounded-md transition-colors duration-200
+                            className={`block px-3 py-1 rounded-md transition-colors duration-200 text-left
                               ${pathname === subMenu.href ? 'bg-yellow-500 text-gray-900 font-medium' : 'hover:bg-gray-600 hover:text-yellow-200'}`}
                           >
                             {getEntityLabel(subMenu.href.substring(1))} {/* Remove leading '/' for entity name */}
@@ -214,7 +222,7 @@ export default function Navbar() {
             ) : (
               <Link href={menuItem.href}>
                 <span
-                  className={`block px-4 py-2 rounded-lg transition-colors duration-200 text-lg font-semibold
+                  className={`block px-4 py-2 rounded-lg transition-colors duration-200 text-lg font-semibold text-left
                     ${pathname === menuItem.href ? 'bg-yellow-600 text-white' : 'hover:bg-gray-700 hover:text-yellow-300'}`}
                 >
                   {menuItem.name}
