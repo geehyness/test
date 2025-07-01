@@ -168,15 +168,9 @@ export default function Navbar() {
   // State to manage open/closed sub-menus
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
-  const toggleMenu = (menuName: string) => {
-    setOpenMenus(prev => ({
-      ...prev,
-      [menuName]: !prev[menuName]
-    }));
-  };
-
   return (
-    <nav className="w-64 bg-gray-800 text-white p-4 overflow-y-auto shadow-lg">
+    // Removed w-64, added h-full to ensure it takes full height of its parent (the fixed div in layout.tsx)
+    <nav className="bg-gray-800 text-white p-4 h-full overflow-y-auto shadow-lg">
       <h2 className="text-3xl font-extrabold mb-8 text-yellow-300">Resto Admin</h2>
       <ul>
         {dashboardMenu.map((menuItem) => (
