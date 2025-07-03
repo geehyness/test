@@ -1,13 +1,11 @@
-'use client'; // This component uses client-side hooks like useState
+'use client'; // This component uses client-side hooks like useState and needs to be client-side
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import './globals.css';
-import { entities } from './config/entities';
-import Navbar from './components/Navbar'; // Import the Navbar component
-import { Menu } from 'lucide-react'; // Import a menu icon for mobile toggle
-
-// metadata export has been moved to src/app/head.tsx
+import Link from 'next/link'; // Still use Next.js Link for routing
+import '@/app/globals.css'; // Keep your global CSS for now
+import Navbar from './components/Navbar'; // Your Navbar component will be refactored next
+import { ChakraProvider, Box, Flex, Button, Heading } from '@chakra-ui/react'; // Import Chakra UI components
+import { Menu } from 'lucide-react'; // Keep lucide-react for icons, as they are not tied to styling
 
 export default function RootLayout({
   children,
@@ -15,67 +13,77 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // resources are still needed to pass to Navbar if it uses them
-  // const resources = Object.keys(entities); // Keep if Navbar needs it, otherwise can remove
 
   return (
     <html lang="en">
-      {/* The body will be a flex container. On small screens, it's column-wise. On medium/larger, it's row-wise. */}
-      <body className="flex flex-col md:flex-row h-screen bg-gray-100 font-sans">
-
-        {/* Mobile Header and Menu Button */}
-        <div className="md:hidden p-4 bg-gray-800 text-white flex justify-between items-center shadow-md">
-          <h2 className="text-2xl font-bold text-yellow-400">Resto Admin</h2>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            aria-label="Toggle sidebar"
+      <body>
+        {/* Wrap your entire application with ChakraProvider */}
+        <ChakraProvider>
+          {/* Mobile Header and Menu Button */}
+          <Flex
+            display={{ base: 'flex', md: 'none' }} // Hidden on medium screens and up
+            p={4}
+            bg="gray.800"
+            color="white"
+            justify="space-between"
+            align="center"
+            shadow="md"
           >
-            <Menu className="h-6 w-6" /> {/* Menu icon */}
-          </button>
-        </div>
+            <Heading as="h2" size="xl" color="yellow.400">
+              Resto Admin
+            </Heading>
+            <Button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              p={2}
+              rounded="md"
+              _focus={{ outline: 'none', ring: 2, ringColor: 'insetWhite' }} // Chakra's focus styles
+              aria-label="Toggle sidebar"
+              variant="unstyled" // No default button styles
+            >
+              <Menu size={24} /> {/* lucide-react icon */}
+            </Button>
+          </Flex>
 
-        {/* Sidebar Navigation */}
-        {/*
-          - fixed inset-y-0 left-0: Positions the sidebar absolutely
-          - z-50: Ensures it's on top of other content
-          - w-64: Fixed width for the sidebar
-          - transform: Enables CSS transforms for sliding animation
-          - ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}: Controls the slide-in/out on mobile
-          - md:relative md:translate-x-0: On medium screens and up, it becomes relative and always visible
-          - transition-transform duration-300 ease-in-out: Smooth animation
-        */}
-        <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-800 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
-          <Navbar />
-        </div>
+          <Flex
+            direction={{ base: 'column', md: 'row' }} // Column on base, row on md and up
+            h="100vh" // Full viewport height
+            bg="gray.100" // Light gray background
+            fontFamily="sans-serif" // Default font, can be customized via theme
+          >
+            {/* Sidebar */}
+            <Box
+              position={{ base: 'fixed', md: 'relative' }} // Fixed on mobile, relative on desktop
+              insetY={0}
+              left={0}
+              zIndex={50} // High z-index for mobile overlay
+              w={{ base: '64', md: '64' }} // Width 64 (256px)
+              bg="gray.800" // Dark sidebar background
+              transform={{ base: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)', md: 'translateX(0)' }} // Slide in/out
+              transition="transform 0.3s ease-in-out" // Smooth transition
+              shadow={{ base: 'lg', md: 'none' }} // Add shadow on mobile sidebar
+            >
+              <Navbar /> {/* Your Navbar component */}
+            </Box>
 
-        {/* Overlay for mobile when sidebar is open */}
-        {/*
-          - fixed inset-0: Covers the entire viewport
-          - style={{ backgroundColor: 'rgba(51, 51, 51, 0.2)' }}: Sets the custom dark grey with 20% opacity
-          - z-40: Below the sidebar but above other content
-          - md:hidden: Hidden on medium screens and up
-          - onClick: Closes the sidebar when clicked
-        */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-40 md:hidden"
-            style={{ backgroundColor: 'rgba(51, 51, 51, 0.2)' }} // Custom color with transparency
-            onClick={() => setSidebarOpen(false)}
-            aria-hidden="true" // Hide from accessibility tree as it's just an overlay
-          ></div>
-        )}
+            {/* Overlay for mobile when sidebar is open */}
+            {sidebarOpen && (
+              <Box
+                position="fixed"
+                inset={0}
+                zIndex={40}
+                display={{ base: 'block', md: 'none' }} // Only show on mobile
+                bg="rgba(51, 51, 51, 0.2)" // Custom overlay color with transparency
+                onClick={() => setSidebarOpen(false)}
+                aria-hidden="true" // Hide from accessibility tree
+              />
+            )}
 
-        {/* Main Content Area */}
-        {/*
-          - flex-1: Takes up remaining space
-          - p-4: Smaller padding on mobile
-          - md:p-6: Larger padding on medium screens and up
-          - overflow-y-auto: Allows vertical scrolling if content overflows
-        */}
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto">
-          {children}
-        </main>
+            {/* Main Content Area */}
+            <Box flex={1} p={{ base: 4, md: 6 }} overflowY="auto">
+              {children}
+            </Box>
+          </Flex>
+        </ChakraProvider>
       </body>
     </html>
   );

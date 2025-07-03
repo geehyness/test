@@ -4,6 +4,18 @@ import { useParams, useRouter } from 'next/navigation';
 import CRUDForm from '../../components/CRUDForm'; // Path adjusted
 import { entities } from '../../config/entities';
 import { fetchItemData, createItem, updateItem } from '../../lib/api'; // Import API functions
+import {
+  Box,
+  Heading,
+  Text,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
+  Flex,
+  VStack, // Used for spacing in the container
+} from '@chakra-ui/react'; // Chakra UI components
 
 export default function ResourceDetailPage() {
   const { resource, id } = useParams() as { resource: string; id: string };
@@ -39,15 +51,15 @@ export default function ResourceDetailPage() {
       }
     };
 
-    if (cfg) {
+    if (cfg) { // Only attempt to load if config exists
       loadItemData();
+    } else {
+      setLoading(false);
+      setError(`Resource "${resource}" configuration not found.`);
     }
-  }, [resource, id, isEditMode, cfg]);
+  }, [resource, id, isEditMode, cfg]); // Added cfg to dependencies
 
-  if (!cfg) {
-    return <p className="text-red-500 text-xl font-semibold">Unknown resource: {resource}</p>;
-  }
-
+  // Handle form submission (create or update)
   const handleSubmit = async (formData: Record<string, any>) => {
     setLoading(true);
     setError(null);
@@ -68,25 +80,41 @@ export default function ResourceDetailPage() {
     }
   };
 
+  if (!cfg) {
+    return (
+      <Alert status="error" variant="left-accent" rounded="md">
+        <AlertIcon />
+        <AlertTitle>Error!</AlertTitle>
+        <AlertDescription>Resource &quot;{resource}&quot; not found.</AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="space-y-6 p-4">
-      <h1 className="text-3xl font-extrabold text-gray-800 mb-6">
+    <VStack className="form-page-container" align="stretch" spacing={6}> {/* Using VStack for space-y-6 */}
+      <Heading as="h1" className="form-page-title">
         {isEditMode ? `Edit ${cfg.label.slice(0, -1)} #${id}` : `New ${cfg.label.slice(0, -1)}`}
-      </h1>
+      </Heading>
 
+      {/* Loading state using Chakra UI Alert */}
       {loading && (
-        <div className="flex justify-center items-center h-64">
-          <p className="text-gray-600 text-xl">Loading form...</p>
-        </div>
+        <Alert status="info" variant="left-accent" rounded="md" className="form-loading-alert">
+          <AlertIcon />
+          <AlertTitle>Loading form...</AlertTitle>
+          <AlertDescription>Fetching data for {cfg.label.slice(0, -1)}.</AlertDescription>
+        </Alert>
       )}
 
+      {/* Error state using Chakra UI Alert */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
-        </div>
+        <Alert status="error" variant="left-accent" rounded="md" className="form-error-alert">
+          <AlertIcon />
+          <AlertTitle>Error!</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
+      {/* Only render CRUDForm if not loading and no critical error preventing form display */}
       {!loading && !error && (
         <CRUDForm
           entity={resource}
@@ -95,6 +123,6 @@ export default function ResourceDetailPage() {
           onSubmit={handleSubmit}
         />
       )}
-    </div>
+    </VStack>
   );
 }

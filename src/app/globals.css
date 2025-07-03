@@ -1,26 +1,541 @@
-@import "tailwindcss";
-
+/* Global Theme Variables for Quick Tweaking */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary-accent: oklch(75% 0.15 80); /* A warm yellow/gold */
+  --primary-accent-dark: oklch(60% 0.15 80);
+  --text-color-dark: oklch(20% 0 0);
+  --text-color-medium: oklch(40% 0 0);
+  --text-color-light: oklch(90% 0 0);
+  --background-light: oklch(98% 0 0);
+  --background-medium: oklch(95% 0 0);
+  --background-dark: oklch(15% 0 0);
+  --border-color-light: oklch(90% 0 0);
+  --border-color-medium: oklch(80% 0 0);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+
+  /* Navbar Specific Variables */
+  --navbar-bg: var(--background-dark); /* gray.800 */
+  --navbar-text-color: var(--text-color-light); /* white for main items, gray.300 for default */
+  --navbar-heading-color: var(--primary-accent); /* yellow.300 */
+
+  --navbar-main-item-active-bg: var(--chakra-colors-gray-700); /* gray.700 */
+  --navbar-main-item-active-text-color: var(--primary-accent); /* yellow.300 */
+  --navbar-main-item-hover-bg: var(--chakra-colors-gray-700); /* gray.700 */
+  --navbar-main-item-hover-text-color: var(--chakra-colors-yellow-200); /* yellow.200 */
+  --navbar-main-item-active-state-bg: var(--chakra-colors-gray-600); /* gray.600 for _active */
+
+  --navbar-submenu-border-color: var(--chakra-colors-gray-700); /* gray.700 */
+  --navbar-submenu-text-color: var(--chakra-colors-gray-400); /* gray.400 for default submenu text */
+  --navbar-submenu-active-bg: var(--chakra-colors-gray-600); /* gray.600 */
+  --navbar-submenu-active-text-color: var(--chakra-colors-yellow-200); /* yellow.200 */
+  --navbar-submenu-hover-bg: var(--chakra-colors-gray-700); /* gray.700 */
+  --navbar-submenu-hover-text-color: var(--chakra-colors-yellow-100); /* yellow.100 */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Base styles - keep minimal as Chakra provides resets */
+html, body {
+  padding: 0;
+  margin: 0;
+  font-family: var(--chakra-fonts-body); /* Use Chakra's default font */
+  line-height: var(--chakra-lineHeights-base);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #eeeeee;
-    --foreground: #151515;
+/* --- Layout Specific Styles (from layout.tsx) --- */
+.app-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background-light);
+  font-family: var(--chakra-fonts-body);
+}
+
+@media (min-width: 48em) { /* md breakpoint in Chakra UI */
+  .app-body {
+    flex-direction: row;
   }
 }
 
-body {
-  background: var(--background);
-  color: #171717;
-  font-family: Arial, Helvetica, sans-serif;
+.mobile-header-flex {
+  display: flex;
+  padding: var(--chakra-space-4);
+  background-color: var(--background-dark);
+  color: var(--text-color-light);
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: var(--chakra-shadows-md);
+}
+
+@media (min-width: 48em) {
+  .mobile-header-flex {
+    display: none !important; /* Added !important to ensure it hides */
+  }
+}
+
+.mobile-menu-button {
+  padding: var(--chakra-space-2);
+  border-radius: var(--chakra-radii-md);
+  outline: none;
+}
+
+.mobile-menu-button:focus {
+  box-shadow: 0 0 0 2px var(--primary-accent), 0 0 0 4px rgba(255, 255, 255, 0.6);
+}
+
+.sidebar-box {
+  position: fixed;
+  inset-block-start: 0; /* insetY */
+  inset-inline-start: 0; /* left */
+  z-index: var(--chakra-zIndices-tooltip); /* z-50 */
+  width: 16rem; /* w-64 */
+  background-color: var(--background-dark);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  box-shadow: var(--chakra-shadows-lg);
+}
+
+.sidebar-box.open {
+  transform: translateX(0);
+}
+
+@media (min-width: 48em) {
+  .sidebar-box {
+    position: relative;
+    transform: translateX(0);
+    box-shadow: none;
+  }
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--chakra-zIndices-overlay); /* z-40 */
+  background-color: rgba(51, 51, 51, 0.2);
+  display: block;
+}
+
+@media (min-width: 48em) {
+  .sidebar-overlay {
+    display: none;
+  }
+}
+
+.main-content-box {
+  flex: 1;
+  padding: var(--chakra-space-4);
+  overflow-y: auto;
+}
+
+@media (min-width: 48em) {
+  .main-content-box {
+    padding: var(--chakra-space-6);
+  }
+}
+
+/* --- DataTable Specific Styles (from DataTable.tsx) --- */
+.data-table-container {
+  border-radius: var(--chakra-radii-lg);
+  border-width: var(--chakra-borders-1px);
+  border-color: var(--chakra-colors-gray-200);
+  box-shadow: var(--chakra-shadows-md);
+  overflow: hidden;
+}
+
+.data-table-header-flex {
+  padding: var(--chakra-space-4);
+  border-bottom-width: var(--chakra-borders-1px);
+  border-bottom-color: var(--chakra-colors-gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.data-table-search-input {
+  max-width: 300px;
+  border-radius: var(--chakra-radii-md);
+}
+
+.data-table-search-input:focus {
+  border-color: var(--chakra-colors-blue-400);
+  box-shadow: 0 0 0 1px rgba(66, 153, 225, 0.6);
+}
+
+.data-table-scroll-box {
+  overflow-x: auto;
+}
+
+.data-table-thead {
+  background-color: var(--chakra-colors-gray-50);
+}
+
+.data-table-th {
+  padding-top: var(--chakra-space-4);
+  padding-bottom: var(--chakra-space-4);
+  padding-left: var(--chakra-space-5);
+  padding-right: var(--chakra-space-5);
+  border-bottom-width: var(--chakra-borders-1px);
+  border-bottom-color: var(--chakra-colors-gray-200);
+  text-transform: capitalize;
+}
+
+.data-table-tr:nth-of-type(even) {
+  background-color: var(--chakra-colors-gray-50);
+}
+
+.data-table-tr:hover {
+  background-color: var(--chakra-colors-gray-100);
+}
+
+.data-table-td {
+  padding-top: var(--chakra-space-3);
+  padding-bottom: var(--chakra-space-3);
+  padding-left: var(--chakra-space-5);
+  padding-right: var(--chakra-space-5);
+  border-bottom-width: var(--chakra-borders-1px);
+  border-bottom-color: var(--chakra-colors-gray-100);
+  white-space: nowrap; /* Ensure single line rows */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.data-table-pagination-flex {
+  padding: var(--chakra-space-4);
+  border-top-width: var(--chakra-borders-1px);
+  border-top-color: var(--chakra-colors-gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.data-table-pagination-text-sm {
+  font-size: var(--chakra-fontSizes-sm);
+  color: var(--chakra-colors-gray-600);
+}
+
+.data-table-pagination-text-medium {
+  font-size: var(--chakra-fontSizes-sm);
+  color: var(--chakra-colors-gray-700);
+  font-weight: var(--chakra-fontWeights-medium);
+}
+
+.data-table-pagination-hstack {
+  display: flex;
+  gap: var(--chakra-space-2);
+}
+
+/* --- Dashboard Specific Styles (from page.tsx) --- */
+.dashboard-container {
+  padding: var(--chakra-space-8);
+  background-color: var(--background-light);
+  min-height: 100vh;
+}
+
+.dashboard-header-flex {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--chakra-space-8);
+}
+
+.dashboard-title {
+  font-size: var(--chakra-fontSizes-xl);
+  color: var(--text-color-dark);
+}
+
+.dashboard-date {
+  font-size: var(--chakra-fontSizes-lg);
+  color: var(--text-color-medium);
+  margin-inline-end: var(--chakra-space-4);
+}
+
+.dashboard-upgrade-button {
+  /* Chakra's colorScheme="blue" handles most of this */
+}
+
+.summary-cards-grid {
+  margin-bottom: var(--chakra-space-10);
+}
+
+.summary-card {
+  padding: var(--chakra-space-6);
+  border-radius: var(--chakra-radii-lg);
+  box-shadow: var(--chakra-shadows-md);
+  transition: all 0.3s ease-in-out;
+}
+
+.summary-card:hover {
+  box-shadow: var(--chakra-shadows-lg);
+}
+
+.summary-card-title-flex {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--chakra-space-2);
+}
+
+.summary-card-title {
+  font-size: var(--chakra-fontSizes-md);
+  color: var(--chakra-colors-gray-600);
+  font-weight: var(--chakra-fontWeights-semibold);
+}
+
+.summary-card-value {
+  font-size: var(--chakra-fontSizes-3xl);
+  font-weight: var(--chakra-fontWeights-bold);
+  color: var(--text-color-dark);
+}
+
+.crew-section-card {
+  padding: var(--chakra-space-6);
+  border-radius: var(--chakra-radii-lg);
+  box-shadow: var(--chakra-shadows-md);
+}
+
+.crew-header-flex {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--chakra-space-4);
+}
+
+.crew-member-flex {
+  display: flex;
+  align-items: center;
+  padding-bottom: var(--chakra-space-2);
+}
+
+.crew-member-flex:not(:last-child) {
+  border-bottom: 1px solid var(--chakra-colors-gray-100);
+}
+
+.crew-member-details {
+  /* No specific styles, uses default Text styles */
+}
+
+.crew-member-status {
+  font-size: var(--chakra-fontSizes-sm);
+  color: var(--chakra-colors-gray-600);
+  margin-inline-end: var(--chakra-space-2);
+}
+
+.crew-member-rating {
+  font-size: var(--chakra-fontSizes-sm);
+  color: var(--chakra-colors-gray-600);
+}
+
+.daily-activity-card {
+  padding: var(--chakra-space-6);
+  border-radius: var(--chakra-radii-lg);
+  box-shadow: var(--chakra-shadows-md);
+}
+
+.daily-activity-header-flex {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--chakra-space-4);
+}
+
+.daily-activity-chart-container {
+  height: 150px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+}
+
+.daily-activity-bar {
+  width: 80%;
+  background-color: var(--chakra-colors-blue-300);
+  border-radius: var(--chakra-radii-sm);
+  transition: background-color 0.2s ease-in-out;
+}
+
+.daily-activity-bar:hover {
+  background-color: var(--chakra-colors-blue-400);
+}
+
+.monthly-takings-card {
+  padding: var(--chakra-space-6);
+  border-radius: var(--chakra-radii-lg);
+  box-shadow: var(--chakra-shadows-md);
+}
+
+.monthly-takings-header-flex {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--chakra-space-4);
+}
+
+.monthly-takings-chart-area {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background: linear-gradient(to top, rgba(66, 153, 225, 0.1) 0%, transparent 100%);
+  border-radius: var(--chakra-radii-md);
+}
+
+.monthly-takings-chart-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background-color: var(--chakra-colors-blue-400);
+  transform: rotateX(180deg);
+  transform-origin: bottom;
+}
+
+.monthly-takings-value {
+  text-align: center;
+  font-size: var(--chakra-fontSizes-3xl);
+  font-weight: var(--chakra-fontWeights-bold);
+  color: var(--text-color-dark);
+}
+
+.review-card {
+  padding: var(--chakra-space-6);
+  border-radius: var(--chakra-radii-lg);
+  box-shadow: var(--chakra-shadows-md);
+}
+
+.review-header-flex {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--chakra-space-4);
+}
+
+.review-user-flex {
+  display: flex;
+  align-items: center;
+}
+
+.review-stars {
+  display: flex;
+  gap: var(--chakra-space-0-5);
+}
+
+/* --- Form Page Specific Styles (from [resource]/page.tsx) --- */
+.form-page-container {
+  padding: var(--chakra-space-4);
+  /* space-y-6 is handled by VStack/Flex spacing in JSX */
+}
+
+.form-page-title {
+  font-size: var(--chakra-fontSizes-3xl);
+  font-weight: var(--chakra-fontWeights-extrabold);
+  color: var(--chakra-colors-gray-800);
+  margin-bottom: var(--chakra-space-6);
+}
+
+.form-loading-alert {
+  /* Chakra's default Alert styles are good, but you can add custom ones here */
+}
+
+.form-error-alert {
+  /* Chakra's default Alert styles are good, but you can add custom ones here */
+}
+
+/* --- Navbar Specific Styles (from Navbar.tsx) --- */
+.navbar-container {
+  background-color: var(--navbar-bg);
+  color: var(--navbar-text-color);
+  padding: var(--chakra-space-4);
+  height: 100%;
+  overflow-y: auto;
+  /* shadow is removed for flat look */
+}
+
+.navbar-heading {
+  color: var(--navbar-heading-color);
+  text-align: left;
+  font-weight: var(--chakra-fontWeights-extrabold);
+  margin-bottom: var(--chakra-space-8);
+}
+
+.navbar-menu-vstack {
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--chakra-space-1);
+}
+
+.navbar-menu-item {
+  list-style-type: none;
+}
+
+.navbar-button-main {
+  width: 100%;
+  justify-content: space-between;
+  padding-inline: var(--chakra-space-4);
+  padding-block: var(--chakra-space-2);
+  border-radius: var(--chakra-radii-md);
+  font-size: var(--chakra-fontSizes-md);
+  font-weight: var(--chakra-fontWeights-normal);
+  background-color: transparent; /* Default */
+  color: var(--navbar-text-color); /* Default */
+  transition: all 0.2s; /* Ensure smooth transitions */
+}
+
+.navbar-button-main.active {
+  background-color: var(--navbar-main-item-active-bg);
+  color: var(--navbar-main-item-active-text-color);
+}
+
+.navbar-button-main:hover {
+  background-color: var(--navbar-main-item-hover-bg);
+  color: var(--navbar-main-item-hover-text-color);
+}
+
+.navbar-button-main:active {
+  background-color: var(--navbar-main-item-active-state-bg); /* Subtle active */
+}
+
+.navbar-button-main:focus {
+  outline: none;
+  box-shadow: none; /* Flat focus */
+}
+
+.navbar-text-main {
+  text-transform: capitalize;
+  font-size: var(--chakra-fontSizes-md);
+  font-weight: var(--chakra-fontWeights-normal);
+}
+
+.navbar-submenu-vstack {
+  list-style-type: none;
+  margin-inline-start: var(--chakra-space-4);
+  margin-top: var(--chakra-space-1);
+  border-inline-start: 1px solid;
+  border-color: var(--navbar-submenu-border-color);
+  padding-inline-start: var(--chakra-space-4);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--chakra-space-0-5);
+}
+
+.navbar-submenu-item {
+  list-style-type: none;
+}
+
+.navbar-text-submenu {
+  display: block;
+  padding-inline: var(--chakra-space-3);
+  padding-block: var(--chakra-space-1);
+  border-radius: var(--chakra-radii-sm);
+  transition: all 0.2s;
+  text-align: left;
+  background-color: transparent; /* Default */
+  color: var(--navbar-submenu-text-color); /* Default */
+  cursor: pointer;
+}
+
+.navbar-text-submenu.active {
+  background-color: var(--navbar-submenu-active-bg);
+  color: var(--navbar-submenu-active-text-color);
+  font-weight: var(--chakra-fontWeights-medium);
+}
+
+.navbar-text-submenu:hover {
+  background-color: var(--navbar-submenu-hover-bg);
+  color: var(--navbar-submenu-hover-text-color);
 }

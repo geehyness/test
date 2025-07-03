@@ -1,10 +1,38 @@
 'use client'; // This directive is crucial for using client-side hooks like useParams, useRouter, useEffect, useState, useCallback
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react'; // Added useRef for AlertDialog
 import { useParams, useRouter } from 'next/navigation'; // Next.js navigation hooks
 import DataTable from '../components/DataTable'; // Adjust path based on your project structure
 import { entities } from '../config/entities'; // Your entity definitions
 import { fetchData, deleteItem } from '../lib/api'; // API functions for data operations
+
+import {
+  Box,
+  Heading,
+  Text,
+  Button,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Spinner,
+  Flex,
+  Spacer,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
+  useDisclosure, // For managing AlertDialog state
+  Modal, // Chakra UI Modal for view details
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  VStack, // For modal content layout
+} from '@chakra-ui/react'; // Chakra UI components
 
 // Define the Column interface directly in this file to resolve import issues
 // This ensures TypeScript recognizes 'Column' as a type within this file's scope.
@@ -14,204 +42,266 @@ interface Column {
   cell?: (row: any) => React.ReactNode; // Optional custom cell renderer
 }
 
+// Define a mapping for important fields to display in the list table for each resource
+// This allows showing only key information in the main table, and full details in the modal.
+const importantFieldsMap: Record<string, string[]> = {
+  users: ['id', 'name', 'email', 'created_at'],
+  foods: ['id', 'name', 'code', 'price', 'food_category_id'],
+  sales: ['id', 'customer_name', 'total', 'grand_total', 'status', 'created_at'],
+  employees: ['id', 'name', 'phone', 'employee_category_id', 'created_at'],
+  customers: ['id', 'name', 'phone', 'address', 'points'],
+  orders: ['id', 'table_id', 'customer_id', 'total_amount', 'status', 'created_at'],
+  products: ['id', 'name', 'code', 'price', 'product_category_id'],
+  suppliers: ['id', 'name', 'phone', 'address'],
+  purchases: ['id', 'supplier_name', 'grand_total', 'status', 'created_at'],
+  // Add more entities here with their important fields.
+  // If an entity is not listed, it will default to showing 'id', 'name', 'email', or the first few available fields.
+};
+
+
 /**
  * ResourceListPage component displays a list of items for a given resource.
  * It fetches data using the API, displays it in a DataTable, and provides
- * functionality for editing and deleting items.
+ * functionality for adding, editing, and deleting items.
  */
 export default function ResourceListPage() {
-  // useParams hook to get the dynamic 'resource' segment from the URL
-  const { resource } = useParams() as { resource: string };
-  // useRouter hook for programmatic navigation
-  const router = useRouter();
+  const { resource } = useParams() as { resource: string }; // Get the dynamic resource name from the URL
+  const router = useRouter(); // Next.js router for navigation
+  const cfg = entities[resource]; // Get configuration for the current resource from entities.ts
 
-  // Get the configuration for the current resource from entities.ts
-  const cfg = entities[resource];
+  const [data, setData] = useState<any[]>([]); // State to store fetched data
+  const [loading, setLoading] = useState(true); // State to manage loading status
+  const [error, setError] = useState<string | null>(null); // State to store any error messages
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null); // State to hold the ID of the item to be deleted
+  const [viewItem, setViewItem] = useState<any | null>(null); // State to hold the item data for viewing
 
-  // State to hold the fetched data for the DataTable
-  const [data, setData] = useState<any[]>([]);
-  // State to manage loading status
-  const [loading, setLoading] = useState(true);
-  // State to manage any errors during data fetching or operations
-  const [error, setError] = useState<string | null>(null);
-  // State to control the visibility of the delete confirmation modal
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // State to store the ID of the item to be deleted
-  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  // Chakra UI's useDisclosure hook for managing AlertDialog open/close state
+  const { isOpen: isDeleteConfirmOpen, onOpen: onDeleteConfirmOpen, onClose: onDeleteConfirmClose } = useDisclosure();
+  const { isOpen: isViewModalOpen, onOpen: onViewModalOpen, onClose: onViewModalClose } = useDisclosure();
 
-  /**
-   * useCallback hook to memoize the data loading function.
-   * This prevents unnecessary re-creations of the function and helps with useEffect dependencies.
-   */
+  const cancelRef = useRef<HTMLButtonElement>(null); // Ref for AlertDialog cancel button
+
+  // Function to fetch data from the API
   const loadData = useCallback(async () => {
-    setLoading(true); // Set loading to true before fetching data
-    setError(null);    // Clear any previous errors
+    setLoading(true); // Set loading to true before fetching
+    setError(null); // Clear any previous errors
     try {
-      // Fetch data for the current resource using the API function
-      const fetchedData = await fetchData(resource);
-      setData(fetchedData); // Update the data state
+      const result = await fetchData(resource); // Fetch data using the API function
+      setData(result); // Update data state with fetched results
     } catch (err) {
-      console.error(`Failed to fetch ${resource}:`, err);
-      // Set an error message if fetching fails
-      setError(`Failed to load ${cfg?.label || resource}. Please try again.`);
+      console.error(`Failed to fetch ${resource}:`, err); // Log error to console
+      setError(`Failed to load data. ${err instanceof Error ? err.message : String(err)}`); // Set user-friendly error message
     } finally {
-      setLoading(false); // Set loading to false after fetching (whether success or error)
+      setLoading(false); // Set loading to false after fetching (success or failure)
     }
-  }, [resource, cfg?.label]); // Dependencies: resource and its label from config
+  }, [resource]); // Dependency array: re-run if 'resource' changes
 
-  /**
-   * useEffect hook to load data when the component mounts or when the resource changes.
-   */
+  // useEffect hook to load data when the component mounts or 'resource' changes
   useEffect(() => {
-    if (cfg) { // Only attempt to load data if the resource configuration is found
+    if (cfg) { // Only load data if resource config is found
       loadData();
+    } else {
+      setLoading(false);
+      setError(`Resource "${resource}" not found.`); // Set error if resource config is missing
     }
-  }, [cfg, loadData]); // Dependencies: cfg (for initial load) and loadData (memoized function)
+  }, [resource, cfg, loadData]); // Dependency array: re-run if 'resource', 'cfg', or 'loadData' changes
 
-  // If the resource configuration is not found, display an error message
-  if (!cfg) {
-    return <p className="text-red-500 text-xl font-semibold p-4">Unknown resource: {resource}</p>;
-  }
+  // Handler for "Add New" button click
+  const handleAddNew = () => {
+    router.push(`/${resource}/new`); // Navigate to the new item creation page
+  };
 
-  /**
-   * Handles navigation to the edit page for a specific item.
-   * @param id The ID of the item to edit.
-   */
+  // Handler for "Edit" button click in DataTable
   const handleEdit = (id: string) => {
-    router.push(`/${resource}/${id}`); // Navigate to the dynamic detail page for editing
+    router.push(`/${resource}/${id}`); // Navigate to the item edit page
   };
 
-  /**
-   * Initiates the delete process by showing a confirmation modal.
-   * @param id The ID of the item to delete.
-   */
-  const handleDeleteClick = (id: string) => {
-    setItemToDelete(id);         // Store the ID of the item to be deleted
-    setShowDeleteConfirm(true);  // Show the confirmation modal
+  // Handler for "Delete" button click in DataTable (opens confirmation dialog)
+  const handleDelete = (id: string) => {
+    setItemToDelete(id); // Store the ID of the item to be deleted
+    onDeleteConfirmOpen(); // Open the AlertDialog
   };
 
-  /**
-   * Confirms and executes the deletion of an item.
-   */
+  // Handler for confirming deletion in AlertDialog
   const confirmDelete = async () => {
-    if (itemToDelete) { // Ensure there's an item selected for deletion
+    if (itemToDelete) {
+      setLoading(true); // Show loading spinner during deletion
+      setError(null); // Clear any previous errors
       try {
-        await deleteItem(resource, itemToDelete); // Call the API to delete the item
-        await loadData(); // Reload the data to reflect the deletion
-        setShowDeleteConfirm(false); // Close the modal
-        setItemToDelete(null);       // Clear the item to delete
+        await deleteItem(resource, itemToDelete); // Call API to delete the item
+        await loadData(); // Reload data after successful deletion
+        onDeleteConfirmClose(); // Close the AlertDialog
+        setItemToDelete(null); // Clear item to delete
       } catch (err) {
-        console.error(`Failed to delete ${resource} with ID ${itemToDelete}:`, err);
-        setError(`Failed to delete item. ${err instanceof Error ? err.message : String(err)}`);
-        setShowDeleteConfirm(false); // Close modal even on error
+        console.error(`Failed to delete item ${itemToDelete} from ${resource}:`, err); // Log error
+        setError(`Failed to delete item. ${err instanceof Error ? err.message : String(err)}`); // Set error message
+      } finally {
+        setLoading(false); // Hide loading spinner
       }
     }
   };
 
-  /**
-   * Cancels the delete operation and hides the confirmation modal.
-   */
+  // Handler for canceling deletion in AlertDialog
   const cancelDelete = () => {
-    setShowDeleteConfirm(false);
-    setItemToDelete(null);
+    onDeleteConfirmClose(); // Close the AlertDialog
+    setItemToDelete(null); // Clear item to delete
   };
 
-  // Define columns for DataTable. This dynamically creates columns based on entity fields.
-  // It also adds a static 'Actions' column for edit/delete buttons.
-  // Explicitly type `columns` as `Column[]` to allow the `cell` property.
-  const columns: Column[] = cfg.fields.map((field) => ({
-    accessorKey: field, // The key in your data object
-    // Format the header name (e.g., 'first_name' becomes 'First Name')
-    header: field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-  }));
+  // Handler for "View" button click in DataTable (opens view modal)
+  const handleView = (row: any) => {
+    setViewItem(row); // Set the item to be viewed
+    onViewModalOpen(); // Open the view modal
+  };
 
-  // Add the 'Actions' column to the end of the columns array
-  columns.push({
-    accessorKey: 'actions',
-    header: 'Actions',
-    // Custom cell renderer for the 'Actions' column to display buttons
-    cell: (row: any) => (
-      <div className="flex space-x-2">
-        <button
-          onClick={() => handleEdit(String(row.id))} // Pass item ID to edit handler
-          className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors duration-200"
-        >
-          Edit
-        </button>
-        <button
-          onClick={() => handleDeleteClick(String(row.id))} // Pass item ID to delete handler
-          className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
-        >
-          Delete
-        </button>
-      </div>
-    ),
-  });
+  // Define columns for the DataTable dynamically based on resource fields
+  const columns: Column[] = cfg
+    ? [
+        // Actions column first
+        {
+          accessorKey: 'actions', // Custom column for actions
+          header: 'Actions',
+          cell: (row: any) => (
+            <Flex> {/* Use Flex for horizontal buttons */}
+              <Button size="sm" colorScheme="blue" onClick={() => handleView(row)} mr={2}>
+                View
+              </Button>
+              <Button size="sm" colorScheme="blue" onClick={() => handleEdit(row.id)} mr={2}>
+                Edit
+              </Button>
+              <Button size="sm" colorScheme="red" onClick={() => handleDelete(row.id)}>
+                Delete
+              </Button>
+            </Flex>
+          ),
+        },
+        // Dynamically generate columns for important fields
+        ...(importantFieldsMap[resource] || cfg.fields.slice(0, 4)).map((field) => ({ // Default to first 4 fields if not in map
+          accessorKey: field,
+          header: field.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()), // Format header
+          // Optional: Add styling to ensure single line and contained width for table cells
+          cell: (row: any) => (
+            <Text noOfLines={1} overflow="hidden" textOverflow="ellipsis">
+              {String(row[field] ?? '')}
+            </Text>
+          ),
+        })),
+      ]
+    : []; // Empty array if no config
+
+  // Render error message if resource config is not found
+  if (!cfg) {
+    return (
+      <Alert status="error" variant="left-accent" rounded="md">
+        <AlertIcon />
+        <AlertTitle>Error!</AlertTitle>
+        <AlertDescription>Resource &quot;{resource}&quot; not found.</AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Header section with resource label and 'New' button */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-md">
-        <h1 className="text-3xl font-extrabold text-gray-800">{cfg.label}</h1>
-        <button
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-200 text-lg font-medium"
-          onClick={() => router.push(`/${resource}/new`)} // Navigate to the 'new' item creation page
-        >
-          New {cfg.label.slice(0, -1)} {/* e.g., "New User" from "Users" */}
-        </button>
-      </div>
+    <Box p={4} minH="100vh"> {/* Use Box for container, with padding and min height */}
+      <Flex align="center" mb={6}> {/* Use Flex for title and button alignment */}
+        <Heading as="h1" size="xl" color="gray.800">
+          {cfg.label}
+        </Heading>
+        <Spacer /> {/* Pushes the button to the right */}
+        <Button colorScheme="green" onClick={handleAddNew}>
+          Add New {cfg.label.slice(0, -1)} {/* e.g., "Add New User" */}
+        </Button>
+      </Flex>
 
-      {/* Loading indicator */}
+      {/* Loading state using Chakra UI Spinner and Text */}
       {loading && (
-        <div className="flex justify-center items-center h-64">
-          <p className="text-gray-600 text-xl">Loading {cfg.label}...</p>
-        </div>
+        <Flex direction="column" align="center" justify="center" minH="200px">
+          <Spinner size="xl" color="blue.500" mb={4} />
+          <Text fontSize="lg" color="gray.600">Loading {cfg.label}...</Text>
+        </Flex>
       )}
 
-      {/* Error message display */}
+      {/* Error state using Chakra UI Alert */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
-        </div>
+        <Alert status="error" variant="left-accent" rounded="md" mb={4}>
+          <AlertIcon />
+          <AlertTitle>Error!</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
-      {/* No data message */}
+      {/* No data state using Chakra UI Alert */}
       {!loading && !error && data.length === 0 && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">No Data!</strong>
-          <span className="block sm:inline"> No {cfg.label} found.</span>
-        </div>
+        <Alert status="info" variant="left-accent" rounded="md" mb={4}>
+          <AlertIcon />
+          <AlertTitle>No Data!</AlertTitle>
+          <AlertDescription>No {cfg.label} found.</AlertDescription>
+        </Alert>
       )}
 
       {/* DataTable display (only when not loading and no error, and data exists) */}
       {!loading && !error && data.length > 0 && (
-        <DataTable columns={columns} data={data} />
+        <Box borderWidth="1px" borderRadius="lg" overflow="hidden" shadow="md"> {/* Added styling for the table container */}
+          <DataTable columns={columns} data={data} />
+        </Box>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-lg shadow-xl max-w-sm w-full">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Confirm Deletion</h2>
-            <p className="mb-6 text-gray-700">Are you sure you want to delete this item? This action cannot be undone.</p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={cancelDelete}
-                className="px-5 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors duration-200"
-              >
+      {/* Delete Confirmation Modal using Chakra UI AlertDialog */}
+      <AlertDialog
+        isOpen={isDeleteConfirmOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onDeleteConfirmClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Confirm Deletion
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to delete this item? This action cannot be undone.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onDeleteConfirmClose}>
                 Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-5 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors duration-200"
-              >
+              </Button>
+              <Button colorScheme="red" onClick={confirmDelete} ml={3}>
                 Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+
+      {/* View Details Modal */}
+      <Modal isOpen={isViewModalOpen} onClose={onViewModalClose} size="xl"> {/* Increased size for more content */}
+        <ModalOverlay />
+        <ModalContent rounded="lg" shadow="xl"> {/* More pronounced shadow for floating card feel */}
+          <ModalHeader borderBottomWidth="1px" pb={3}>
+            Details for {cfg?.label.slice(0, -1) || 'Item'}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody py={6}>
+            {viewItem ? (
+              <VStack align="stretch" spacing={3}>
+                {Object.entries(viewItem).map(([key, value]) => (
+                  <Flex key={key} borderBottomWidth="1px" borderColor="gray.100" pb={2}>
+                    <Text fontWeight="semibold" mr={2} textTransform="capitalize">
+                      {key.replace(/_/g, ' ')}:
+                    </Text>
+                    <Text>
+                      {typeof value === 'object' && value !== null
+                        ? JSON.stringify(value, null, 2) // Stringify objects for display
+                        : String(value)}
+                    </Text>
+                  </Flex>
+                ))}
+              </VStack>
+            ) : (
+              <Text>No item selected for viewing.</Text>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 }

@@ -1,9 +1,20 @@
-'use client'; // This is a client component as it uses hooks like useRouter and usePathname
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { entities } from '../config/entities'; // Import your entities configuration
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Text,
+  VStack,
+  Collapse,
+  Icon,
+} from '@chakra-ui/react'; // Chakra UI components
+import { ChevronDownIcon } from '@chakra-ui/icons'; // Chakra UI icon
 
 // Define the structure for your dashboard menu
 interface MenuItem {
@@ -18,10 +29,9 @@ const dashboardMenu: MenuItem[] = [
   {
     name: 'Dashboard Overview',
     href: '/',
-    subMenus: [
-      { name: 'Summary', href: '/' },
-      { name: 'Daily Summaries', href: '/daily_summaries' },
-    ],
+  },
+  { 
+    name: 'Daily Summaries', href: '/daily_summaries' 
   },
   {
     name: 'Sales & Orders',
@@ -176,62 +186,108 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gray-800 text-white p-4 h-full overflow-y-auto shadow-lg">
+    <Box as="nav" bg="gray.800" color="white" p={4} h="full" overflowY="auto" /* Removed shadow */>
       {/* Added text-left to ensure title is left-aligned */}
-      <h2 className="text-3xl font-extrabold mb-8 text-yellow-300 text-left">Resto Admin</h2>
-      <ul>
+      <br /><br />
+      <Heading as="h2" size="xl" mb={8} color="yellow.300" textAlign="left" fontWeight="extrabold">
+        Resto Admin
+      </Heading>
+      <hr />
+      <VStack as="ul" align="stretch" spacing={1} listStyleType="none"> {/* Reduced spacing, added listStyleType */}
         {dashboardMenu.map((menuItem) => (
-          <li key={menuItem.name} className="mb-2">
+          <Box as="li" key={menuItem.name} listStyleType="none"> {/* Added listStyleType */}
             {menuItem.subMenus ? (
               <>
-                <button
+                {/* Use Chakra Button for expandable menu items */}
+                <Button
+                  variant="ghost"
+                  width="full"
+                  justifyContent="space-between"
+                  px={4}
+                  py={2}
+                  rounded="md" /* Slightly less rounded */
+                  fontSize="md" /* Slightly smaller font */
+                  fontWeight="normal" /* Less bold */
+                  bg={pathname.startsWith(menuItem.href) ? 'gray.700' : 'transparent'} /* More subtle active bg */
+                  color={pathname.startsWith(menuItem.href) ? 'yellow.300' : 'gray.300'} /* Active color */
+                  _hover={{ bg: 'gray.700', color: 'yellow.200' }} /* Subtle hover */
+                  _active={{ bg: 'gray.600' }} /* Subtle active */
+                  _focus={{ outline: 'none', boxShadow: 'none' }} /* Flat focus */
                   onClick={() => toggleMenu(menuItem.name)}
-                  className={`flex items-center justify-between w-full px-4 py-2 rounded-lg transition-colors duration-200 text-left
-                    ${pathname.startsWith(menuItem.href) ? 'bg-yellow-600 text-white' : 'hover:bg-gray-700 hover:text-yellow-300'}
-                    focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50`}
                 >
-                  {/* Text is already on the left due to justify-between and block span */}
-                  <span className="capitalize text-lg font-semibold">{menuItem.name}</span>
-                  <svg
-                    className={`w-4 h-4 transform transition-transform duration-200 ${openMenus[menuItem.name] ? 'rotate-90' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
+                  <Text as="span" textTransform="capitalize" fontSize="md" fontWeight="normal">{menuItem.name}</Text>
+                  {/* Use Chakra UI icon for chevron */}
+                  <Icon
+                    as={ChevronDownIcon}
+                    ml={2}
+                    h={4}
+                    w={4}
+                    transition="transform 0.2s"
+                    transform={openMenus[menuItem.name] ? 'rotate(180deg)' : 'rotate(0deg)'}
+                  />
+                </Button>
+                <Collapse in={openMenus[menuItem.name]} animateOpacity>
+                  <VStack
+                    as="ul"
+                    ml={4}
+                    mt={1} /* Reduced margin top */
+                    borderLeft="1px solid"
+                    borderColor="gray.700" /* Darker, more subtle border */
+                    pl={4}
+                    align="stretch"
+                    spacing={0.5} /* Reduced spacing */
+                    listStyleType="none" // Added listStyleType
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </button>
-                {openMenus[menuItem.name] && (
-                  <ul className="ml-4 mt-2 border-l border-gray-600 pl-4">
                     {menuItem.subMenus.map((subMenu) => (
-                      <li key={subMenu.name} className="mb-1">
-                        <Link href={subMenu.href}>
-                          <span
-                            className={`block px-3 py-1 rounded-md transition-colors duration-200 text-left
-                              ${pathname === subMenu.href ? 'bg-yellow-500 text-gray-900 font-medium' : 'hover:bg-gray-600 hover:text-yellow-200'}`}
+                      <Box as="li" key={subMenu.name} listStyleType="none"> {/* Added listStyleType */}
+                        <Link href={subMenu.href} passHref>
+                          <Text
+                            as="span"
+                            display="block"
+                            px={3}
+                            py={1}
+                            rounded="sm" /* Even less rounded */
+                            transition="colors 0.2s"
+                            textAlign="left"
+                            bg={pathname === subMenu.href ? 'gray.600' : 'transparent'} /* More subtle active bg */
+                            color={pathname === subMenu.href ? 'yellow.200' : 'gray.400'} /* Active color */
+                            fontWeight={pathname === subMenu.href ? 'medium' : 'normal'}
+                            _hover={{ bg: 'gray.700', color: 'yellow.100' }} /* Subtle hover */
+                            cursor="pointer"
                           >
                             {getEntityLabel(subMenu.href.substring(1))} {/* Remove leading '/' for entity name */}
-                          </span>
+                          </Text>
                         </Link>
-                      </li>
+                      </Box>
                     ))}
-                  </ul>
-                )}
+                  </VStack>
+                </Collapse>
               </>
             ) : (
-              <Link href={menuItem.href}>
-                <span
-                  className={`block px-4 py-2 rounded-lg transition-colors duration-200 text-lg font-semibold text-left
-                    ${pathname === menuItem.href ? 'bg-yellow-600 text-white' : 'hover:bg-gray-700 hover:text-yellow-300'}`}
+              <Link href={menuItem.href} passHref>
+                <Text
+                  as="span"
+                  display="block"
+                  px={4}
+                  py={2}
+                  rounded="md" /* Slightly less rounded */
+                  transition="colors 0.2s"
+                  fontSize="md" /* Slightly smaller font */
+                  fontWeight="normal" /* Less bold */
+                  textAlign="left"
+                  bg={pathname === menuItem.href ? 'gray.700' : 'transparent'} /* More subtle active bg */
+                  color={pathname === menuItem.href ? 'yellow.300' : 'gray.300'} /* Active color */
+                  _hover={{ bg: 'gray.700', color: 'yellow.200' }} /* Subtle hover */
+                  cursor="pointer"
                 >
                   {menuItem.name}
-                </span>
+                </Text>
               </Link>
             )}
-          </li>
+          </Box>
         ))}
-      </ul>
-    </nav>
+      </VStack>
+    </Box>
   );
 }
+
