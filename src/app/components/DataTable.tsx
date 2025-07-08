@@ -63,39 +63,23 @@ export default function DataTable({
 
   return (
     <Box className="data-table-container">
-      {/* Search Input */}
-      <Flex mb={4} justifyContent="flex-end">
-        <Input
-          placeholder="Search..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          width="fit-content"
-          size="md"
-          rounded="md"
-          borderColor="var(--border-color)" // Use border color
-          _hover={{ borderColor: 'var(--primary-green)' }} // Green on hover
-          focusBorderColor="var(--primary-green)" // Green on focus
-          color="var(--dark-gray-text)" // Dark gray text
-          className="font-regular"
-        />
-      </Flex>
+      <Input
+        placeholder="Search..."
+        value={searchTerm}
+        onChange={(e) => {
+          setSearchTerm(e.target.value);
+          setCurrentPage(1); // Reset to first page on new search
+        }}
+        mb={4}
+        className="data-table-search-input"
+      />
 
-      {/* Table Container with Scroll */}
-      <Box overflowX="auto" border="1px solid var(--border-color)" rounded="md" shadow="sm"> {/* Added border and shadow for card-like feel */}
+      <Box overflowX="auto" border="1px solid var(--border-color)" rounded="md" shadow="sm">
         <Table variant="simple" size="md">
-          <Thead bg="var(--light-gray-bg)"> {/* Light gray background for table header */}
+          <Thead bg="var(--light-gray-bg)">
             <Tr>
               {columns.map((column) => (
-                <Th
-                  key={column.accessorKey}
-                  py={3}
-                  px={4}
-                  textAlign="left"
-                  color="var(--dark-gray-text)" // Dark gray text for headers
-                  className="font-semibold" // Semi-bold font for headers
-                  textTransform="capitalize"
-                  borderBottom="2px solid var(--border-color)" // Border below header
-                >
+                <Th key={column.accessorKey} className="data-table-th">
                   {column.header}
                 </Th>
               ))}
@@ -104,16 +88,9 @@ export default function DataTable({
           <Tbody>
             {paginatedData.length > 0 ? (
               paginatedData.map((row, rowIndex) => (
-                <Tr key={rowIndex} _hover={{ bg: 'var(--light-gray-bg)' }}> {/* Light gray background on row hover */}
+                <Tr key={rowIndex} className="data-table-tr">
                   {columns.map((col) => (
-                    <Td
-                      key={`${row.id}-${col.accessorKey}`}
-                      py={3}
-                      px={4}
-                      color="var(--medium-gray-text)" // Medium gray text for data cells
-                      className="font-regular"
-                      borderBottom="1px solid var(--border-color)" // Border between rows
-                    >
+                    <Td key={`${row.id}-${col.accessorKey}`} className="data-table-td">
                       {col.cell ? col.cell(row) : String(row[col.accessorKey] ?? '')}
                     </Td>
                   ))}
@@ -121,7 +98,7 @@ export default function DataTable({
               ))
             ) : (
               <Tr>
-                <Td colSpan={columns.length} textAlign="center" py={4} color="var(--medium-gray-text)" className="font-regular">
+                <Td colSpan={columns.length} textAlign="center" py={4} color="gray.500">
                   No data found.
                 </Td>
               </Tr>
@@ -143,9 +120,9 @@ export default function DataTable({
             isDisabled={currentPage === 1}
             size="sm"
             variant="outline"
-            borderColor="var(--border-color)" // Border color for buttons
-            color="var(--dark-gray-text)" // Dark gray text for buttons
-            _hover={{ bg: 'var(--light-gray-bg)' }} // Light gray background on hover
+            borderColor="var(--border-color)"
+            color="var(--dark-gray-text)"
+            _hover={{ bg: 'var(--light-gray-bg)' }}
             rounded="md"
           />
           <Text color="var(--dark-gray-text)" className="font-medium">

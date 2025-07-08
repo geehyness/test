@@ -77,7 +77,8 @@ export default function ResourceDetailPage() {
         setLoading(true);
         setError(null);
         try {
-          const item = await fetchData(resource, id); // Assuming fetchData can also fetch a single item by ID if data[id] is called
+          // Corrected: fetchData for a single item (GET method)
+          const item = await fetchData(resource, id, undefined, 'GET'); 
           if (item) {
             setInitialData(item);
           } else {
@@ -106,7 +107,8 @@ export default function ResourceDetailPage() {
     setIsDataLoading(true);
     setDataError(null);
     try {
-      const result = await fetchData(resource);
+      // Corrected: fetchData for all items (GET method, no id)
+      const result = await fetchData(resource, undefined, undefined, 'GET');
       setData(result);
     } catch (err) {
       console.error(`Failed to fetch data for ${resource}:`, err);
@@ -126,10 +128,12 @@ export default function ResourceDetailPage() {
   const handleFormSubmit = useCallback(async (formData: Record<string, any>) => {
     try {
       if (isEditMode) {
-        await fetchData(resource, id, formData, 'PUT'); // Assuming fetchData handles PUT for update
+        // Corrected: fetchData for update (PUT method)
+        await fetchData(resource, id, formData, 'PUT'); 
         router.push(`/${resource}`); // Redirect back to list view after update
       } else {
-        await fetchData(resource, formData, 'POST'); // Assuming fetchData handles POST for create
+        // Corrected: fetchData for create (POST method) - pass undefined for id
+        await fetchData(resource, undefined, formData, 'POST'); 
         router.push(`/${resource}`); // Redirect back to list view after creation
       }
     } catch (err) {

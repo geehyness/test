@@ -1,3 +1,4 @@
+// src/lib/api.ts
 import axios from 'axios';
 import { sampleData } from '../data/sample'; // Import your sample data
 
@@ -7,64 +8,86 @@ export const api = axios.create({
 });
 
 /**
- * Fetches a list of resources from the sample data.
+ * Fetches data for a resource, either a list of all items or a single item by ID.
+ * It also handles creation (POST) and updating (PUT) by modifying sampleData directly.
+ *
  * @param resource The name of the resource (e.g., 'users', 'sales').
- * @returns An array of resource data from sample.ts.
+ * @param id Optional: The ID of a specific item to fetch, update, or delete.
+ * @param data Optional: Data payload for POST or PUT requests.
+ * @param method Optional: HTTP method (GET, POST, PUT, DELETE). Defaults to 'GET'.
+ * @returns A promise that resolves to the fetched data, created item, or updated item, or null if not found/error.
  */
-export async function fetchData(resource: string): Promise<any[]> {
-  console.log(`Fetching data for ${resource} from sample.ts`);
-  // Return data directly from sampleData
-  return sampleData[resource] || [];
+export async function fetchData(
+  resource: string,
+  id?: string, // Make id optional
+  data?: Record<string, any>,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET'
+): Promise<any | null> {
+  console.log(`API call: ${method} ${resource}${id ? '/' + id : ''}`, data || '');
+
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  const currentResourceData = sampleData[resource] || [];
+
+  switch (method) {
+    case 'GET':
+      if (id) {
+        // Fetch a single item
+        const item = currentResourceData.find((x: any) => String(x.id) === String(id));
+        return item || null;
+      } else {
+        // Fetch all items
+        return currentResourceData;
+      }
+    case 'POST':
+      if (!data) {
+        throw new Error('Data is required for POST request.');
+      }
+      // Simulate ID generation for new item
+      const newId = Math.floor(Math.random() * 100000) + 1000;
+      const newItem = { ...data, id: newId };
+      sampleData[resource] = [...currentResourceData, newItem]; // Add new item to sampleData
+      return newItem;
+    case 'PUT':
+      if (!id || !data) {
+        throw new Error('ID and data are required for PUT request.');
+      }
+      const updatedItemIndex = currentResourceData.findIndex((x: any) => String(x.id) === String(id));
+      if (updatedItemIndex > -1) {
+        const updatedItem = { ...currentResourceData[updatedItemIndex], ...data, id: String(id) }; // Ensure ID consistency
+        sampleData[resource][updatedItemIndex] = updatedItem; // Update item in sampleData
+        return updatedItem;
+      } else {
+        throw new Error(`Item with ID ${id} not found for update.`);
+      }
+    case 'DELETE':
+      if (!id) {
+        throw new Error('ID is required for DELETE request.');
+      }
+      const initialLength = currentResourceData.length;
+      sampleData[resource] = currentResourceData.filter((x: any) => String(x.id) !== String(id)); // Filter out deleted item
+      if (sampleData[resource].length === initialLength) {
+        throw new Error(`Item with ID ${id} not found for deletion.`);
+      }
+      return true; // Indicate successful deletion
+    default:
+      throw new Error(`Unsupported HTTP method: ${method}`);
+  }
 }
 
 /**
- * Fetches a single resource by its ID from the sample data.
- * @param resource The name of the resource.
- * @param id The ID of the resource.
- * @returns The resource data from sample.ts, or null if not found.
- */
-export async function fetchItemData(resource: string, id: string): Promise<any | null> {
-  console.log(`Fetching item ${id} for ${resource} from sample.ts`);
-  const items = sampleData[resource] || [];
-  // Find the item by ID (assuming 'id' is a string or number)
-  const item = items.find((x: any) => String(x.id) === String(id));
-  return item || null;
-}
-
-/**
- * Simulates creating a new resource (logs the action).
- * @param resource The name of the resource.
- * @param data The data for the new resource.
- * @returns A promise that resolves to the simulated created resource data.
- */
-export async function createItem(resource: string, data: any): Promise<any> {
-  console.log(`Simulating creation of ${resource}:`, data);
-  // In a real scenario, you'd add this to your backend and get a real ID.
-  // For sample data, we'll just return a mock success.
-  return { ...data, id: Math.floor(Math.random() * 1000) + 1000 }; // Assign a mock ID
-}
-
-/**
- * Simulates updating an existing resource (logs the action).
- * @param resource The name of the resource.
- * @param id The ID of the resource to update.
- * @param data The updated data for the resource.
- * @returns A promise that resolves to the simulated updated resource data.
- */
-export async function updateItem(resource: string, id: string, data: any): Promise<any> {
-  console.log(`Simulating update of ${resource} with ID ${id}:`, data);
-  // For sample data, we'll just return a mock success.
-  return { ...data, id: id };
-}
-
-/**
- * Simulates deleting a resource by its ID (logs the action).
+ * Simulates deleting a resource by its ID.
+ * This function now leverages the consolidated fetchData for DELETE operations.
  * @param resource The name of the resource.
  * @param id The ID of the resource to delete.
- * @returns A promise that resolves when the resource is simulated deleted.
+ * @returns A promise that resolves to true if the resource is simulated deleted.
  */
-export async function deleteItem(resource: string, id: string): Promise<void> {
-  console.log(`Simulating deletion of ${resource} with ID ${id}`);
-  // For sample data, we'll just return a mock success.
-  return;
+export async function deleteItem(resource: string, id: string): Promise<boolean> {
+  return fetchData(resource, id, undefined, 'DELETE');
 }
+
+// The following functions are no longer needed as their functionality is merged into fetchData
+// export async function fetchItemData(resource: string, id: string): Promise<any | null> { ... }
+// export async function createItem(resource: string, data: any): Promise<any> { ... }
+// export async function updateItem(resource: string, id: string, data: any): Promise<any> { ... }
