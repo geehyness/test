@@ -7,7 +7,7 @@ import {
   Heading,
   Text,
   SimpleGrid,
-  Image as ChakraImage,
+  Image as ChakraImage, // Renamed Image to ChakraImage to avoid conflict with HTML Image
   VStack,
   HStack,
   Spinner,
@@ -33,14 +33,91 @@ import {
   DrawerCloseButton,
   IconButton,
   Badge,
-  Icon, // Import Icon component from Chakra UI
-  Spacer, // Import Spacer component from Chakra UI
+  Icon,
+  Spacer,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  useDisclosure,
+  Link as ChakraLink,
+  Image // Import Image component for the logo
 } from '@chakra-ui/react';
-import { AddIcon, MinusIcon, DeleteIcon } from '@chakra-ui/icons'; // Removed ShoppingCartIcon
-import { FaShoppingCart } from 'react-icons/fa'; // New: Import FaShoppingCart from react-icons/fa
+import { AddIcon, MinusIcon, DeleteIcon, SearchIcon, BellIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import {
+  FaShoppingCart,
+  FaPizzaSlice,
+  FaCoffee,
+  FaBurger,
+  FaDrumstickBite,
+  FaHotdog,
+  FaWineGlass,
+  FaUtensils,
+  FaCocktail,
+  FaBreadSlice,
+  FaTachometerAlt,
+  FaBoxes,
+  FaChartLine,
+  FaUsers,
+  FaReceipt
+} from 'react-icons/fa';
 import { fetchData } from '../lib/api';
 
-// Define interfaces for your data structure, now reflecting 'foods' and 'food_categories'
+interface NavItemProps {
+  icon: React.ElementType;
+  label: string;
+  isActive?: boolean;
+  isSubItem?: boolean;
+  onClick?: () => void;
+  href?: string;
+}
+
+const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, isSubItem, onClick, href }) => {
+  const inactiveBg = isSubItem ? 'var(--navbar-submenu-hover-bg)' : 'var(--navbar-main-item-hover-bg)';
+  const activeBg = isSubItem ? 'var(--navbar-submenu-active-bg)' : 'var(--navbar-main-item-active-bg)';
+  const inactiveText = isSubItem ? 'var(--navbar-submenu-inactive-text)' : 'var(--navbar-main-item-inactive-text)';
+  const activeText = isSubItem ? 'var(--navbar-submenu-active-text)' : 'var(--navbar-main-item-active-text)';
+
+  return (
+    <Button
+      as={href ? ChakraLink : Button}
+      href={href}
+      width="full"
+      justifyContent="flex-start"
+      variant="ghost"
+      bg={isActive ? activeBg : 'transparent'}
+      color={isActive ? activeText : inactiveText}
+      _hover={{
+        bg: isActive ? activeBg : inactiveBg,
+        color: isActive ? activeText : 'var(--navbar-main-item-active-text)',
+      }}
+      _active={{
+        bg: activeBg,
+        color: activeText,
+      }}
+      px={isSubItem ? 8 : 4}
+      py={3}
+      rounded="md"
+      fontSize="md"
+      fontWeight={isActive ? 'semibold' : 'normal'}
+      leftIcon={<Icon as={icon} mr={isSubItem ? 2 : 3} />}
+      onClick={onClick}
+      fontFamily="var(--font-lexend-deca)"
+      position="relative"
+    >
+      {label}
+      {isActive && (
+        <Icon
+          as={ChevronRightIcon}
+          position="absolute"
+          right={4}
+          color={activeText}
+          w={5} h={5}
+        />
+      )}
+    </Button>
+  );
+};
+
 interface FoodItem {
   id: number;
   name: string;
@@ -69,9 +146,9 @@ interface FoodCategoryItem {
   image?: string;
   created_at: string;
   updated_at: string;
+  icon?: React.ElementType;
 }
 
-// New: Interface for an item in the shopping cart
 interface CartItem extends FoodItem {
   quantity: number;
 }
@@ -80,6 +157,7 @@ interface GroupedFoodCategory {
   id: number;
   name: string;
   image?: string;
+  icon?: React.ElementType;
   items: FoodItem[];
 }
 
@@ -88,21 +166,25 @@ export default function CustomerMenuPage() {
   const [foods, setFoods] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null); // null means "All Categories"
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // New: Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Chakra UI color mode values for dynamic styling
-  const cardBg = useColorModeValue('var(--background-color-light)', 'gray.700');
-  const textColor = useColorModeValue('var(--dark-gray-text)', 'white');
-  const headingColor = useColorModeValue('var(--text-color-dark)', 'white');
-  const categoryButtonInactiveBg = useColorModeValue('gray.100', 'gray.800');
-  const categoryButtonInactiveText = useColorModeValue('var(--medium-gray-text)', 'gray.300');
+  const [activeMenuItem, setActiveMenuItem] = useState<string>('Menu');
+  const { isOpen: isDashboardOpen, onToggle: onToggleDashboard } = useDisclosure();
+
+
+  const bgColor = useColorModeValue('var(--light-gray-bg)', 'gray.900');
+  const cardBg = useColorModeValue('var(--background-color-light)', 'gray.800');
+  const textColor = useColorModeValue('var(--dark-gray-text)', 'whiteAlpha.900');
+  const headingColor = useColorModeValue('var(--text-color-dark)', 'whiteAlpha.900');
+  const primaryGreen = 'var(--primary-green)';
+  const categoryInactiveBg = useColorModeValue('var(--background-color-light)', 'gray.700');
+  const categoryInactiveText = useColorModeValue('var(--medium-gray-text)', 'gray.300');
   const cartDrawerBg = useColorModeValue('var(--background-color-light)', 'gray.800');
-  const cartHeaderColor = useColorModeValue('var(--text-color-dark)', 'white');
-  const cartItemBorderColor = useColorModeValue('var(--border-color)', 'gray.600');
+  const borderColor = useColorModeValue('var(--border-color)', 'gray.700');
 
   const loadMenuData = useCallback(async () => {
     try {
@@ -111,10 +193,28 @@ export default function CustomerMenuPage() {
       const categoriesData: FoodCategoryItem[] = await fetchData('food_categories');
       const foodsData: FoodItem[] = await fetchData('foods');
 
-      setFoodCategories(categoriesData);
-      setFoods(foodsData);
+      // Process foodsData to ensure price and cost are numbers
+      const processedFoodsData = foodsData.map(food => ({
+        ...food,
+        price: Number(food.price),
+        cost: Number(food.cost)
+      }));
 
-      // Initially, show "All Categories" by setting activeCategoryId to null
+      const categoriesWithIcons = categoriesData.map(cat => {
+        let iconComponent: React.ElementType | undefined;
+        if (cat.name.toLowerCase().includes('breakfast')) iconComponent = FaBreadSlice;
+        else if (cat.name.toLowerCase().includes('pizza') || cat.name.toLowerCase().includes('pasta')) iconComponent = FaPizzaSlice;
+        else if (cat.name.toLowerCase().includes('burger')) iconComponent = FaBurger;
+        else if (cat.name.toLowerCase().includes('drink') || cat.name.toLowerCase().includes('beverage')) iconComponent = FaCocktail;
+        else if (cat.name.toLowerCase().includes('bbq') || cat.name.toLowerCase().includes('chicken')) iconComponent = FaDrumstickBite;
+        else if (cat.name.toLowerCase().includes('soup')) iconComponent = FaUtensils;
+        else iconComponent = FaUtensils;
+        return { ...cat, icon: iconComponent };
+      });
+
+      setFoodCategories(categoriesWithIcons);
+      setFoods(processedFoodsData); // Use processedFoodsData here
+
       setActiveCategoryId(null);
     } catch (err) {
       console.error('Failed to fetch menu data:', err);
@@ -128,7 +228,6 @@ export default function CustomerMenuPage() {
     loadMenuData();
   }, [loadMenuData]);
 
-  // Group foods by category and filter based on activeCategoryId
   const groupedFoods = React.useMemo(() => {
     const groups: { [key: number]: GroupedFoodCategory } = {};
 
@@ -137,45 +236,61 @@ export default function CustomerMenuPage() {
         id: category.id,
         name: category.name,
         image: category.image,
+        icon: category.icon,
         items: [],
       };
     });
 
-    foods.forEach((food) => {
+    const filteredFoods = foods.filter(food =>
+      food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      food.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    filteredFoods.forEach((food) => {
       if (groups[food.food_category_id]) {
         groups[food.food_category_id].items.push(food);
       }
     });
 
-    // If 'activeCategoryId' is null, show all categories with items.
-    // Otherwise, show only the active category if it has items.
     return Object.values(groups).filter(group =>
       group.items.length > 0 &&
       (activeCategoryId === null || group.id === activeCategoryId)
     );
-  }, [foods, foodCategories, activeCategoryId]);
+  }, [foods, foodCategories, activeCategoryId, searchTerm]);
 
-  // Cart Functions
+  const getCartItemQuantity = (foodItemId: number) => {
+    const item = cartItems.find(cartItem => cartItem.id === foodItemId);
+    // Ensure the returned quantity is always a valid finite number, default to 0 if not
+    return item ? (Number.isFinite(item.quantity) ? item.quantity : 0) : 0;
+  };
+
   const addToCart = (foodItem: FoodItem) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === foodItem.id);
       if (existingItem) {
+        // Ensure existingItem.quantity is a finite number before adding
+        const currentNumericalQuantity = Number.isFinite(existingItem.quantity) ? existingItem.quantity : 0;
+        const updatedQuantity = currentNumericalQuantity + 1;
         return prevItems.map(item =>
-          item.id === foodItem.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === foodItem.id ? { ...item, quantity: updatedQuantity } : item
         );
       } else {
         return [...prevItems, { ...foodItem, quantity: 1 }];
       }
     });
+    setIsCartOpen(true);
   };
 
   const updateCartItemQuantity = (itemId: number, newQuantity: number) => {
     setCartItems(prevItems => {
-      if (newQuantity <= 0) {
+      // Ensure newQuantity is a finite number, default to 0 if not
+      const validatedNewQuantity = Number.isFinite(newQuantity) ? newQuantity : 0;
+
+      if (validatedNewQuantity < 1) { // Corrected condition: remove if quantity becomes less than 1
         return prevItems.filter(item => item.id !== itemId);
       }
       return prevItems.map(item =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
+        item.id === itemId ? { ...item, quantity: validatedNewQuantity } : item
       );
     });
   };
@@ -185,26 +300,34 @@ export default function CustomerMenuPage() {
   };
 
   const calculateCartTotal = React.useMemo(() => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cartItems.reduce((total, item) => {
+      // Ensure both price and quantity are finite numbers before multiplication
+      const itemPrice = Number.isFinite(item.price) ? item.price : 0;
+      const itemQuantity = Number.isFinite(item.quantity) ? item.quantity : 0;
+      return total + itemPrice * itemQuantity;
+    }, 0);
   }, [cartItems]);
 
   const totalCartItems = React.useMemo(() => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
+    return cartItems.reduce((total, item) => {
+      // Ensure item.quantity is a finite number before summing
+      const itemQuantity = Number.isFinite(item.quantity) ? item.quantity : 0;
+      return total + itemQuantity;
+    }, 0);
   }, [cartItems]);
-
 
   if (loading) {
     return (
-      <Flex justify="center" align="center" minH="70vh">
-        <Spinner size="xl" color="var(--primary-green)" />
-        <Text ml={4} fontSize="xl" color="var(--medium-gray-text)">Loading menu...</Text>
+      <Flex justify="center" align="center" minH="70vh" bg={bgColor}>
+        <Spinner size="xl" color={primaryGreen} />
+        <Text ml={4} fontSize="xl" color={textColor}>Loading menu...</Text>
       </Flex>
     );
   }
 
   if (error) {
     return (
-      <Container maxW="container.xl" py={10}>
+      <Container maxW="container.xl" py={10} bg={bgColor}>
         <Alert status="error" variant="left-accent" rounded="md">
           <AlertIcon />
           <AlertTitle>Error!</AlertTitle>
@@ -214,158 +337,349 @@ export default function CustomerMenuPage() {
     );
   }
 
+  const getFoodCountForCategory = (categoryId: number | null) => {
+    if (categoryId === null) {
+      return foods.filter(food => food.name.toLowerCase().includes(searchTerm.toLowerCase())).length;
+    }
+    return foods.filter(food => food.food_category_id === categoryId && food.name.toLowerCase().includes(searchTerm.toLowerCase())).length;
+  };
+
   return (
-    <Container maxW="container.xl" py={10} px={{ base: 4, md: 8 }}>
-      <VStack spacing={10} align="stretch">
-        <Heading as="h1" size="2xl" textAlign="center" color={headingColor} fontFamily="var(--font-lexend-deca)" mb={6}>
-          Our Delicious Menu
-        </Heading>
+    <Flex minH="100vh" bg={bgColor}>
+      {/* Main Content Area - Centered with margins */}
+      <Box
+        flex="1"
+        maxW="1200px" // Max width for content
+        mx="auto"    // Center the content horizontally
+        px={{ base: 4, md: 8 }} // Horizontal padding
+        pt={{ base: '100px', md: '100px' }} // Top padding to clear fixed top bar
+        pb={{ base: 4, md: 8 }} // Bottom padding
+      >
+        {/* Top Bar for Search and Notifications - Now aligns with main content width */}
+        <Flex
+          position="fixed"
+          top="0"
+          left="50%" // Center horizontally
+          transform="translateX(-50%)" // Adjust for perfect centering
+          zIndex="10"
+          bg={cardBg}
+          rounded="lg"
+          shadow="sm"
+          borderWidth="1px"
+          borderColor={borderColor}
+          maxW="1200px" // Constrain the max width of the fixed bar itself
+          width="full" // Allow it to take full width up to maxW
+          px={{ base: 4, md: 8 }} // Apply padding to the fixed bar itself
+        >
+          {/* Inner Box for content, simplified as parent Flex handles maxW and px */}
+          <Box width="full" py={4}>
+            <Flex justifyContent="space-between" alignItems="center">
+              {/* Logo added here */}
+              <HStack spacing={4} alignItems="center">
+                <Image
+                  src="/c2.png" // Replace with the actual path to your logo
+                  alt="Company Logo"
+                  boxSize="40px" // Adjust size as needed
+                  objectFit="contain"
+                />
+                <InputGroup maxW="400px">
+                  <InputLeftElement
+                    pointerEvents="none"
+                    children={<SearchIcon color="gray.400" />}
+                  />
+                  <Input
+                    placeholder="Search product here..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    rounded="md"
+                    bg={bgColor}
+                    borderColor={borderColor}
+                    _focus={{ borderColor: primaryGreen, boxShadow: 'none' }}
+                    color={textColor}
+                    fontFamily="var(--font-lexend-deca)"
+                  />
+                </InputGroup>
+              </HStack>
+              <HStack spacing={4}>
+                <IconButton
+                  aria-label="Notifications"
+                  icon={<BellIcon w={5} h={5} />}
+                  variant="ghost"
+                  color={textColor}
+                  _hover={{ bg: 'gray.100' }}
+                  rounded="full"
+                />
+                {/* Cart button in top bar - now visible on all screen sizes */}
+                <Button
+                  onClick={() => setIsCartOpen(true)}
+                  colorScheme="green"
+                  size="md"
+                  rounded="md"
+                  leftIcon={<Icon as={FaShoppingCart} />}
+                  fontFamily="var(--font-lexend-deca)"
+                  bg={primaryGreen}
+                >
+                  Cart ({totalCartItems})
+                </Button>
+              </HStack>
+            </Flex>
+          </Box>
+        </Flex>
 
         {/* Category Navigation */}
-        <HStack spacing={4} wrap="wrap" justify="center" mb={8}>
-          {/* "All Categories" Button */}
-          <Button
-            onClick={() => setActiveCategoryId(null)} // Set to null to show all
-            size="lg"
-            px={6}
-            py={3}
-            rounded="full"
-            fontWeight="medium"
-            fontSize="md"
-            bg={activeCategoryId === null ? 'var(--primary-green)' : categoryButtonInactiveBg}
-            color={activeCategoryId === null ? 'var(--background-color-light)' : categoryButtonInactiveText}
-            _hover={{
-              bg: activeCategoryId === null ? 'var(--primary-green)' : 'gray.200',
-              color: activeCategoryId === null ? 'var(--background-color-light)' : 'var(--text-color-dark)',
-            }}
-            shadow={activeCategoryId === null ? 'md' : 'sm'}
+        <HStack spacing={4} wrap="wrap" justify="flex-start" mb={8} mt={{ base: 0, md: 0 }}>
+          <VStack
+            onClick={() => setActiveCategoryId(null)}
+            cursor="pointer"
+            p={3}
+            rounded="lg"
+            bg={activeCategoryId === null ? primaryGreen : categoryInactiveBg}
+            color={activeCategoryId === null ? 'white' : categoryInactiveText}
+            _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
             transition="all 0.2s ease-in-out"
+            minW="120px"
+            align="center"
+            borderWidth="1px"
+            borderColor={activeCategoryId === null ? primaryGreen : borderColor}
           >
-            All Categories
-          </Button>
+            <Icon as={FaUtensils} w={6} h={6} mb={1} />
+            <Text fontWeight="medium" fontSize="sm" fontFamily="var(--font-lexend-deca)">All</Text>
+            <Text fontSize="xs" opacity={0.8} fontFamily="var(--font-lexend-deca)">{getFoodCountForCategory(null)} items</Text>
+          </VStack>
 
-          {/* Other Category Buttons */}
-          {foodCategories.map((category) => (
-            <Button
-              key={category.id}
-              onClick={() => setActiveCategoryId(category.id)}
-              size="lg"
-              px={6}
-              py={3}
-              rounded="full"
-              fontWeight="medium"
-              fontSize="md"
-              bg={activeCategoryId === category.id ? 'var(--primary-green)' : categoryButtonInactiveBg}
-              color={activeCategoryId === category.id ? 'var(--background-color-light)' : categoryButtonInactiveText}
-              _hover={{
-                bg: activeCategoryId === category.id ? 'var(--primary-green)' : 'gray.200',
-                color: activeCategoryId === category.id ? 'var(--background-color-light)' : 'var(--text-color-dark)',
-              }}
-              shadow={activeCategoryId === category.id ? 'md' : 'sm'}
-              transition="all 0.2s ease-in-out"
-            >
-              {category.name}
-            </Button>
-          ))}
+          {foodCategories.map((category) => {
+            const itemCount = getFoodCountForCategory(category.id);
+            return (
+              <VStack
+                key={category.id}
+                onClick={() => setActiveCategoryId(category.id)}
+                cursor="pointer"
+                p={3}
+                rounded="lg"
+                bg={activeCategoryId === category.id ? primaryGreen : categoryInactiveBg}
+                color={activeCategoryId === category.id ? 'white' : categoryInactiveText}
+                _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
+                transition="all 0.2s ease-in-out"
+                minW="120px"
+                align="center"
+                borderWidth="1px"
+                borderColor={activeCategoryId === category.id ? primaryGreen : borderColor}
+              >
+                <Icon as={category.icon || FaUtensils} w={6} h={6} mb={1} />
+                <Text fontWeight="medium" fontSize="sm" fontFamily="var(--font-lexend-deca)}">{category.name}</Text>
+                <Text fontSize="xs" opacity={0.8} fontFamily="var(--font-lexend-deca)}">{itemCount} items</Text>
+              </VStack>
+            );
+          })}
         </HStack>
 
         {groupedFoods.length === 0 && (
-          <Text textAlign="center" fontSize="xl" color="var(--medium-gray-text)" py={10}>
-            No items found in this category.
+          <Text textAlign="center" fontSize="xl" color={textColor} py={10} fontFamily="var(--font-lexend-deca)">
+            No items found in this category or matching your search.
           </Text>
         )}
 
         {/* Food Items Display */}
-        {groupedFoods.map((group) => (
-          <Box key={group.id} pt={6}>
-            {activeCategoryId === null && ( // Only show category heading if "All Categories" is active
-              <Flex align="center" mb={6}>
-                {group.image && (
-                  <ChakraImage
-                    src={group.image}
-                    alt={group.name}
-                    boxSize="50px"
-                    objectFit="cover"
-                    rounded="lg"
-                    mr={4}
-                  />
-                )}
-                <Heading as="h2" size="xl" color={headingColor} fontFamily="var(--font-lexend-deca)">
-                  {group.name}
-                </Heading>
-              </Flex>
-            )}
-            <SimpleGrid
-              columns={{ base: 1, sm: 2, md: 2, lg: 3, xl: 4 }}
-              spacing={8}
-            >
-              {group.items.map((item) => (
+        <SimpleGrid
+          columns={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
+          spacing={6}
+        >
+          {groupedFoods.flatMap((group) =>
+            group.items.map((item) => {
+              const currentQuantity = getCartItemQuantity(item.id);
+              return (
                 <Card
                   key={item.id}
-                  maxW="sm"
+                  maxW="200px"
                   bg={cardBg}
-                  rounded="xl"
-                  shadow="lg"
+                  rounded="lg"
+                  shadow="sm"
                   overflow="hidden"
                   _hover={{
-                    shadow: '2xl',
-                    transform: 'translateY(-8px)',
-                    transition: 'all 0.3s ease-in-out',
+                    shadow: 'md',
+                    transform: 'translateY(-4px)',
+                    transition: 'all 0.2s ease-in-out',
                   }}
-                  transition="all 0.2s ease-in-out"
+                  transition="all 0.1s ease-in-out"
                   borderWidth="1px"
-                  borderColor="var(--border-color)"
+                  borderColor={borderColor}
                 >
                   {item.image && (
                     <ChakraImage
                       src={item.image}
                       alt={item.name}
-                      height="200px"
+                      height="120px"
                       objectFit="cover"
                       width="100%"
-                      roundedTop="xl"
+                      roundedTop="lg"
                     />
                   )}
-                  <CardBody>
-                    <Stack spacing={3}>
-                      <Heading size="md" color={textColor} fontFamily="var(--font-lexend-deca)" noOfLines={1}>
+                  <CardBody p={3}>
+                    <VStack spacing={1} align="stretch">
+                      <Text fontWeight="semibold" fontSize="sm" color={textColor} noOfLines={1} fontFamily="var(--font-lexend-deca)">
                         {item.name}
-                      </Heading>
-                      <Text color="var(--primary-green)" fontSize="3xl" fontWeight="bold">
+                      </Text>
+                      <Text color={primaryGreen} fontSize="md" fontWeight="bold" fontFamily="var(--font-lexend-deca)">
                         R {item.price.toFixed(2)}
                       </Text>
-                    </Stack>
+                    </VStack>
                   </CardBody>
-                  <Divider borderColor="var(--border-color)" />
-                  <CardFooter>
-                    <Button
-                      variant="solid"
-                      colorScheme="green"
-                      width="full"
-                      size="lg"
-                      rounded="lg"
-                      _hover={{
-                        bg: 'green.600',
-                      }}
-                      fontFamily="var(--font-lexend-deca)"
-                      fontWeight="semibold"
-                      onClick={() => addToCart(item)}
-                    >
-                      Add to Cart
-                    </Button>
+                  <Divider borderColor={borderColor} />
+                  <CardFooter p={2}>
+                    <Flex width="full" justify="space-between" align="center">
+                      {currentQuantity === 0 ? (
+                        <Button
+                          variant="solid"
+                          colorScheme="green"
+                          size="sm"
+                          width="full"
+                          rounded="md"
+                          onClick={() => addToCart(item)}
+                          fontWeight="normal"
+                          fontSize="sm"
+                          bg={primaryGreen}
+                          fontFamily="var(--font-lexend-deca)"
+                        >
+                          Add
+                        </Button>
+                      ) : (
+                        <HStack width="full" justify="center">
+                          <IconButton
+                            aria-label="Decrease quantity"
+                            icon={<MinusIcon />}
+                            size="sm"
+                            onClick={() => updateCartItemQuantity(item.id, currentQuantity - 1)} // FIX: Use currentQuantity
+                            isDisabled={currentQuantity <= 0}
+                            rounded="md"
+                          />
+                          <Text fontWeight="bold" color={textColor} fontSize="md" fontFamily="var(--font-lexend-deca)">{currentQuantity}</Text>
+                          <IconButton
+                            aria-label="Increase quantity"
+                            icon={<AddIcon />}
+                            size="sm"
+                            onClick={() => updateCartItemQuantity(item.id, currentQuantity + 1)} // FIX: Use currentQuantity
+                            rounded="md"
+                          />
+                        </HStack>
+                      )}
+                    </Flex>
                   </CardFooter>
                 </Card>
-              ))}
-            </SimpleGrid>
-          </Box>
-        ))}
-      </VStack>
+              );
+            })
+          )}
+        </SimpleGrid>
+      </Box>
 
-      {/* Floating Cart Button */}
+      {/* Right Sidebar (Cart) - Reverted to original Drawer behavior */}
+      <Drawer
+        isOpen={isCartOpen}
+        placement="right"
+        onClose={() => setIsCartOpen(false)}
+        size="md"
+      >
+        <DrawerOverlay />
+        <DrawerContent
+          bg={cartDrawerBg}
+          rounded="none"
+          shadow="lg"
+        >
+          <DrawerCloseButton color={headingColor} />
+          <DrawerHeader borderBottomWidth="1px" borderColor={borderColor} color={headingColor} fontFamily="var(--font-lexend-deca)" py={4} px={4}>
+            Your Cart ({totalCartItems} items)
+          </DrawerHeader>
+
+          <DrawerBody p={4}>
+            {cartItems.length === 0 ? (
+              <Flex direction="column" align="center" justify="center" height="full" py={10}>
+                <Icon as={FaShoppingCart} w={12} h={12} color="gray.300" mb={4} />
+                <Text fontSize="lg" color={textColor} fontFamily="var(--font-lexend-deca)">Your cart is empty.</Text>
+              </Flex>
+            ) : (
+              <VStack spacing={3} align="stretch">
+                {cartItems.map((item) => (
+                  <HStack key={item.id} p={2} borderWidth="1px" borderColor={borderColor} rounded="md" shadow="xs" bg={cardBg}>
+                    {item.image && (
+                      <ChakraImage
+                        src={item.image}
+                        alt={item.name}
+                        boxSize="60px"
+                        objectFit="cover"
+                        rounded="sm"
+                        mr={2}
+                      />
+                    )}
+                    <Box flex="1">
+                      <Text fontWeight="medium" color={textColor} noOfLines={1} fontSize="sm" fontFamily="var(--font-lexend-deca)}">{item.name}</Text>
+                      <Text fontSize="xs" color="gray.500" fontFamily="var(--font-lexend-deca)}">R {item.price.toFixed(2)} each</Text>
+                      <HStack mt={1} spacing={1}>
+                        <IconButton
+                          aria-label="Decrease quantity"
+                          icon={<MinusIcon />}
+                          size="xs"
+                          onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                          isDisabled={item.quantity <= 0}
+                          rounded="sm"
+                        />
+                        <Text fontWeight="bold" color={textColor} fontSize="sm" fontFamily="var(--font-lexend-deca)}">{item.quantity}</Text>
+                        <IconButton
+                          aria-label="Increase quantity"
+                          icon={<AddIcon />}
+                          size="xs"
+                          onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                          rounded="sm"
+                        />
+                        <Spacer />
+                        <IconButton
+                          aria-label="Remove item"
+                          icon={<DeleteIcon />}
+                          size="xs"
+                          colorScheme="red"
+                          onClick={() => removeFromCart(item.id)}
+                          rounded="sm"
+                        />
+                      </HStack>
+                    </Box>
+                    <Text fontWeight="bold" color={primaryGreen} fontSize="sm" fontFamily="var(--font-lexend-deca)}">R {(item.price * item.quantity).toFixed(2)}</Text>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
+          </DrawerBody>
+
+          <DrawerFooter borderTopWidth="1px" borderColor={borderColor} p={4}>
+            <VStack width="full" spacing={3}>
+              <Flex width="full" justify="space-between" align="center">
+                <Text fontSize="lg" fontWeight="bold" color={headingColor} fontFamily="var(--font-lexend-deca)">Total Amount:</Text>
+                <Text fontSize="lg" fontWeight="bold" color={primaryGreen} fontFamily="var(--font-lexend-deca)">R {calculateCartTotal.toFixed(2)}</Text>
+              </Flex>
+              <Button
+                colorScheme="green"
+                bg={primaryGreen}
+                size="lg"
+                width="full"
+                rounded="md"
+                onClick={() => {
+                  alert('Proceeding to checkout! (This is a demo action)');
+                  setIsCartOpen(false);
+                  setCartItems([]);
+                }}
+                isDisabled={cartItems.length === 0}
+                fontWeight="semibold"
+                fontFamily="var(--font-lexend-deca)"
+              >
+                Place Order
+              </Button>
+            </VStack>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Floating Cart Button - now visible on all screen sizes */}
       <Box
         position="fixed"
-        bottom={8}
-        right={8}
+        bottom={4}
+        right={4}
         zIndex={100}
       >
         <Button
@@ -373,18 +687,18 @@ export default function CustomerMenuPage() {
           colorScheme="green"
           size="lg"
           rounded="full"
-          height="60px"
-          width="60px"
-          shadow="2xl"
+          height="50px"
+          width="50px"
+          shadow="lg"
           _hover={{
             bg: 'green.600',
             transform: 'scale(1.05)',
           }}
           transition="all 0.2s ease-in-out"
           position="relative"
+          bg={primaryGreen}
         >
-          {/* Using Icon component with FaShoppingCart */}
-          <Icon as={FaShoppingCart} w={6} h={6} />
+          <Icon as={FaShoppingCart} w={5} h={5} />
           {totalCartItems > 0 && (
             <Badge
               colorScheme="red"
@@ -394,7 +708,7 @@ export default function CustomerMenuPage() {
               rounded="full"
               px={2}
               py={1}
-              fontSize="sm"
+              fontSize="xs"
               fontWeight="bold"
             >
               {totalCartItems}
@@ -402,102 +716,6 @@ export default function CustomerMenuPage() {
           )}
         </Button>
       </Box>
-
-      {/* Shopping Cart Drawer */}
-      <Drawer
-        isOpen={isCartOpen}
-        placement="right"
-        onClose={() => setIsCartOpen(false)}
-        size={{ base: 'full', md: 'md' }}
-      >
-        <DrawerOverlay />
-        <DrawerContent bg={cartDrawerBg}>
-          <DrawerCloseButton color={cartHeaderColor} />
-          <DrawerHeader borderBottomWidth="1px" borderColor={cartItemBorderColor} color={cartHeaderColor} fontFamily="var(--font-lexend-deca)">
-            Your Cart ({totalCartItems} items)
-          </DrawerHeader>
-
-          <DrawerBody>
-            {cartItems.length === 0 ? (
-              <Flex direction="column" align="center" justify="center" height="full">
-                <Icon as={FaShoppingCart} w={16} h={16} color="gray.400" mb={4} /> {/* Using Icon with FaShoppingCart here too */}
-                <Text fontSize="xl" color="var(--medium-gray-text)">Your cart is empty.</Text>
-              </Flex>
-            ) : (
-              <VStack spacing={4} align="stretch">
-                {cartItems.map((item) => (
-                  <HStack key={item.id} p={3} borderWidth="1px" borderColor={cartItemBorderColor} rounded="lg" shadow="sm">
-                    {item.image && (
-                      <ChakraImage
-                        src={item.image}
-                        alt={item.name}
-                        boxSize="70px"
-                        objectFit="cover"
-                        rounded="md"
-                        mr={3}
-                      />
-                    )}
-                    <Box flex="1">
-                      <Text fontWeight="semibold" color={textColor} noOfLines={1}>{item.name}</Text>
-                      <Text fontSize="sm" color="var(--medium-gray-text)">R {item.price.toFixed(2)} each</Text>
-                      <HStack mt={2}>
-                        <IconButton
-                          aria-label="Decrease quantity"
-                          icon={<MinusIcon />}
-                          size="sm"
-                          onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                          isDisabled={item.quantity <= 1}
-                        />
-                        <Text fontWeight="bold" color={textColor}>{item.quantity}</Text>
-                        <IconButton
-                          aria-label="Increase quantity"
-                          icon={<AddIcon />}
-                          size="sm"
-                          onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                        />
-                        <Spacer /> {/* Spacer needs to be imported */}
-                        <IconButton
-                          aria-label="Remove item"
-                          icon={<DeleteIcon />}
-                          size="sm"
-                          colorScheme="red"
-                          onClick={() => removeFromCart(item.id)}
-                        />
-                      </HStack>
-                    </Box>
-                    <Text fontWeight="bold" color="var(--primary-green)">R {(item.price * item.quantity).toFixed(2)}</Text>
-                  </HStack>
-                ))}
-              </VStack>
-            )}
-          </DrawerBody>
-
-          <DrawerFooter borderTopWidth="1px" borderColor={cartItemBorderColor}>
-            <VStack width="full" spacing={4}>
-              <Flex width="full" justify="space-between" align="center">
-                <Text fontSize="xl" fontWeight="bold" color={headingColor}>Total:</Text>
-                <Text fontSize="xl" fontWeight="bold" color="var(--primary-green)">R {calculateCartTotal.toFixed(2)}</Text>
-              </Flex>
-              <Button
-                colorScheme="green"
-                size="lg"
-                width="full"
-                rounded="lg"
-                onClick={() => {
-                  alert('Proceeding to checkout! (This is a demo action)');
-                  setIsCartOpen(false);
-                  setCartItems([]); // Clear cart after "checkout"
-                }}
-                isDisabled={cartItems.length === 0}
-                fontFamily="var(--font-lexend-deca)"
-                fontWeight="semibold"
-              >
-                Proceed to Checkout
-              </Button>
-            </VStack>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-    </Container>
+    </Flex>
   );
 }

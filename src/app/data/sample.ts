@@ -737,7 +737,7 @@ export const sampleData: SampleData = {
       "cost": 20.00,
       "price": 35.00,
       "price_include_gst": true,
-      "image": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Onion_Rings_with_ketchup.jpg",
+      "image": "https://therecipecritic.com/wp-content/uploads/2020/06/onion_rings2.jpg",
       "cost_include_gst": true,
       "sale_price": 33.00,
       "gst_percentage": 5,
