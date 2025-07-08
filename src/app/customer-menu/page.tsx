@@ -7,7 +7,7 @@ import {
   Heading,
   Text,
   SimpleGrid,
-  Image as ChakraImage, // Renamed Image to ChakraImage to avoid conflict with HTML Image
+  Image as ChakraImage,
   VStack,
   HStack,
   Spinner,
@@ -40,14 +40,14 @@ import {
   InputLeftElement,
   useDisclosure,
   Link as ChakraLink,
-  Image // Import Image component for the logo
+  Image
 } from '@chakra-ui/react';
 import { AddIcon, MinusIcon, DeleteIcon, SearchIcon, BellIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import {
   FaShoppingCart,
   FaPizzaSlice,
   FaCoffee,
-  FaBurger,
+  FaHamburger,
   FaDrumstickBite,
   FaHotdog,
   FaWineGlass,
@@ -75,12 +75,12 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, isSubItem, onC
   const inactiveBg = isSubItem ? 'var(--navbar-submenu-hover-bg)' : 'var(--navbar-main-item-hover-bg)';
   const activeBg = isSubItem ? 'var(--navbar-submenu-active-bg)' : 'var(--navbar-main-item-active-bg)';
   const inactiveText = isSubItem ? 'var(--navbar-submenu-inactive-text)' : 'var(--navbar-main-item-inactive-text)';
-  const activeText = isSubItem ? 'var(--navbar-submenu-active-text)' : 'var(--navbar-main-item-active-text)';
+  const activeText = isSubItem ? 'var(--navbar-submenu-active-bg)' : 'var(--navbar-main-item-active-text)';
 
   return (
     <Button
       as={href ? ChakraLink : Button}
-      href={href}
+      {...(href && { href })}
       width="full"
       justifyContent="flex-start"
       variant="ghost"
@@ -164,7 +164,7 @@ interface GroupedFoodCategory {
 export default function CustomerMenuPage() {
   const [foodCategories, setFoodCategories] = useState<FoodCategoryItem[]>([]);
   const [foods, setFoods] = useState<FoodItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Corrected this line
   const [error, setError] = useState<string | null>(null);
   const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -204,7 +204,7 @@ export default function CustomerMenuPage() {
         let iconComponent: React.ElementType | undefined;
         if (cat.name.toLowerCase().includes('breakfast')) iconComponent = FaBreadSlice;
         else if (cat.name.toLowerCase().includes('pizza') || cat.name.toLowerCase().includes('pasta')) iconComponent = FaPizzaSlice;
-        else if (cat.name.toLowerCase().includes('burger')) iconComponent = FaBurger;
+        else if (cat.name.toLowerCase().includes('burger')) iconComponent = FaHamburger;
         else if (cat.name.toLowerCase().includes('drink') || cat.name.toLowerCase().includes('beverage')) iconComponent = FaCocktail;
         else if (cat.name.toLowerCase().includes('bbq') || cat.name.toLowerCase().includes('chicken')) iconComponent = FaDrumstickBite;
         else if (cat.name.toLowerCase().includes('soup')) iconComponent = FaUtensils;
@@ -213,7 +213,7 @@ export default function CustomerMenuPage() {
       });
 
       setFoodCategories(categoriesWithIcons);
-      setFoods(processedFoodsData); // Use processedFoodsData here
+      setFoods(processedFoodsData);
 
       setActiveCategoryId(null);
     } catch (err) {
@@ -260,7 +260,6 @@ export default function CustomerMenuPage() {
 
   const getCartItemQuantity = (foodItemId: number) => {
     const item = cartItems.find(cartItem => cartItem.id === foodItemId);
-    // Ensure the returned quantity is always a valid finite number, default to 0 if not
     return item ? (Number.isFinite(item.quantity) ? item.quantity : 0) : 0;
   };
 
@@ -268,7 +267,6 @@ export default function CustomerMenuPage() {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === foodItem.id);
       if (existingItem) {
-        // Ensure existingItem.quantity is a finite number before adding
         const currentNumericalQuantity = Number.isFinite(existingItem.quantity) ? existingItem.quantity : 0;
         const updatedQuantity = currentNumericalQuantity + 1;
         return prevItems.map(item =>
@@ -283,10 +281,9 @@ export default function CustomerMenuPage() {
 
   const updateCartItemQuantity = (itemId: number, newQuantity: number) => {
     setCartItems(prevItems => {
-      // Ensure newQuantity is a finite number, default to 0 if not
       const validatedNewQuantity = Number.isFinite(newQuantity) ? newQuantity : 0;
 
-      if (validatedNewQuantity < 1) { // Corrected condition: remove if quantity becomes less than 1
+      if (validatedNewQuantity < 1) {
         return prevItems.filter(item => item.id !== itemId);
       }
       return prevItems.map(item =>
@@ -301,7 +298,6 @@ export default function CustomerMenuPage() {
 
   const calculateCartTotal = React.useMemo(() => {
     return cartItems.reduce((total, item) => {
-      // Ensure both price and quantity are finite numbers before multiplication
       const itemPrice = Number.isFinite(item.price) ? item.price : 0;
       const itemQuantity = Number.isFinite(item.quantity) ? item.quantity : 0;
       return total + itemPrice * itemQuantity;
@@ -310,7 +306,6 @@ export default function CustomerMenuPage() {
 
   const totalCartItems = React.useMemo(() => {
     return cartItems.reduce((total, item) => {
-      // Ensure item.quantity is a finite number before summing
       const itemQuantity = Number.isFinite(item.quantity) ? item.quantity : 0;
       return total + itemQuantity;
     }, 0);
@@ -349,27 +344,27 @@ export default function CustomerMenuPage() {
       {/* Main Content Area - Centered with margins */}
       <Box
         flex="1"
-        maxW="1200px" // Max width for content
-        mx="auto"    // Center the content horizontally
-        px={{ base: 4, md: 8 }} // Horizontal padding
-        pt={{ base: '100px', md: '100px' }} // Top padding to clear fixed top bar
-        pb={{ base: 4, md: 8 }} // Bottom padding
+        maxW="1200px"
+        mx="auto"
+        px={{ base: 4, md: 8 }}
+        pt={{ base: '100px', md: '100px' }}
+        pb={{ base: 4, md: 8 }}
       >
         {/* Top Bar for Search and Notifications - Now aligns with main content width */}
         <Flex
           position="fixed"
           top="0"
-          left="50%" // Center horizontally
-          transform="translateX(-50%)" // Adjust for perfect centering
+          left="50%"
+          transform="translateX(-50%)"
           zIndex="10"
           bg={cardBg}
           rounded="lg"
           shadow="sm"
           borderWidth="1px"
           borderColor={borderColor}
-          maxW="1200px" // Constrain the max width of the fixed bar itself
-          width="full" // Allow it to take full width up to maxW
-          px={{ base: 4, md: 8 }} // Apply padding to the fixed bar itself
+          maxW="1200px"
+          width="full"
+          px={{ base: 4, md: 8 }}
         >
           {/* Inner Box for content, simplified as parent Flex handles maxW and px */}
           <Box width="full" py={4}>
@@ -377,16 +372,17 @@ export default function CustomerMenuPage() {
               {/* Logo added here */}
               <HStack spacing={4} alignItems="center">
                 <Image
-                  src="/c2.png" // Replace with the actual path to your logo
+                  src="/path/to/your/logo.png"
                   alt="Company Logo"
-                  boxSize="40px" // Adjust size as needed
+                  boxSize="40px"
                   objectFit="contain"
                 />
                 <InputGroup maxW="400px">
                   <InputLeftElement
                     pointerEvents="none"
-                    children={<SearchIcon color="gray.400" />}
-                  />
+                  >
+                    <SearchIcon color="gray.400" />
+                  </InputLeftElement>
                   <Input
                     placeholder="Search product here..."
                     value={searchTerm}
@@ -444,7 +440,7 @@ export default function CustomerMenuPage() {
           >
             <Icon as={FaUtensils} w={6} h={6} mb={1} />
             <Text fontWeight="medium" fontSize="sm" fontFamily="var(--font-lexend-deca)">All</Text>
-            <Text fontSize="xs" opacity={0.8} fontFamily="var(--font-lexend-deca)">{getFoodCountForCategory(null)} items</Text>
+            <Text fontSize="xs" opacity={0.8} fontFamily="var(--font-lexend-deca)}">{getFoodCountForCategory(null)} items</Text>
           </VStack>
 
           {foodCategories.map((category) => {
@@ -548,7 +544,7 @@ export default function CustomerMenuPage() {
                             aria-label="Decrease quantity"
                             icon={<MinusIcon />}
                             size="sm"
-                            onClick={() => updateCartItemQuantity(item.id, currentQuantity - 1)} // FIX: Use currentQuantity
+                            onClick={() => updateCartItemQuantity(item.id, currentQuantity - 1)}
                             isDisabled={currentQuantity <= 0}
                             rounded="md"
                           />
@@ -557,7 +553,7 @@ export default function CustomerMenuPage() {
                             aria-label="Increase quantity"
                             icon={<AddIcon />}
                             size="sm"
-                            onClick={() => updateCartItemQuantity(item.id, currentQuantity + 1)} // FIX: Use currentQuantity
+                            onClick={() => updateCartItemQuantity(item.id, currentQuantity + 1)}
                             rounded="md"
                           />
                         </HStack>
@@ -571,7 +567,7 @@ export default function CustomerMenuPage() {
         </SimpleGrid>
       </Box>
 
-      {/* Right Sidebar (Cart) - Reverted to original Drawer behavior */}
+      {/* Right Sidebar (Cart) */}
       <Drawer
         isOpen={isCartOpen}
         placement="right"
@@ -675,7 +671,7 @@ export default function CustomerMenuPage() {
         </DrawerContent>
       </Drawer>
 
-      {/* Floating Cart Button - now visible on all screen sizes */}
+      {/* Floating Cart Button */}
       <Box
         position="fixed"
         bottom={4}
