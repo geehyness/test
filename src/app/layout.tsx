@@ -35,6 +35,8 @@ export default function RootLayout({
               align="center"
               shadow="md"
               width="full" // Ensure it takes full width on mobile
+              position="fixed"
+              zIndex={40}
             >
               <Heading as="h2" size="xl" color="var(--navbar-heading-color)"> {/* Use navbar heading color */}
                 Resto Admin
