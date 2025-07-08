@@ -1,4 +1,5 @@
-'use client';
+/* src/app/page.tsx */
+'use client'; // This directive is crucial for using client-side hooks like useState and needs to be client-side
 
 import React from 'react';
 import {
@@ -7,8 +8,6 @@ import {
   Text,
   SimpleGrid,
   Card,
-  CardHeader,
-  CardBody,
   Flex,
   Spacer,
   Button,
@@ -16,10 +15,10 @@ import {
   Avatar,
   VStack,
   HStack,
-  Progress,
+  Progress, // Though not used in the provided snippet, kept for completeness if needed
 } from '@chakra-ui/react';
 import { ChevronUpIcon, ChevronDownIcon, StarIcon } from '@chakra-ui/icons'; // Chakra UI icons
-import { FaFacebook, FaYelp } from 'react-icons/fa'; 
+import { FaFacebook, FaYelp } from 'react-icons/fa';
 
 export default function Home() {
   // Mock data for the dashboard to match the image
@@ -55,239 +54,158 @@ export default function Home() {
       name: 'Jessica Jones',
       role: 'Waitress | Afternoon shift',
       status: 'On Shift',
-      rating: 4.4,
-      avatar: 'https://placehold.co/40x40/FF66B2/FFFFFF?text=JJ', // Placeholder image
+      rating: 4.5,
+      avatar: 'https://placehold.co/100x100/E0E0E0/000000?text=JJ',
     },
     {
-      name: 'Loui Fermagerie',
-      role: 'Waiter | Morning shift',
-      status: 'Shift finished',
-      rating: 3.7,
-      avatar: 'https://placehold.co/40x40/66B2FF/FFFFFF?text=LF', // Placeholder image
+      name: 'Michael Scott',
+      role: 'Manager | All shifts',
+      status: 'Off Shift',
+      rating: 3.8,
+      avatar: 'https://placehold.co/100x100/E0E0E0/000000?text=MS',
     },
-    // Add more mock crew members if needed
-  ];
-
-  const dailyActivityData = [
-    { hour: '11', value: 30 },
-    { hour: '12', value: 80 },
-    { hour: '13', value: 50 },
-    { hour: '14', value: 120 },
-    { hour: '15', value: 70 },
-    { hour: '16', value: 100 },
-    { hour: '17', value: 150 },
-    { hour: '18', value: 90 },
-    { hour: '19', value: 180 }, // Peak
-    { hour: '20', value: 130 },
-    { hour: '21', value: 160 },
-    { hour: '22', value: 110 },
+    {
+      name: 'Pam Beesly',
+      role: 'Hostess | Morning shift',
+      status: 'On Shift',
+      rating: 4.2,
+      avatar: 'https://placehold.co/100x100/E0E0E0/000000?text=PB',
+    },
   ];
 
   const reviews = [
     {
       platform: 'Facebook',
-      user: 'Jessica Jones',
-      avatar: 'https://placehold.co/40x40/FF66B2/FFFFFF?text=JJ',
-      rating: 5,
       icon: FaFacebook,
+      user: 'John Doe',
+      avatar: 'https://placehold.co/100x100/E0E0E0/000000?text=JD',
+      rating: 5,
+      reviewText: 'Great food and service!',
     },
     {
       platform: 'Yelp',
-      user: 'James Prince',
-      avatar: 'https://placehold.co/40x40/66B2FF/FFFFFF?text=JP',
-      rating: 4,
       icon: FaYelp,
+      user: 'Jane Smith',
+      avatar: 'https://placehold.co/100x100/E0E0E0/000000?text=JS',
+      rating: 4,
+      reviewText: 'Good experience overall, a bit slow on service.',
     },
   ];
 
-
   return (
-    <Box p={8} bg="gray.100" minH="100vh">
-      {/* Header Section */}
-      <Flex align="center" mb={8}>
-        <Heading as="h1" size="xl" color="gray.800">
-          Overview - Restaurant &quot;Soul&quot;
-        </Heading>
-        <Spacer />
-        <Text fontSize="lg" color="gray.600" mr={4}>
-          20.08.2018
-        </Text>
-        <Button colorScheme="blue" size="lg">
-          Upgrade
-        </Button>
-      </Flex>
+    <Box p={8} bg="var(--light-gray-bg)" minH="100vh"> {/* Using light-gray-bg for the overall page background */}
+      <Heading as="h1" size="xl" mb={6} color="var(--text-color-dark)" className="font-semibold">
+        Resto Admin Dashboard
+      </Heading>
 
-      {/* Summary Cards Grid */}
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={10}>
+      {/* Summary Cards */}
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
         {summaryData.map((item, index) => (
-          <Card key={index} p={6} rounded="lg" shadow="md" _hover={{ shadow: 'lg' }} transition="all 0.3s ease-in-out">
-            <Flex align="center" mb={2}>
-              <Text fontSize="md" color="gray.600" fontWeight="semibold">
+          <Card key={index} p={6} rounded="lg" shadow="md" bg="var(--background-color-light)"> {/* Card background to white */}
+            <Flex align="center" mb={4}>
+              <Text fontSize="lg" fontWeight="medium" color="var(--medium-gray-text)"> {/* Medium gray for titles */}
                 {item.title}
               </Text>
-              {item.change === 'up' && <Icon as={ChevronUpIcon} color="green.500" ml={2} />}
-              {item.change === 'down' && <Icon as={ChevronDownIcon} color="red.500" ml={2} />}
+              <Spacer />
+              {item.change === 'up' && <Icon as={ChevronUpIcon} w={6} h={6} color="var(--primary-green)" />} {/* Green for 'up' */}
+              {item.change === 'down' && <Icon as={ChevronDownIcon} w={6} h={6} color="red.500" />} {/* Red for 'down' (can be customized) */}
             </Flex>
-            <Text fontSize="3xl" fontWeight="bold" color="gray.800">
+            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="var(--text-color-dark)">
               {item.value}
             </Text>
-            {/* For Guests Goal, add a simple progress bar simulation */}
-            {item.title === 'Guests Goal' && (
-              <Progress value={(131 / 170) * 100} size="xs" colorScheme="blue" mt={2} rounded="full" />
-            )}
           </Card>
         ))}
       </SimpleGrid>
 
-      {/* Main Content Grid (Crew, Daily Activity, Monthly Takings, Reviews) */}
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
-        {/* Left Column */}
-        <VStack spacing={6} align="stretch">
-          {/* Crew Section */}
-          <Card p={6} rounded="lg" shadow="md">
-            <Flex align="center" mb={4}>
-              <Heading as="h3" size="md" color="gray.700">
-                Crew 20.08.2018
-              </Heading>
-              <Spacer />
-              <Button variant="link" colorScheme="blue" size="sm">
-                See more
-              </Button>
-            </Flex>
-            <VStack align="stretch" spacing={4}>
-              {crewMembers.map((member, index) => (
-                <Flex key={index} align="center" pb={2} borderBottom={index < crewMembers.length - 1 ? '1px solid' : 'none'} borderColor="gray.100">
-                  <Avatar src={member.avatar} name={member.name} size="md" mr={4} />
-                  <Box>
-                    <Text fontWeight="semibold" color="gray.800">{member.name}</Text>
-                    <Text fontSize="sm" color="gray.500">{member.role}</Text>
-                  </Box>
-                  <Spacer />
-                  <Text fontSize="sm" color="gray.600" mr={2}>{member.status}</Text>
-                  <Text fontSize="sm" color="gray.600">{member.rating}</Text>
-                </Flex>
-              ))}
-            </VStack>
-          </Card>
-
-          {/* Daily Activity Chart */}
-          <Card p={6} rounded="lg" shadow="md">
-            <Flex align="center" mb={4}>
-              <Heading as="h3" size="md" color="gray.700">
-                Daily Activity
-              </Heading>
-              <Text fontSize="sm" color="gray.500" ml={2}>
-                Number of guests / hour
-              </Text>
-              <Spacer />
-              <Text fontSize="sm" color="blue.500">
-                11:00 - 22:00
-              </Text>
-            </Flex>
-            <Box height="150px" width="full" display="flex" alignItems="flex-end" justifyContent="space-around">
-              {dailyActivityData.map((data, index) => (
-                <VStack key={index} spacing={1} flex="1" mx={0.5}>
-                  <Box
-                    height={`${data.value * 0.8}px`} // Scale height for visual representation
-                    width="80%"
-                    bg="blue.300"
-                    rounded="sm"
-                    _hover={{ bg: 'blue.400' }}
-                    transition="background-color 0.2s ease-in-out"
-                  />
-                  <Text fontSize="xs" color="gray.500">{data.hour}</Text>
-                </VStack>
-              ))}
-            </Box>
-          </Card>
-        </VStack>
-
-        {/* Right Column */}
-        <VStack spacing={6} align="stretch">
-          {/* Monthly Takings Chart */}
-          <Card p={6} rounded="lg" shadow="md">
-            <Flex align="center" mb={4}>
-              <Heading as="h3" size="md" color="gray.700">
-                Monthly Takings
-              </Heading>
-              <Spacer />
-              <Button variant="outline" size="sm" rightIcon={<ChevronDownIcon />}>
-                August
-              </Button>
-            </Flex>
-            {/* Simple Line Chart Simulation */}
-            <Box height="150px" width="full" position="relative">
-              <Box
-                position="absolute"
-                left="0"
-                right="0"
-                bottom="0"
-                top="0"
-                bg="linear-gradient(to top, rgba(66, 153, 225, 0.1) 0%, transparent 100%)"
-                rounded="md"
-              />
-              <Box
-                position="absolute"
-                left="0"
-                right="0"
-                bottom="0"
-                height="2px"
-                bg="blue.400"
-                transform="rotateX(180deg)"
-                transformOrigin="bottom"
-                style={{
-                  clipPath: 'polygon(0% 100%, 10% 20%, 20% 80%, 30% 40%, 40% 90%, 50% 10%, 60% 70%, 70% 30%, 80% 60%, 90% 0%, 100% 100%)',
-                }}
-              />
-              <Text position="absolute" top="10%" left="10%" fontSize="sm" fontWeight="bold" color="blue.500">
-                $6,280
-              </Text>
-              <Text position="absolute" bottom="10%" left="30%" fontSize="sm" color="gray.500">
-                16.08
-              </Text>
-            </Box>
-            <Text textAlign="center" fontSize="sm" color="gray.600" mt={4}>
-              TOTAL:
-            </Text>
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="gray.800">
-              $134,100
-            </Text>
-          </Card>
-
-          {/* Review Sections */}
-          {reviews.map((review, index) => (
-            <Card key={index} p={6} rounded="lg" shadow="md">
-              <Flex align="center" mb={4}>
-                <Icon as={review.icon} w={6} h={6} color="blue.500" mr={2} />
-                <Heading as="h3" size="md" color="gray.700">
-                  {review.platform} Review
-                </Heading>
-                <Spacer />
-                <Button variant="link" colorScheme="blue" size="sm">
-                  Read review
-                </Button>
-              </Flex>
+      {/* Crew Members Section */}
+      <Box mb={8}>
+        <Heading as="h2" size="lg" mb={4} color="var(--dark-gray-text)" className="font-semibold">
+          Crew Members
+        </Heading>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+          {crewMembers.map((member, index) => (
+            <Card key={index} p={6} rounded="lg" shadow="md" bg="var(--background-color-light)">
               <Flex align="center">
-                <Avatar src={review.avatar} name={review.user} size="md" mr={4} />
+                <Avatar src={member.avatar} name={member.name} size="lg" mr={4} />
                 <Box>
-                  <Text fontWeight="semibold" color="gray.800">{review.user}</Text>
-                  <HStack spacing={0.5}>
-                    {[...Array(5)].map((_, i) => (
-                      <Icon
-                        key={i}
-                        as={StarIcon}
-                        color={i < review.rating ? 'yellow.400' : 'gray.300'}
-                        w={4}
-                        h={4}
-                      />
-                    ))}
-                  </HStack>
+                  <Text fontWeight="semibold" fontSize="lg" color="var(--text-color-dark)">
+                    {member.name}
+                  </Text>
+                  <Text fontSize="sm" color="var(--medium-gray-text)">
+                    {member.role}
+                  </Text>
+                  <Text fontSize="sm" color={member.status === 'On Shift' ? 'var(--primary-green)' : 'red.500'}>
+                    {member.status}
+                  </Text>
                 </Box>
+                <Spacer />
+                <VStack spacing={0.5}>
+                  {[...Array(5)].map((_, i) => (
+                    <Icon
+                      key={i}
+                      as={StarIcon}
+                      color={i < Math.floor(member.rating) ? 'yellow.400' : 'gray.300'} // Keeping yellow for stars for contrast
+                      w={4}
+                      h={4}
+                    />
+                  ))}
+                  <Text fontSize="sm" color="var(--medium-gray-text)">
+                    {member.rating.toFixed(1)}
+                  </Text>
+                </VStack>
               </Flex>
             </Card>
           ))}
-        </VStack>
-      </SimpleGrid>
+        </SimpleGrid>
+      </Box>
+
+      {/* Sales and Revenue Section */}
+      <Box mb={8}>
+        <Heading as="h2" size="lg" mb={4} color="var(--dark-gray-text)" className="font-semibold">
+          Sales & Revenue
+        </Heading>
+        <Card p={6} rounded="lg" shadow="md" bg="var(--background-color-light)">
+          <Text fontSize="lg" fontWeight="medium" color="var(--medium-gray-text)" mb={2}>
+            Total Revenue
+          </Text>
+          <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="var(--text-color-dark)">
+            $134,100
+          </Text>
+        </Card>
+      </Box>
+
+      {/* Review Sections */}
+      {reviews.map((review, index) => (
+        <Card key={index} p={6} rounded="lg" shadow="md" mb={6} bg="var(--background-color-light)">
+          <Flex align="center" mb={4}>
+            <Icon as={review.icon} w={6} h={6} color="var(--primary-green)" mr={2} /> {/* Green for platform icons */}
+            <Heading as="h3" size="md" color="var(--dark-gray-text)" className="font-medium">
+              {review.platform} Review
+            </Heading>
+            <Spacer />
+            <Button variant="link" color="var(--primary-green)" size="sm" className="font-medium"> {/* Green link button */}
+              Read review
+            </Button>
+          </Flex>
+          <Flex align="center">
+            <Avatar src={review.avatar} name={review.user} size="md" mr={4} />
+            <Box>
+              <Text fontWeight="semibold" color="var(--text-color-dark)">{review.user}</Text>
+              <HStack spacing={0.5}>
+                {[...Array(5)].map((_, i) => (
+                  <Icon
+                    key={i}
+                    as={StarIcon}
+                    color={i < review.rating ? 'yellow.400' : 'gray.300'} // Keeping yellow for stars for contrast
+                    w={4}
+                    h={4}
+                  />
+                ))}
+              </HStack>
+            </Box>
+          </Flex>
+        </Card>
+      ))}
     </Box>
   );
 }

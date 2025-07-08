@@ -1,3 +1,4 @@
+/* src/app/components/Navbar.tsx */
 'use client';
 
 import React, { useState } from 'react';
@@ -13,6 +14,7 @@ import {
   VStack,
   Collapse,
   Icon,
+  Image as ChakraImage // Import Image component from Chakra UI
 } from '@chakra-ui/react'; // Chakra UI components
 import { ChevronDownIcon } from '@chakra-ui/icons'; // Chakra UI icon
 
@@ -30,8 +32,8 @@ const dashboardMenu: MenuItem[] = [
     name: 'Dashboard Overview',
     href: '/',
   },
-  { 
-    name: 'Daily Summaries', href: '/daily_summaries' 
+  {
+    name: 'Daily Summaries', href: '/daily_summaries'
   },
   {
     name: 'Sales & Orders',
@@ -186,37 +188,51 @@ export default function Navbar() {
   };
 
   return (
-    <Box as="nav" bg="gray.800" color="white" p={4} h="full" overflowY="auto" /* Removed shadow */>
-      {/* Added text-left to ensure title is left-aligned */}
-      <br /><br />
-      <Heading as="h2" size="xl" mb={8} color="yellow.300" textAlign="left" fontWeight="extrabold">
-        Resto Admin
-      </Heading>
-      <hr />
-      <VStack as="ul" align="stretch" spacing={1} listStyleType="none"> {/* Reduced spacing, added listStyleType */}
+    <Box as="nav" bg="var(--navbar-bg)" color="var(--navbar-main-item-inactive-text)" p={4} h="full" overflowY="auto">
+      {/* Logo Image and "Restaurant Manager" Text */}
+      <Box mb={8} textAlign="center"> {/* Centering the logo and text */}
+        <ChakraImage
+          src="/carte.png" // Using the provided image path
+          alt="Carte Logo"
+          width="300px" // Adjust width as needed
+          height="auto" // Maintain aspect ratio
+          objectFit="contain"
+          mx="auto" // Center the image if width is less than container
+          mt={4} // Add some top margin
+        />
+        <Text
+          fontSize="md" // Adjust font size as needed
+          fontWeight="medium" // Adjust font weight as needed
+          color="var(--navbar-main-item-inactive-text)" // Use a suitable color, e.g., white or a light gray
+          mt={2} // Margin top to separate from logo
+          fontFamily="var(--font-lexend-deca)" // Ensure Lexend Deca font is used
+        >
+          Restaurant Manager
+        </Text>
+      </Box>
+      <hr style={{ borderColor: 'var(--navbar-submenu-border-color)' }}/> {/* Styled HR */}
+      <VStack as="ul" align="stretch" spacing={1} listStyleType="none">
         {dashboardMenu.map((menuItem) => (
-          <Box as="li" key={menuItem.name} listStyleType="none"> {/* Added listStyleType */}
+          <Box as="li" key={menuItem.name} listStyleType="none">
             {menuItem.subMenus ? (
               <>
-                {/* Use Chakra Button for expandable menu items */}
                 <Button
                   variant="ghost"
                   width="full"
                   justifyContent="space-between"
                   px={4}
                   py={2}
-                  rounded="md" /* Slightly less rounded */
-                  fontSize="md" /* Slightly smaller font */
-                  fontWeight="normal" /* Less bold */
-                  bg={pathname.startsWith(menuItem.href) ? 'gray.700' : 'transparent'} /* More subtle active bg */
-                  color={pathname.startsWith(menuItem.href) ? 'yellow.300' : 'gray.300'} /* Active color */
-                  _hover={{ bg: 'gray.700', color: 'yellow.200' }} /* Subtle hover */
-                  _active={{ bg: 'gray.600' }} /* Subtle active */
-                  _focus={{ outline: 'none', boxShadow: 'none' }} /* Flat focus */
+                  rounded="md"
+                  fontSize="md"
+                  fontWeight="normal"
+                  bg={pathname.startsWith(menuItem.href) ? 'var(--navbar-main-item-active-bg)' : 'transparent'}
+                  color={pathname.startsWith(menuItem.href) ? 'var(--navbar-main-item-active-text)' : 'var(--navbar-main-item-inactive-text)'}
+                  _hover={{ bg: 'var(--navbar-main-item-hover-bg)', color: 'var(--navbar-main-item-active-text)' }}
+                  _active={{ bg: 'var(--navbar-main-item-active-bg)' }}
+                  _focus={{ outline: 'none', boxShadow: 'none' }}
                   onClick={() => toggleMenu(menuItem.name)}
                 >
-                  <Text as="span" textTransform="capitalize" fontSize="md" fontWeight="normal">{menuItem.name}</Text>
-                  {/* Use Chakra UI icon for chevron */}
+                  <Text as="span" textTransform="capitalize" fontSize="md" fontWeight="normal" fontFamily="var(--font-lexend-deca)">{menuItem.name}</Text>
                   <Icon
                     as={ChevronDownIcon}
                     ml={2}
@@ -230,32 +246,33 @@ export default function Navbar() {
                   <VStack
                     as="ul"
                     ml={4}
-                    mt={1} /* Reduced margin top */
+                    mt={1}
                     borderLeft="1px solid"
-                    borderColor="gray.700" /* Darker, more subtle border */
+                    borderColor="var(--navbar-submenu-border-color)"
                     pl={4}
                     align="stretch"
-                    spacing={0.5} /* Reduced spacing */
-                    listStyleType="none" // Added listStyleType
+                    spacing={0.5}
+                    listStyleType="none"
                   >
                     {menuItem.subMenus.map((subMenu) => (
-                      <Box as="li" key={subMenu.name} listStyleType="none"> {/* Added listStyleType */}
+                      <Box as="li" key={subMenu.name} listStyleType="none">
                         <Link href={subMenu.href} passHref>
                           <Text
                             as="span"
                             display="block"
                             px={3}
                             py={1}
-                            rounded="sm" /* Even less rounded */
+                            rounded="sm"
                             transition="colors 0.2s"
                             textAlign="left"
-                            bg={pathname === subMenu.href ? 'gray.600' : 'transparent'} /* More subtle active bg */
-                            color={pathname === subMenu.href ? 'yellow.200' : 'gray.400'} /* Active color */
+                            bg={pathname === subMenu.href ? 'var(--navbar-submenu-active-bg)' : 'transparent'}
+                            color={pathname === subMenu.href ? 'var(--navbar-submenu-active-text)' : 'var(--navbar-submenu-inactive-text)'}
                             fontWeight={pathname === subMenu.href ? 'medium' : 'normal'}
-                            _hover={{ bg: 'gray.700', color: 'yellow.100' }} /* Subtle hover */
+                            _hover={{ bg: 'var(--navbar-submenu-hover-bg)', color: 'var(--navbar-submenu-active-text)' }}
                             cursor="pointer"
+                            fontFamily="var(--font-lexend-deca)"
                           >
-                            {getEntityLabel(subMenu.href.substring(1))} {/* Remove leading '/' for entity name */}
+                            {getEntityLabel(subMenu.href.substring(1))}
                           </Text>
                         </Link>
                       </Box>
@@ -270,15 +287,16 @@ export default function Navbar() {
                   display="block"
                   px={4}
                   py={2}
-                  rounded="md" /* Slightly less rounded */
+                  rounded="md"
                   transition="colors 0.2s"
-                  fontSize="md" /* Slightly smaller font */
-                  fontWeight="normal" /* Less bold */
+                  fontSize="md"
+                  fontWeight="normal"
                   textAlign="left"
-                  bg={pathname === menuItem.href ? 'gray.700' : 'transparent'} /* More subtle active bg */
-                  color={pathname === menuItem.href ? 'yellow.300' : 'gray.300'} /* Active color */
-                  _hover={{ bg: 'gray.700', color: 'yellow.200' }} /* Subtle hover */
+                  bg={pathname === menuItem.href ? 'var(--navbar-main-item-active-bg)' : 'transparent'}
+                  color={pathname === menuItem.href ? 'var(--navbar-main-item-active-text)' : 'var(--navbar-main-item-inactive-text)'}
+                  _hover={{ bg: 'var(--navbar-main-item-hover-bg)', color: 'var(--navbar-main-item-active-text)' }}
                   cursor="pointer"
+                  fontFamily="var(--font-lexend-deca)"
                 >
                   {menuItem.name}
                 </Text>
@@ -290,4 +308,3 @@ export default function Navbar() {
     </Box>
   );
 }
-
