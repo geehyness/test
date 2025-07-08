@@ -646,7 +646,8 @@ export const sampleData: SampleData = {
       "updated_at": "2025-06-30T22:19:49.847Z"
     }
   ],
-  "foods": [
+  "foods": 
+  [
     // --- Appetizers (food_category_id: 1) ---
     {
       "id": 101,
@@ -714,7 +715,7 @@ export const sampleData: SampleData = {
       "code": "SRV004",
       "hsn": "996332",
       "cost": 25.00,
-      "price": 40.00,
+      "price": 40.0      ,
       "price_include_gst": true,
       "image": "https://wallpaperaccess.com/full/6905828.jpg",
       "cost_include_gst": true,
@@ -726,6 +727,26 @@ export const sampleData: SampleData = {
       "updated_by": 1,
       "created_at": "2025-07-01T10:15:00Z",
       "updated_at": "2025-07-01T10:15:00Z",
+      "kitchen_id": 1
+    },
+    {
+      "id": 105,
+      "name": "Onion Rings",
+      "code": "OR005",
+      "hsn": "996332",
+      "cost": 20.00,
+      "price": 35.00,
+      "price_include_gst": true,
+      "image": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Onion_Rings_with_ketchup.jpg",
+      "cost_include_gst": true,
+      "sale_price": 33.00,
+      "gst_percentage": 5,
+      "food_category_id": 1,
+      "food_brand_id": 1,
+      "created_by": 1,
+      "updated_by": 1,
+      "created_at": "2025-07-01T10:20:00Z",
+      "updated_at": "2025-07-01T10:20:00Z",
       "kitchen_id": 1
     },
 
@@ -830,6 +851,26 @@ export const sampleData: SampleData = {
       "updated_at": "2025-07-01T11:20:00Z",
       "kitchen_id": 1
     },
+    {
+      "id": 206,
+      "name": "Fish and Chips",
+      "code": "FNC006",
+      "hsn": "996332",
+      "cost": 60.00,
+      "price": 100.00,
+      "price_include_gst": true,
+      "image": "http://3.bp.blogspot.com/_6fGQsHhOUdE/TEiFzVtjMFI/AAAAAAAAB00/y1x6PCshlyY/s1600/FishChips.jpg",
+      "cost_include_gst": true,
+      "sale_price": 95.00,
+      "gst_percentage": 5,
+      "food_category_id": 2,
+      "food_brand_id": 1,
+      "created_by": 1,
+      "updated_by": 1,
+      "created_at": "2025-07-01T11:25:00Z",
+      "updated_at": "2025-07-01T11:25:00Z",
+      "kitchen_id": 1
+    },
 
     // --- Desserts (food_category_id: 3) ---
     {
@@ -890,6 +931,26 @@ export const sampleData: SampleData = {
       "updated_by": 1,
       "created_at": "2025-07-01T12:10:00Z",
       "updated_at": "2025-07-01T12:10:00Z",
+      "kitchen_id": 1
+    },
+    {
+      "id": 304,
+      "name": "Apple Pie",
+      "code": "AP004",
+      "hsn": "996332",
+      "cost": 28.00,
+      "price": 48.00,
+      "price_include_gst": true,
+      "image": "https://www.alsothecrumbsplease.com/wp-content/uploads/2019/08/Apple-Pie-13.jpg",
+      "cost_include_gst": true,
+      "sale_price": 45.00,
+      "gst_percentage": 5,
+      "food_category_id": 3,
+      "food_brand_id": 1,
+      "created_by": 1,
+      "updated_by": 1,
+      "created_at": "2025-07-01T12:15:00Z",
+      "updated_at": "2025-07-01T12:15:00Z",
       "kitchen_id": 1
     },
 
@@ -953,9 +1014,70 @@ export const sampleData: SampleData = {
       "created_at": "2025-07-01T13:10:00Z",
       "updated_at": "2025-07-01T13:10:00Z",
       "kitchen_id": 1
+    },
+    {
+      "id": 404,
+      "name": "Iced Tea",
+      "code": "IT004",
+      "hsn": "996332",
+      "cost": 12.00,
+      "price": 25.00,
+      "price_include_gst": true,
+      "image": "https://buytea.com/cdn/shop/articles/chilled-ice-tea.jpg?v=1683704546",
+      "cost_include_gst": true,
+      "sale_price": 23.00,
+      "gst_percentage": 5,
+      "food_category_id": 4,
+      "food_brand_id": 1,
+      "created_by": 1,
+      "updated_by": 1,
+      "created_at": "2025-07-01T13:15:00Z",
+      "updated_at": "2025-07-01T13:15:00Z",
+      "kitchen_id": 1
+    },
+
+    // --- Salads (food_category_id: 5) ---
+    {
+      "id": 501,
+      "name": "Caesar Salad",
+      "code": "CS001",
+      "hsn": "996332",
+      "cost": 35.00,
+      "price": 60.00,
+      "price_include_gst": true,
+      "image": "https://s23209.pcdn.co/wp-content/uploads/2023/01/220905_DD_Chx-Caesar-Salad_051-1365x2048.jpg",
+      "cost_include_gst": true,
+      "sale_price": 55.00,
+      "gst_percentage": 5,
+      "food_category_id": 5,
+      "food_brand_id": 1,
+      "created_by": 1,
+      "updated_by": 1,
+      "created_at": "2025-07-01T14:00:00Z",
+      "updated_at": "2025-07-01T14:00:00Z",
+      "kitchen_id": 1
+    },
+    {
+      "id": 502,
+      "name": "Greek Salad",
+      "code": "GS002",
+      "hsn": "996332",
+      "cost": 38.00,
+      "price": 65.00,
+      "price_include_gst": true,
+      "image": "https://www.aheadofthyme.com/wp-content/uploads/2016/03/the-perfect-greek-salad-7.jpg",
+      "cost_include_gst": true,
+      "sale_price": 60.00,
+      "gst_percentage": 5,
+      "food_category_id": 5,
+      "food_brand_id": 1,
+      "created_by": 1,
+      "updated_by": 1,
+      "created_at": "2025-07-01T14:05:00Z",
+      "updated_at": "2025-07-01T14:05:00Z",
+      "kitchen_id": 1
     }
   ],
-
   "food_categories": [
     {
       "id": 1,
