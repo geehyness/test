@@ -372,7 +372,7 @@ export default function CustomerMenuPage() {
               {/* Logo added here */}
               <HStack spacing={4} alignItems="center">
                 <Image
-                  src="/path/to/your/logo.png"
+                  src="/c2.png"
                   alt="Company Logo"
                   boxSize="40px"
                   objectFit="contain"
