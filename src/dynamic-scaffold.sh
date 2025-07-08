@@ -9,10 +9,11 @@ set -euo pipefail
 ENTITIES=(
   tenants domains users roles permissions customers categories foods tables
   orders payments expenses suppliers purchases stocks store-timings coupons
-  reviews faqs invoices payrolls menus administrators announcements settings
+  reviews faqs invoices payrolls menus categories administrators announcements settings
   carts delivery-personnels wallets notifications events gateways recipes
   daily-summaries messages currencies taxes tenant-settings
 )
+
 
 echo "📦 Installing deps…"
 npm install axios @tanstack/react-query

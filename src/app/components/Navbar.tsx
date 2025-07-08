@@ -33,6 +33,10 @@ const dashboardMenu: MenuItem[] = [
     name: 'Daily Summaries', href: '/daily_summaries'
   },
   {
+    name: 'Customer Menu',
+    href: '/customer-menu',
+  },
+  {
     name: 'Sales & Orders',
     href: '/sales',
     subMenus: [
