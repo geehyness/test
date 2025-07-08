@@ -14,19 +14,16 @@ import {
   VStack,
   Collapse,
   Icon,
-  Image as ChakraImage // Import Image component from Chakra UI
-} from '@chakra-ui/react'; // Chakra UI components
-import { ChevronDownIcon } from '@chakra-ui/icons'; // Chakra UI icon
+  Image as ChakraImage
+} from '@chakra-ui/react';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 
-// Define the structure for your dashboard menu
 interface MenuItem {
   name: string;
   href: string;
   subMenus?: MenuItem[];
 }
 
-// Define your dashboard menu structure based on the entities
-// This can be expanded or modified as needed.
 const dashboardMenu: MenuItem[] = [
   {
     name: 'Dashboard Overview',
@@ -63,8 +60,8 @@ const dashboardMenu: MenuItem[] = [
       { name: 'Food Items', href: '/foods' },
       { name: 'Food Categories', href: '/food_categories' },
       { name: 'Food Brands', href: '/food_brands' },
-      { name: 'Food Modifiers', href: '/modifiers' }, // Linking to modifiers directly
-      { name: 'Food Product Links', href: '/food_product' }, // Junction table
+      { name: 'Food Modifiers', href: '/modifiers' },
+      { name: 'Food Product Links', href: '/food_product' },
       { name: 'Products (Raw/Retail)', href: '/products' },
       { name: 'Product Categories', href: '/product_categories' },
       { name: 'Product Brands', href: '/product_brands' },
@@ -177,7 +174,6 @@ const getEntityLabel = (resource: string): string => {
 
 export default function Navbar() {
   const pathname = usePathname();
-  // State to manage open/closed sub-menus
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const toggleMenu = (menuName: string) => {
@@ -189,28 +185,42 @@ export default function Navbar() {
 
   return (
     <Box as="nav" bg="var(--navbar-bg)" color="var(--navbar-main-item-inactive-text)" p={4} h="full" overflowY="auto">
-      {/* Logo Image and "Restaurant Manager" Text */}
-      <Box mb={8} textAlign="center"> {/* Centering the logo and text */}
-        <ChakraImage
-          src="/carte.png" // Using the provided image path
-          alt="Carte Logo"
-          width="300px" // Adjust width as needed
-          height="auto" // Maintain aspect ratio
-          objectFit="contain"
-          mx="auto" // Center the image if width is less than container
-          mt={4} // Add some top margin
-        />
-        <Text
-          fontSize="md" // Adjust font size as needed
-          fontWeight="medium" // Adjust font weight as needed
-          color="var(--navbar-main-item-inactive-text)" // Use a suitable color, e.g., white or a light gray
-          mt={2} // Margin top to separate from logo
-          fontFamily="var(--font-lexend-deca)" // Ensure Lexend Deca font is used
-        >
-          Restaurant Manager
-        </Text>
+      {/* Sticky Header Section */}
+      <Box
+        position="sticky"
+        top="-10"
+        zIndex="10" // Ensure it stays above other content
+        bg="var(--navbar-bg)" // Match Navbar background
+        //pt={-10}
+        pb={4} // Add some padding to the bottom to separate from scrollable content
+      >
+        <Box mb={2} textAlign="center">
+          <br />
+          <ChakraImage
+            src="/carte.png"
+            alt="Carte Logo"
+            width="300px"
+            height="auto"
+            objectFit="contain"
+            mx="auto"
+            mt={4}
+          />
+          <br />
+          <Text
+            fontSize="md"
+            fontWeight="medium"
+            color="var(--navbar-main-item-inactive-text)"
+            mt={2}
+            fontFamily="var(--font-lexend-deca)"
+          >
+            Restaurant Manager
+          </Text>
+        </Box>
+        <hr style={{ borderColor: 'var(--navbar-submenu-border-color)' }}/>
+        <br />
       </Box>
-      <hr style={{ borderColor: 'var(--navbar-submenu-border-color)' }}/> {/* Styled HR */}
+
+      {/* Scrollable Menu Section */}
       <VStack as="ul" align="stretch" spacing={1} listStyleType="none">
         {dashboardMenu.map((menuItem) => (
           <Box as="li" key={menuItem.name} listStyleType="none">
