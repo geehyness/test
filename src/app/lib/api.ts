@@ -86,8 +86,3 @@ export async function fetchData(
 export async function deleteItem(resource: string, id: string): Promise<boolean> {
   return fetchData(resource, id, undefined, 'DELETE');
 }
-
-// The following functions are no longer needed as their functionality is merged into fetchData
-// export async function fetchItemData(resource: string, id: string): Promise<any | null> { ... }
-// export async function createItem(resource: string, data: any): Promise<any> { ... }
-// export async function updateItem(resource: string, id: string, data: any): Promise<any> { ... }
