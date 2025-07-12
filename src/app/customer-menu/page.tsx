@@ -21,8 +21,8 @@ import {
   Divider,
   CardFooter,
   Button,
-  Container, // Container is still imported for other potential uses, but main wrapper changed
-  Flex, // Ensure Flex is imported
+  Container,
+  Flex,
   useColorModeValue,
   IconButton,
   Badge,
@@ -59,7 +59,8 @@ import {
   FaBreadSlice,
   FaCreditCard,
   FaMoneyBillWave,
-  FaCheckCircle
+  FaCheckCircle,
+  FaClipboardList
 } from 'react-icons/fa';
 import { fetchData } from '../lib/api';
 
@@ -338,6 +339,7 @@ const CustomerMenuPage: React.FC = () => {
 
   const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
   const totalCartPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const activeOrdersCount = orderedMeals.filter(meal => meal.status !== 'Served').length; // Calculate active orders
 
   const handlePlaceOrder = () => {
     if (cartItems.length > 0) {
@@ -351,6 +353,18 @@ const CustomerMenuPage: React.FC = () => {
       alert(`Order placed for Table ${randomlySelectedTable?.name || 'N/A'}! Total: R ${totalCartPrice.toFixed(2)}`);
       onCartClose();
     }
+  };
+
+  // Function to open cart modal and switch to "Order Progress" tab
+  const handleTrackOrderClick = () => {
+    setActiveTabIndex(1); // Set the active tab to the "Order Progress" tab (index 1)
+    onCartOpen(); // Open the cart modal
+  };
+
+  // Function to open cart modal and switch to "Your Order" tab
+  const handleCartButtonClick = () => {
+    setActiveTabIndex(0); // Set the active tab to the "Your Order" tab (index 0)
+    onCartOpen(); // Open the cart modal
   };
 
   // --- Conditional return AFTER all Hooks are called ---
@@ -371,36 +385,62 @@ const CustomerMenuPage: React.FC = () => {
         zIndex={10}
         bg={topBarBg}
         pb={4}
-        boxShadow="sm"
-        py={8}
+        py={4}
+        boxShadow="0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)"
+        transition="background-color 0.3s ease-in-out"
       >
-        <Flex direction={{ base: 'column', md: 'row' }} align={{ base: 'flex-start', md: 'center' }} justify="space-between" mb={4} wrap="wrap">
+        <Flex
+          direction={{ base: 'column', md: 'row' }}
+          align={{ base: 'flex-start', md: 'center' }}
+          justify="space-between"
+          mb={4}
+          wrap="wrap"
+          px={{ base: 4, md: 8 }}
+        >
           <Box mb={{ base: 4, md: 0 }}>
-            <Heading as="h1" size="xl" color={textColor} mb={2} fontFamily="var(--font-lexend-deca)">
+            <Heading
+              as="h1"
+              size="xl"
+              color={textColor}
+              mb={2}
+              fontFamily="var(--font-lexend-deca)"
+              fontWeight="extrabold"
+            >
               Our Delicious Menu
             </Heading>
-            <Text fontSize="lg" color="var(--medium-gray-text)" fontFamily="var(--font-lexend-deca)">
+            <Text
+              fontSize="lg"
+              color="var(--medium-gray-text)"
+              fontFamily="var(--font-lexend-deca)"
+              lineHeight="short"
+            >
               Discover a wide variety of culinary delights.
             </Text>
           </Box>
-
-          <HStack spacing={4}>
-            <InputGroup maxW="300px">
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color="gray.300" />
-              </InputLeftElement>
-              <Input
-                type="text"
-                placeholder="Search dishes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                rounded="md"
-                focusBorderColor={primaryGreen}
-                fontFamily="var(--font-lexend-deca)"
-              />
-            </InputGroup>
-          </HStack>
         </Flex>
+
+        {/* Search Bar on its own line */}
+        <Box px={{ base: 4, md: 8 }} mb={6} mt={4}> {/* Added margin-top for spacing from title, and padding */}
+          <InputGroup width="100%">
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.400" />
+            </InputLeftElement>
+            <Input
+              type="text"
+              placeholder="Search dishes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              rounded="lg"
+              focusBorderColor={primaryGreen}
+              fontFamily="var(--font-lexend-deca)"
+              px={5}
+              py={3}
+              boxShadow="sm"
+              _hover={{ borderColor: primaryGreen, boxShadow: 'md' }}
+              transition="all 0.2s ease-in-out"
+            />
+          </InputGroup>
+        </Box>
 
         <Flex
           overflowX="auto"
@@ -415,6 +455,7 @@ const CustomerMenuPage: React.FC = () => {
             scrollbarWidth: 'none',
           }}
           py={2}
+          px={{ base: 4, md: 8 }}
         >
           {dynamicCategories.map((category) => (
             <NavItem
@@ -429,6 +470,7 @@ const CustomerMenuPage: React.FC = () => {
         </Flex>
       </Box>
 
+      
       <Flex direction={{ base: 'column', md: 'row' }} gap={8}>
         <Box flex={1} overflowY="auto" maxH="calc(100vh - 180px)" pr={{ base: 0, md: 4 }}>
           {error && (
@@ -915,7 +957,7 @@ const CustomerMenuPage: React.FC = () => {
         zIndex={100}
       >
         <Button
-          onClick={onCartOpen}
+          onClick={handleCartButtonClick}
           colorScheme="green"
           size="lg"
           rounded="full"
@@ -929,6 +971,7 @@ const CustomerMenuPage: React.FC = () => {
           transition="all 0.2s ease-in-out"
           position="relative"
           bg={primaryGreen}
+          mb={totalCartItems > 0 || activeOrdersCount > 0 ? '60px' : '0'}
         >
           <Icon as={FaShoppingCart} w={5} h={5} />
           {totalCartItems > 0 && (
@@ -947,6 +990,46 @@ const CustomerMenuPage: React.FC = () => {
             </Badge>
           )}
         </Button>
+
+        {/* New "Track Order" Button */}
+        {(orderedMeals.length > 0 || activeOrdersCount > 0) && (
+          <Button
+            onClick={handleTrackOrderClick}
+            colorScheme="blue"
+            size="lg"
+            rounded="full"
+            height="50px"
+            width="50px"
+            shadow="lg"
+            _hover={{
+              bg: 'blue.600',
+              transform: 'scale(1.05)',
+            }}
+            transition="all 0.2s ease-in-out"
+            position="absolute"
+            bottom="0px"
+            right="0px"
+            bg="blue.500"
+            mt={2}
+          >
+            <Icon as={FaClipboardList} w={5} h={5} />
+            {activeOrdersCount > 0 && (
+              <Badge
+                colorScheme="orange"
+                position="absolute"
+                top="-5px"
+                right="-5px"
+                rounded="full"
+                px={2}
+                py={1}
+                fontSize="xs"
+                fontWeight="bold"
+              >
+                {activeOrdersCount}
+              </Badge>
+            )}
+          </Button>
+        )}
       </Box>
     </Flex>
   );
