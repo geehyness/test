@@ -1,6 +1,82 @@
 export interface EntityConfig {
-  label: string        // human-readable name
-  fields: string[]     // exact column names in the table
+  label: string; // human-readable name
+  fields: string[]; // exact column names in the table
+}
+
+// Define the missing interfaces based on your 'entities' object
+export interface Order {
+  id: string;
+  tenant_id: string;
+  table_id: string;
+  customer_id: string;
+  total_amount: number;
+  status: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MenuItem {
+  id: string;
+  menu_id: string;
+  food_id: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  code: string;
+  image: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  address: string;
+  area: string;
+  tax_number: string;
+  district: string;
+  phone: string;
+  points: number;
+  no_points: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Table {
+  id: string;
+  name: string;
+  code: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// You might also want to define interfaces for other commonly used entities
+// For example:
+export interface Food {
+  id: string;
+  name: string;
+  code: string;
+  hsn: string;
+  cost: number;
+  price: number;
+  price_include_gst: boolean;
+  image: string;
+  cost_include_gst: boolean;
+  sale_price: number;
+  gst_percentage: number;
+  food_category_id: string;
+  food_brand_id: string;
+  created_by: string;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+  kitchen_id: string;
 }
 
 export const entities: Record<string, EntityConfig> = {

@@ -67,6 +67,11 @@ export async function fetchData(
   }
 }
 
+// New export for deleteItem
+export async function deleteItem(resource: string, id: string): Promise<boolean> {
+  return fetchData(resource, id, undefined, 'DELETE');
+}
+
 // --- Custom Hooks for API Interactions ---
 
 /**
