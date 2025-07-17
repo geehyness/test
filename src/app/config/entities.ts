@@ -1,6 +1,9 @@
+// src/app/config/entities.ts
 export interface EntityConfig {
+  subMenus?: any; // Marked as optional as it's not consistently used
   label: string; // human-readable name
   fields: string[]; // exact column names in the table
+  endpoint: string; // Added: The API endpoint for fetching data for this entity
 }
 
 // Define the missing interfaces based on your 'entities' object
@@ -56,8 +59,6 @@ export interface Table {
   updated_at: string;
 }
 
-// You might also want to define interfaces for other commonly used entities
-// For example:
 export interface Food {
   id: string;
   name: string;
@@ -82,6 +83,7 @@ export interface Food {
 export const entities: Record<string, EntityConfig> = {
   tenants: {
     label: "Tenants",
+    endpoint: "/api/tenants", // Added endpoint
     fields: [
       "id",
       "name",
@@ -94,6 +96,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   domains: {
     label: "Domains",
+    endpoint: "/api/domains", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -105,6 +108,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   jobs: {
     label: "Jobs",
+    endpoint: "/api/jobs", // Added endpoint
     fields: [
       "id",
       "queue",
@@ -117,6 +121,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   failed_jobs: {
     label: "Failed Jobs",
+    endpoint: "/api/failed_jobs", // Added endpoint
     fields: [
       "id",
       "uuid",
@@ -129,10 +134,12 @@ export const entities: Record<string, EntityConfig> = {
   },
   password_resets: {
     label: "Password Resets",
+    endpoint: "/api/password_resets", // Added endpoint
     fields: ["email", "token", "created_at"],
   },
   users: {
     label: "Users",
+    endpoint: "/api/users", // Added endpoint
     fields: [
       "id",
       "name",
@@ -153,34 +160,42 @@ export const entities: Record<string, EntityConfig> = {
   },
   user_stores: {
     label: "User Stores",
+    endpoint: "/api/user_stores", // Added endpoint
     fields: ["id", "user_id", "store_id", "created_at", "updated_at"],
   },
   roles: {
     label: "Roles",
+    endpoint: "/api/roles", // Added endpoint
     fields: ["id", "name", "guard_name", "created_at", "updated_at"],
   },
   model_has_roles: {
     label: "Model Has Roles",
+    endpoint: "/api/model_has_roles", // Added endpoint
     fields: ["role_id", "model_type", "model_id"],
   },
   model_has_permissions: {
     label: "Model Has Permissions",
+    endpoint: "/api/model_has_permissions", // Added endpoint
     fields: ["permission_id", "model_type", "model_id"],
   },
   permissions: {
     label: "Permissions",
+    endpoint: "/api/permissions", // Added endpoint
     fields: ["id", "name", "guard_name", "created_at", "updated_at"],
   },
   role_has_permissions: {
     label: "Role Has Permissions",
+    endpoint: "/api/role_has_permissions", // Added endpoint
     fields: ["permission_id", "role_id"],
   },
   languages: {
     label: "Languages",
+    endpoint: "/api/languages", // Added endpoint
     fields: ["id", "code", "name", "created_at", "updated_at"],
   },
   language_translations: {
     label: "Language Translations",
+    endpoint: "/api/language_translations", // Added endpoint
     fields: [
       "id",
       "language_id",
@@ -194,6 +209,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   customers: {
     label: "Customers",
+    endpoint: "/api/customers", // Added endpoint
     fields: [
       "id",
       "name",
@@ -208,9 +224,9 @@ export const entities: Record<string, EntityConfig> = {
       "updated_at",
     ],
   },
-  // 'categories' entity removed as 'food_categories' is explicitly defined by a migration
   foods: {
     label: "Foods",
+    endpoint: "/api/foods", // Added endpoint
     fields: [
       "id",
       "name",
@@ -229,11 +245,12 @@ export const entities: Record<string, EntityConfig> = {
       "updated_by",
       "created_at",
       "updated_at",
-      "kitchen_id", // Added from AddKitchenIdColumnInFoodTable
+      "kitchen_id",
     ],
   },
   tables: {
     label: "Tables",
+    endpoint: "/api/tables", // Added endpoint
     fields: [
       "id",
       "name",
@@ -244,6 +261,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   orders: {
     label: "Orders",
+    endpoint: "/api/orders", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -258,6 +276,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   order_items: {
     label: "Order Items",
+    endpoint: "/api/order_items", // Added endpoint
     fields: [
       "id",
       "order_id",
@@ -270,6 +289,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   payments: {
     label: "Payments",
+    endpoint: "/api/payments", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -284,10 +304,12 @@ export const entities: Record<string, EntityConfig> = {
   },
   expense_categories: {
     label: "Expense Categories",
+    endpoint: "/api/expense_categories", // Added endpoint
     fields: ["id", "name", "created_at", "updated_at"],
   },
   expenses: {
     label: "Expenses",
+    endpoint: "/api/expenses", // Added endpoint
     fields: [
       "id",
       "note",
@@ -304,10 +326,12 @@ export const entities: Record<string, EntityConfig> = {
   },
   units: {
     label: "Units",
+    endpoint: "/api/units", // Added endpoint
     fields: ["id", "tenant_id", "name", "created_at", "updated_at"],
   },
   suppliers: {
     label: "Suppliers",
+    endpoint: "/api/suppliers", // Added endpoint
     fields: [
       "id",
       "name",
@@ -321,6 +345,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   purchases: {
     label: "Purchases",
+    endpoint: "/api/purchases", // Added endpoint
     fields: [
       "id",
       "supplier_id",
@@ -343,6 +368,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   purchase_items: {
     label: "Purchase Items",
+    endpoint: "/api/purchase_items", // Added endpoint
     fields: [
       "id",
       "product_id",
@@ -363,10 +389,12 @@ export const entities: Record<string, EntityConfig> = {
   },
   stocks: {
     label: "Stocks",
+    endpoint: "/api/stocks", // Added endpoint
     fields: ["id", "tenant_id", "food_id", "quantity", "created_at", "updated_at"],
   },
   store_timings: {
     label: "Store Timings",
+    endpoint: "/api/store_timings", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -379,10 +407,12 @@ export const entities: Record<string, EntityConfig> = {
   },
   tables_sections: {
     label: "Table Sections",
+    endpoint: "/api/tables_sections", // Added endpoint
     fields: ["id", "tenant_id", "name", "created_at", "updated_at"],
   },
   coupons: {
     label: "Coupons",
+    endpoint: "/api/coupons", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -397,18 +427,22 @@ export const entities: Record<string, EntityConfig> = {
   },
   table_coupons: {
     label: "Table Coupons",
+    endpoint: "/api/table_coupons", // Added endpoint
     fields: ["id", "table_id", "coupon_id", "created_at", "updated_at"],
   },
   product_coupons: {
     label: "Product Coupons",
+    endpoint: "/api/product_coupons", // Added endpoint
     fields: ["id", "food_id", "coupon_id", "created_at", "updated_at"],
   },
   customer_coupons: {
     label: "Customer Coupons",
+    endpoint: "/api/customer_coupons", // Added endpoint
     fields: ["id", "customer_id", "coupon_id", "used_at", "created_at", "updated_at"],
   },
   reviews: {
     label: "Reviews",
+    endpoint: "/api/reviews", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -422,10 +456,12 @@ export const entities: Record<string, EntityConfig> = {
   },
   faqs: {
     label: "FAQs",
+    endpoint: "/api/faqs", // Added endpoint
     fields: ["id", "tenant_id", "question", "answer", "created_at", "updated_at"],
   },
   invoices: {
     label: "Invoices",
+    endpoint: "/api/invoices", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -440,6 +476,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   invoice_items: {
     label: "Invoice Items",
+    endpoint: "/api/invoice_items", // Added endpoint
     fields: [
       "id",
       "invoice_id",
@@ -452,22 +489,27 @@ export const entities: Record<string, EntityConfig> = {
   },
   payrolls: {
     label: "Payrolls",
+    endpoint: "/api/payrolls", // Added endpoint
     fields: ["id", "tenant_id", "user_id", "amount", "pay_date", "created_at", "updated_at"],
   },
   menus: {
     label: "Menus",
+    endpoint: "/api/menus", // Added endpoint
     fields: ["id", "tenant_id", "name", "created_at", "updated_at"],
   },
   menu_items: {
     label: "Menu Items",
+    endpoint: "/api/menu_items", // Added endpoint
     fields: ["id", "menu_id", "food_id", "position", "created_at", "updated_at"],
   },
   administrators: {
     label: "Administrators",
+    endpoint: "/api/administrators", // Added endpoint
     fields: ["id", "tenant_id", "user_id", "role", "created_at", "updated_at"],
   },
   announcements: {
     label: "Announcements",
+    endpoint: "/api/announcements", // Added endpoint
     fields: [
       "id",
       "tenant_id",
@@ -482,6 +524,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   settings: {
     label: "Settings",
+    endpoint: "/api/settings", // Added endpoint
     fields: [
       "id",
       "business_name",
@@ -514,119 +557,147 @@ export const entities: Record<string, EntityConfig> = {
       "pos_post_product_add_action",
       "supplier_dine_in",
       "all_orders_kot",
-      "is_direct_file_print", // Added from AddIsDirectFilePrintInSettingsTable
+      "is_direct_file_print",
     ],
   },
   carts: {
     label: "Carts",
+    endpoint: "/api/carts", // Added endpoint
     fields: ["id", "tenant_id", "user_id", "created_at", "updated_at"],
   },
   cart_items: {
     label: "Cart Items",
+    endpoint: "/api/cart_items", // Added endpoint
     fields: ["id", "cart_id", "food_id", "quantity", "price", "created_at", "updated_at"],
   },
   delivery_personnels: {
     label: "Delivery Personnel",
+    endpoint: "/api/delivery_personnels", // Added endpoint
     fields: ["id", "tenant_id", "name", "phone", "vehicle_number", "status", "created_at", "updated_at"],
   },
   wallets: {
     label: "Wallets",
+    endpoint: "/api/wallets", // Added endpoint
     fields: ["id", "tenant_id", "user_id", "balance", "created_at", "updated_at"],
   },
   coupon_redemptions: {
     label: "Coupon Redemptions",
+    endpoint: "/api/coupon_redemptions", // Added endpoint
     fields: ["id", "tenant_id", "customer_coupon_id", "redeemed_at", "created_at", "updated_at"],
   },
   cash_flows: {
     label: "Cash Flows",
+    endpoint: "/api/cash_flows", // Added endpoint
     fields: ["id", "tenant_id", "amount", "type", "description", "date", "created_at", "updated_at"],
   },
   refunds: {
     label: "Refunds",
+    endpoint: "/api/refunds", // Added endpoint
     fields: ["id", "tenant_id", "order_id", "amount", "reason", "created_at", "updated_at"],
   },
   notifications: {
     label: "Notifications",
+    endpoint: "/api/notifications", // Added endpoint
     fields: ["id", "tenant_id", "user_id", "type", "data", "read_at", "created_at", "updated_at"],
   },
   password_changes: {
     label: "Password Changes",
+    endpoint: "/api/password_changes", // Added endpoint
     fields: ["id", "user_id", "old_password", "new_password", "changed_at", "created_at", "updated_at"],
   },
   stocks_movements: {
     label: "Stock Movements",
+    endpoint: "/api/stocks_movements", // Added endpoint
     fields: ["id", "stock_id", "change", "type", "note", "created_at", "updated_at"],
   },
   contact_messages: {
     label: "Contact Messages",
+    endpoint: "/api/contact_messages", // Added endpoint
     fields: ["id", "tenant_id", "name", "email", "subject", "message", "status", "created_at", "updated_at"],
   },
   events: {
     label: "Events",
+    endpoint: "/api/events", // Added endpoint
     fields: ["id", "tenant_id", "name", "description", "start_date", "end_date", "location", "created_at", "updated_at"],
   },
   gateways: {
     label: "Gateways",
+    endpoint: "/api/gateways", // Added endpoint
     fields: ["id", "tenant_id", "name", "type", "config", "status", "created_at", "updated_at"],
   },
   gateways_logs: {
     label: "Gateway Logs",
+    endpoint: "/api/gateways_logs", // Added endpoint
     fields: ["id", "gateway_id", "request", "response", "status_code", "created_at", "updated_at"],
   },
   import_batches: {
     label: "Import Batches",
+    endpoint: "/api/import_batches", // Added endpoint
     fields: ["id", "tenant_id", "file_path", "status", "created_at", "updated_at"],
   },
   import_batch_jobs: {
     label: "Import Batch Jobs",
+    endpoint: "/api/import_batch_jobs", // Added endpoint
     fields: ["id", "import_batch_id", "payload", "status", "created_at", "updated_at"],
   },
   recipes: {
     label: "Recipes",
+    endpoint: "/api/recipes", // Added endpoint
     fields: ["id", "tenant_id", "name", "description", "created_at", "updated_at"],
   },
   ingredient_recipe: {
     label: "Ingredient Recipes",
+    endpoint: "/api/ingredient_recipe", // Added endpoint
     fields: ["id", "recipe_id", "ingredient_name", "quantity", "unit", "created_at", "updated_at"],
   },
   stocks_logs: {
     label: "Stock Logs",
+    endpoint: "/api/stocks_logs", // Added endpoint
     fields: ["id", "stock_id", "before", "after", "change", "created_at", "updated_at"],
   },
   cashflows_logs: {
     label: "Cash Flow Logs",
+    endpoint: "/api/cashflows_logs", // Added endpoint
     fields: ["id", "tenant_id", "cash_flow_id", "type", "amount", "created_at", "updated_at"],
   },
   daily_summaries: {
     label: "Daily Summaries",
+    endpoint: "/api/daily_summaries", // Added endpoint
     fields: ["id", "tenant_id", "summary_date", "total_revenue", "total_orders", "created_at", "updated_at"],
   },
   messages: {
     label: "Messages",
+    endpoint: "/api/messages", // Added endpoint
     fields: ["id", "tenant_id", "sender_type", "sender_id", "recipient_id", "content", "read_at", "created_at", "updated_at"],
   },
   api_tokens: {
     label: "API Tokens",
+    endpoint: "/api/api_tokens", // Added endpoint
     fields: ["id", "tenant_id", "tokenable_type", "tokenable_id", "name", "token", "abilities", "last_used_at", "expires_at", "created_at", "updated_at"],
   },
   translations: {
     label: "Translations",
+    endpoint: "/api/translations", // Added endpoint
     fields: ["id", "locale", "group", "key", "value", "created_at", "updated_at"],
   },
   currencies: {
     label: "Currencies",
+    endpoint: "/api/currencies", // Added endpoint
     fields: ["id", "code", "name", "symbol", "created_at", "updated_at"],
   },
   taxes: {
     label: "Taxes",
+    endpoint: "/api/taxes", // Added endpoint
     fields: ["id", "tenant_id", "name", "rate", "type", "created_at", "updated_at"],
   },
   tenant_settings: {
     label: "Tenant Settings",
+    endpoint: "/api/tenant_settings", // Added endpoint
     fields: ["id", "tenant_id", "currency_id", "key", "value", "created_at", "updated_at"],
   },
   sales: {
     label: "Sales",
+    endpoint: "/api/sales", // Added endpoint
     fields: [
       "id",
       "customer_id",
@@ -660,6 +731,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   accounts: {
     label: "Accounts",
+    endpoint: "/api/accounts", // Added endpoint
     fields: [
       "id",
       "name",
@@ -671,6 +743,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   food_location: {
     label: "Food Location",
+    endpoint: "/api/food_location", // Added endpoint
     fields: [
       "id",
       "location_id",
@@ -689,6 +762,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   location_product: {
     label: "Location Product",
+    endpoint: "/api/location_product", // Added endpoint
     fields: [
       "id",
       "location_id",
@@ -709,6 +783,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   employee_attendances: {
     label: "Employee Attendances",
+    endpoint: "/api/employee_attendances", // Added endpoint
     fields: [
       "id",
       "employee_id",
@@ -721,6 +796,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   products: {
     label: "Products",
+    endpoint: "/api/products", // Added endpoint
     fields: [
       "id",
       "name",
@@ -743,6 +819,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   purchase_payments: {
     label: "Purchase Payments",
+    endpoint: "/api/purchase_payments", // Added endpoint
     fields: [
       "id",
       "purchase_id",
@@ -758,6 +835,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   employee_salaries: {
     label: "Employee Salaries",
+    endpoint: "/api/employee_salaries", // Added endpoint
     fields: [
       "id",
       "employee_id",
@@ -780,6 +858,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   modifiers: {
     label: "Modifiers",
+    endpoint: "/api/modifiers", // Added endpoint
     fields: [
       "id",
       "name",
@@ -791,6 +870,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   purchase_statuses: {
     label: "Purchase Statuses",
+    endpoint: "/api/purchase_statuses", // Added endpoint
     fields: [
       "id",
       "purchase_id",
@@ -803,6 +883,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   food_categories: {
     label: "Food Categories",
+    endpoint: "/api/food_categories", // Added endpoint
     fields: [
       "id",
       "name",
@@ -814,6 +895,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   employees: {
     label: "Employees",
+    endpoint: "/api/employees", // Added endpoint
     fields: [
       "id",
       "name",
@@ -836,6 +918,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   sale_statuses: {
     label: "Sale Statuses",
+    endpoint: "/api/sale_statuses", // Added endpoint
     fields: [
       "id",
       "sale_id",
@@ -848,6 +931,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   product_categories: {
     label: "Product Categories",
+    endpoint: "/api/product_categories", // Added endpoint
     fields: [
       "id",
       "name",
@@ -858,6 +942,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   product_brands: {
     label: "Product Brands",
+    endpoint: "/api/product_brands", // Added endpoint
     fields: [
       "id",
       "name",
@@ -868,6 +953,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   registers: {
     label: "Registers",
+    endpoint: "/api/registers", // Added endpoint
     fields: [
       "id",
       "user_id",
@@ -883,6 +969,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   employee_categories: {
     label: "Employee Categories",
+    endpoint: "/api/employee_categories", // Added endpoint
     fields: [
       "id",
       "name",
@@ -892,6 +979,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   food_product: {
     label: "Food Product",
+    endpoint: "/api/food_product", // Added endpoint
     fields: [
       "id",
       "food_id",
@@ -904,6 +992,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   modifier_sale_item: {
     label: "Modifier Sale Item",
+    endpoint: "/api/modifier_sale_item", // Added endpoint
     fields: [
       "id",
       "sale_item_id",
@@ -915,6 +1004,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   purchase_returns: {
     label: "Purchase Returns",
+    endpoint: "/api/purchase_returns", // Added endpoint
     fields: [
       "id",
       "purchase_id",
@@ -939,6 +1029,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   consumption_items: {
     label: "Consumption Items",
+    endpoint: "/api/consumption_items", // Added endpoint
     fields: [
       "id",
       "product_id",
@@ -958,6 +1049,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   points: {
     label: "Points",
+    endpoint: "/api/points", // Added endpoint
     fields: [
       "id",
       "customer_id",
@@ -975,6 +1067,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   food_modifier: {
     label: "Food Modifier",
+    endpoint: "/api/food_modifier", // Added endpoint
     fields: [
       "id",
       "food_id",
@@ -985,6 +1078,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   kitchens: {
     label: "Kitchens",
+    endpoint: "/api/kitchens", // Added endpoint
     fields: [
       "id",
       "name",
@@ -997,6 +1091,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   purchase_return_items: {
     label: "Purchase Return Items",
+    endpoint: "/api/purchase_return_items", // Added endpoint
     fields: [
       "id",
       "product_id",
@@ -1015,6 +1110,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   transactions: {
     label: "Transactions",
+    endpoint: "/api/transactions", // Added endpoint
     fields: [
       "id",
       "account_id",
@@ -1042,6 +1138,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   sale_payments: {
     label: "Sale Payments",
+    endpoint: "/api/sale_payments", // Added endpoint
     fields: [
       "id",
       "sale_id",
@@ -1058,6 +1155,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   table_items: {
     label: "Table Items",
+    endpoint: "/api/table_items", // Added endpoint
     fields: [
       "id",
       "customer_id",
@@ -1082,6 +1180,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   oauth_access_tokens: {
     label: "Oauth Access Tokens",
+    endpoint: "/api/oauth_access_tokens", // Added endpoint
     fields: [
       "id",
       "user_id",
@@ -1096,6 +1195,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   oauth_auth_codes: {
     label: "Oauth Auth Codes",
+    endpoint: "/api/oauth_auth_codes", // Added endpoint
     fields: [
       "id",
       "user_id",
@@ -1107,6 +1207,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   oauth_refresh_tokens: {
     label: "Oauth Refresh Tokens",
+    endpoint: "/api/oauth_refresh_tokens", // Added endpoint
     fields: [
       "id",
       "access_token_id",
@@ -1116,6 +1217,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   oauth_clients: {
     label: "Oauth Clients",
+    endpoint: "/api/oauth_clients", // Added endpoint
     fields: [
       "id",
       "user_id",
@@ -1132,6 +1234,7 @@ export const entities: Record<string, EntityConfig> = {
   },
   oauth_personal_access_clients: {
     label: "Oauth Personal Access Clients",
+    endpoint: "/api/oauth_personal_access_clients", // Added endpoint
     fields: [
       "id",
       "client_id",

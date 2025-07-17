@@ -1,22 +1,18 @@
-/* src/app/components/Navbar.tsx */
+// src/app/components/Navbar.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { forwardRef } from 'react'; // Import forwardRef
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { entities } from '../config/entities'; // Import your entities configuration
 import {
   Box,
-  Button,
   Flex,
   Heading,
   Text,
   VStack,
-  Collapse,
-  Icon,
   Image as ChakraImage
 } from '@chakra-ui/react';
-import { ChevronDownIcon } from '@chakra-ui/icons';
 
 interface MenuItem {
   name: string;
@@ -24,7 +20,7 @@ interface MenuItem {
   subMenus?: MenuItem[];
 }
 
-const dashboardMenu: MenuItem[] = [
+export const dashboardMenu: MenuItem[] = [
   {
     name: 'Dashboard Overview',
     href: '/',
@@ -175,28 +171,35 @@ const getEntityLabel = (resource: string): string => {
   return cfg ? cfg.label : resource.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
 
-
-export default function Navbar() {
+// Use forwardRef to allow parent components to pass a ref to this component
+const Navbar = forwardRef<HTMLDivElement, { isOpen: boolean }>(({ isOpen }, ref) => {
   const pathname = usePathname();
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
-
-  const toggleMenu = (menuName: string) => {
-    setOpenMenus(prev => ({
-      ...prev,
-      [menuName]: !prev[menuName]
-    }));
-  };
 
   return (
-    <Box as="nav" bg="var(--navbar-bg)" color="var(--navbar-main-item-inactive-text)" p={4} h="full" overflowY="auto">
-      {/* Sticky Header Section */}
+    <Box
+      as="nav"
+      ref={ref} // Attach the forwarded ref here
+      w="250px"
+      bg="var(--navbar-bg)"
+      color="var(--navbar-main-item-inactive-text)"
+      p={4}
+      height="100vh"
+      position="fixed"
+      left={isOpen ? '0' : '-250px'}
+      top="0"
+      zIndex={20}
+      transition="left 0.3s ease-in-out"
+      boxShadow="lg"
+      display={{ base: 'block', md: 'block' }}
+      overflowY="auto"
+    >
+      {/* Sticky Header Section - Retained from user's provided snippet */}
       <Box
         position="sticky"
-        top="-10"
-        zIndex="10" // Ensure it stays above other content
-        bg="var(--navbar-bg)" // Match Navbar background
-        //pt={-10}
-        pb={4} // Add some padding to the bottom to separate from scrollable content
+        top="0"
+        zIndex="10"
+        bg="var(--navbar-bg)"
+        pb={4}
       >
         <Box mb={2} textAlign="center">
           <br />
@@ -228,97 +231,33 @@ export default function Navbar() {
       <VStack as="ul" align="stretch" spacing={1} listStyleType="none">
         {dashboardMenu.map((menuItem) => (
           <Box as="li" key={menuItem.name} listStyleType="none">
-            {menuItem.subMenus ? (
-              <>
-                <Button
-                  variant="ghost"
-                  width="full"
-                  justifyContent="space-between"
-                  px={4}
-                  py={2}
-                  rounded="md"
-                  fontSize="md"
-                  fontWeight="normal"
-                  bg={pathname.startsWith(menuItem.href) ? 'var(--navbar-main-item-active-bg)' : 'transparent'}
-                  color={pathname.startsWith(menuItem.href) ? 'var(--navbar-main-item-active-text)' : 'var(--navbar-main-item-inactive-text)'}
-                  _hover={{ bg: 'var(--navbar-main-item-hover-bg)', color: 'var(--navbar-main-item-active-text)' }}
-                  _active={{ bg: 'var(--navbar-main-item-active-bg)' }}
-                  _focus={{ outline: 'none', boxShadow: 'none' }}
-                  onClick={() => toggleMenu(menuItem.name)}
-                >
-                  <Text as="span" textTransform="capitalize" fontSize="md" fontWeight="normal" fontFamily="var(--font-lexend-deca)">{menuItem.name}</Text>
-                  <Icon
-                    as={ChevronDownIcon}
-                    ml={2}
-                    h={4}
-                    w={4}
-                    transition="transform 0.2s"
-                    transform={openMenus[menuItem.name] ? 'rotate(180deg)' : 'rotate(0deg)'}
-                  />
-                </Button>
-                <Collapse in={openMenus[menuItem.name]} animateOpacity>
-                  <VStack
-                    as="ul"
-                    ml={4}
-                    mt={1}
-                    borderLeft="1px solid"
-                    borderColor="var(--navbar-submenu-border-color)"
-                    pl={4}
-                    align="stretch"
-                    spacing={0.5}
-                    listStyleType="none"
-                  >
-                    {menuItem.subMenus.map((subMenu) => (
-                      <Box as="li" key={subMenu.name} listStyleType="none">
-                        <Link href={subMenu.href} passHref>
-                          <Text
-                            as="span"
-                            display="block"
-                            px={3}
-                            py={1}
-                            rounded="sm"
-                            transition="colors 0.2s"
-                            textAlign="left"
-                            bg={pathname === subMenu.href ? 'var(--navbar-submenu-active-bg)' : 'transparent'}
-                            color={pathname === subMenu.href ? 'var(--navbar-submenu-active-text)' : 'var(--navbar-submenu-inactive-text)'}
-                            fontWeight={pathname === subMenu.href ? 'medium' : 'normal'}
-                            _hover={{ bg: 'var(--navbar-submenu-hover-bg)', color: 'var(--navbar-submenu-active-text)' }}
-                            cursor="pointer"
-                            fontFamily="var(--font-lexend-deca)"
-                          >
-                            {getEntityLabel(subMenu.href.substring(1))}
-                          </Text>
-                        </Link>
-                      </Box>
-                    ))}
-                  </VStack>
-                </Collapse>
-              </>
-            ) : (
-              <Link href={menuItem.href} passHref>
-                <Text
-                  as="span"
-                  display="block"
-                  px={4}
-                  py={2}
-                  rounded="md"
-                  transition="colors 0.2s"
-                  fontSize="md"
-                  fontWeight="normal"
-                  textAlign="left"
-                  bg={pathname === menuItem.href ? 'var(--navbar-main-item-active-bg)' : 'transparent'}
-                  color={pathname === menuItem.href ? 'var(--navbar-main-item-active-text)' : 'var(--navbar-main-item-inactive-text)'}
-                  _hover={{ bg: 'var(--navbar-main-item-hover-bg)', color: 'var(--navbar-main-item-active-text)' }}
-                  cursor="pointer"
-                  fontFamily="var(--font-lexend-deca)"
-                >
-                  {menuItem.name}
-                </Text>
-              </Link>
-            )}
+            <Link href={menuItem.href} passHref>
+              <Text
+                as="span"
+                display="block"
+                px={4}
+                py={2}
+                rounded="md"
+                transition="colors 0.2s"
+                fontSize="md"
+                fontWeight="normal"
+                textAlign="left"
+                bg={pathname === menuItem.href ? 'var(--navbar-main-item-active-bg)' : 'transparent'}
+                color={pathname === menuItem.href ? 'var(--navbar-main-item-active-text)' : 'var(--navbar-main-item-inactive-text)'}
+                _hover={{ bg: 'var(--navbar-main-item-hover-bg)', color: 'var(--navbar-main-item-active-text)' }}
+                cursor="pointer"
+                fontFamily="var(--font-lexend-deca)"
+              >
+                {menuItem.name}
+              </Text>
+            </Link>
           </Box>
         ))}
       </VStack>
     </Box>
   );
-}
+});
+
+Navbar.displayName = 'Navbar'; // Add a display name for better debugging
+
+export default Navbar;

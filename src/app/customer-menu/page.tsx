@@ -116,7 +116,7 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ icon, children, isActive, onClick }) => {
-  const activeBg = useColorModeValue('var(--navbar-main-item-active-bg)', 'var(--navbar-main-item-active-bg)');
+  const activeBg = useColorModeValue('#333', '#333'); // Changed to #333 for both light and dark modes
   const hoverBg = useColorModeValue('var(--navbar-main-item-hover-bg)', 'var(--navbar-main-item-hover-bg)');
   const activeColor = 'var(--primary-green)';
   const inactiveColor = useColorModeValue('var(--dark-gray-text)', 'var(--navbar-main-item-inactive-text)');
@@ -172,11 +172,11 @@ const CustomerMenuPage: React.FC = () => {
 
   // Move ALL useColorModeValue hooks to the top level
   const primaryGreen = useColorModeValue('var(--primary-green)', 'var(--primary-green)');
-  const textColor = useColorModeValue('var(--dark-gray-text)', 'white');
-  const cardBg = useColorModeValue('var(--background-color-light)', 'gray.800');
-  const borderColor = useColorModeValue('var(--border-color)', 'gray.700');
-  const modalContentBg = useColorModeValue('var(--background-color-light)', 'gray.900');
-  const topBarBg = useColorModeValue('var(--background-color-light)', 'gray.900');
+  const textColor = useColorModeValue('var(--dark-gray-text)', 'var(--dark-gray-text)');
+  const cardBg = useColorModeValue('var(--background-color-light)', 'var(--background-color-light)');
+  const borderColor = useColorModeValue('var(--border-color)', 'var(--border-color)');
+  const modalContentBg = useColorModeValue('var(--background-color-light)', 'var(--background-color-light)');
+  const topBarBg = useColorModeValue('var(--background-color-light)', 'var(--background-color-light)');
 
   // IMPORTANT: If you have any `useContext`, `useRef`, or `useId` calls in your
   // full file, they also need to be declared here at the top, unconditionally.
@@ -431,6 +431,7 @@ const CustomerMenuPage: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               rounded="lg"
+              borderColor="#333" // Added border color
               focusBorderColor={primaryGreen}
               fontFamily="var(--font-lexend-deca)"
               px={5}
@@ -483,6 +484,7 @@ const CustomerMenuPage: React.FC = () => {
 
           {groupedFoods.map((group) => (
             <Box key={group.id} mb={10}>
+              <br /><br />
               <Heading as="h2" size="lg" mb={6} color={textColor} borderBottom="2px solid" borderColor={primaryGreen} pb={2} display="inline-block" fontFamily="var(--font-lexend-deca)">
                 {group.name}
               </Heading>

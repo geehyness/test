@@ -1,11 +1,11 @@
 /* src/app/layout.tsx */
-'use client'; // This component uses client-side hooks like useState and needs to be client-side
+'use client';
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link'; // Still use Next.js Link for routing
-import { usePathname } from 'next/navigation'; // Import usePathname hook
-import '@/app/globals.css'; // Keep your global CSS
-import Navbar from './components/Navbar'; // Your Navbar component
+import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import '@/app/globals.css';
+import Navbar from './components/Navbar';
 import {
   ChakraProvider,
   Box,
@@ -17,11 +17,12 @@ import {
   AlertTitle,
   AlertDescription,
   CloseButton,
-  VStack, // Added for stacking notifications
-} from '@chakra-ui/react'; // Import Chakra UI components
-import { Menu } from 'lucide-react'; // Keep lucide-react for icons
+  VStack,
+  useMediaQuery,
+  Spacer
+} from '@chakra-ui/react';
+import { Menu } from 'lucide-react';
 
-// Define a type for your notifications
 interface AppNotification {
   id: string;
   message: string;
@@ -33,169 +34,176 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLargerThanMd] = useMediaQuery('(min-width: 768px)');
+  const [sidebarOpen, setSidebarOpen] = useState(isLargerThanMd);
+  const navbarRef = useRef<HTMLDivElement>(null); // Ref for the Navbar component
+
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const pathname = usePathname(); // Get the current pathname
+  const pathname = usePathname();
 
-  // Determine if the current page is a customer menu page
-  const isCustomerMenuPage = pathname.startsWith('/customer-menu');
+  const isCustomerMenuPage = pathname.startsWith('/customer-menu'); //
 
-  // Effect to handle incoming custom events for notifications
+  useEffect(() => {
+    // Only set sidebarOpen based on screen size if it's not the customer menu page
+    if (!isCustomerMenuPage) {
+      setSidebarOpen(isLargerThanMd);
+    } else {
+      setSidebarOpen(false); // Ensure sidebar is closed on customer menu page
+    }
+  }, [isLargerThanMd, isCustomerMenuPage]);
+
   useEffect(() => {
     const handleNewOrderNotification = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { tableId, items } = customEvent.detail;
-
-      const itemNames = items.map((item: any) => `${item.quantity}x ${item.name}`).join(', ');
-      const message = `Table ${tableId} has ordered: ${itemNames}.`;
-
-      const newNotification: AppNotification = {
-        id: Date.now().toString(), // Unique ID for the notification
-        message: message,
-        type: 'info', // Or 'success' if you prefer
-      };
-
-      setNotifications((prevNotifications) => [...prevNotifications, newNotification]);
-
-      // Automatically dismiss the notification after 5 seconds
+      const customEvent = event as CustomEvent<AppNotification>;
+      setNotifications((prev) => [...prev, customEvent.detail]);
       setTimeout(() => {
-        setNotifications((prevNotifications) =>
-          prevNotifications.filter((n) => n.id !== newNotification.id)
-        );
+        dismissNotification(customEvent.detail.id);
       }, 5000);
     };
 
-    // Add event listener for custom 'newOrderPlaced' event
-    window.addEventListener('newOrderPlaced', handleNewOrderNotification as EventListener);
+    window.addEventListener('newOrderNotification', handleNewOrderNotification);
 
-    // Clean up the event listener on component unmount
     return () => {
-      window.removeEventListener('newOrderPlaced', handleNewOrderNotification as EventListener);
+      window.removeEventListener('newOrderNotification', handleNewOrderNotification);
     };
   }, []);
 
+  // Effect to handle clicks outside the sidebar on mobile
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        !isLargerThanMd && // Only apply on mobile (when not larger than md)
+        sidebarOpen &&
+        navbarRef.current &&
+        !navbarRef.current.contains(event.target as Node)
+      ) {
+        setSidebarOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [sidebarOpen, isLargerThanMd]);
+
   const dismissNotification = (id: string) => {
-    setNotifications((prevNotifications) =>
-      prevNotifications.filter((n) => n.id !== id)
-    );
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   return (
     <html lang="en">
+      <head>
+        {/* Temporarily add this for DataTables CSS */}
+        <link
+          rel="stylesheet"
+          type="text/css"
+          href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css"
+        />
+      </head>
       <body>
         <ChakraProvider>
-          {/* Main container for the entire application layout */}
-          <Flex
-            direction={{ base: 'column', md: 'row' }}
-            minH="100vh"
-            bg="var(--light-gray-bg)"
-          >
-            {/* Mobile Header (visible only on mobile, positioned at the top of the column) */}
-            <Flex
-              // Hide mobile header on customer menu page
-              display={{ base: isCustomerMenuPage ? 'none' : 'flex', md: 'none' }}
-              p={4}
-              bg="var(--navbar-bg)"
-              color="var(--navbar-main-item-inactive-text)"
-              justify="space-between"
-              align="center"
-              shadow="md"
-              width="full"
-              position="fixed"
-              zIndex={40}
-            >
-              <Heading as="h2" size="xl" color="var(--navbar-heading-color)">
-                Resto Admin
-              </Heading>
-              <Button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                p={2}
-                rounded="md"
-                _focus={{ outline: 'none', ring: 2, ringColor: 'var(--primary-green)' }}
-                bg="transparent"
-                _hover={{ bg: 'var(--navbar-main-item-hover-bg)' }}
-                color="var(--navbar-main-item-inactive-text)"
-              >
-                <Menu size={24} />
-              </Button>
-            </Flex>
-
-            {/* Sidebar (now fixed on all screen sizes) */}
-            <Box
-              // Hide sidebar completely on customer menu page for desktop, and control mobile view
-              position="fixed"
-              insetY={0}
-              left={0}
-              zIndex={50}
-              w={{ base: '64', md: isCustomerMenuPage ? '0' : '64' }} // Width 0 on customer menu for desktop
-              bg="var(--navbar-bg)"
-              // Slide out animation for mobile, but always hidden on desktop for customer menu
-              transform={{
-                base: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
-                md: isCustomerMenuPage ? 'translateX(-100%)' : 'translateX(0)',
-              }}
-              transition="transform 0.3s ease-in-out"
-              shadow={{ base: 'lg', md: isCustomerMenuPage ? 'none' : 'none' }}
-              // Set height to full viewport height and keep internal scrolling
-              h="100vh"
-              overflowY="auto"
-              // Hide content and padding on customer menu page
-              p={isCustomerMenuPage ? 0 : undefined} // Remove padding when hidden
-            >
-              {!isCustomerMenuPage && <Navbar />} {/* Only render Navbar if not customer menu page */}
-            </Box>
-
-            {/* Overlay for mobile when sidebar is open */}
-            {sidebarOpen && !isCustomerMenuPage && ( // Also hide overlay on customer menu page
-              <Box
-                position="fixed"
-                inset={0}
-                zIndex={40}
-                display={{ base: 'block', md: 'none' }}
-                bg="rgba(0, 0, 0, 0.4)"
-                onClick={() => setSidebarOpen(false)}
-                aria-hidden="true"
-              />
+          <Flex>
+            {/* Conditionally render Navbar based on isCustomerMenuPage */}
+            {!isCustomerMenuPage && ( //
+              <Navbar isOpen={sidebarOpen} ref={navbarRef} />
             )}
 
-            {/* Main Content Area */}
+            {/* Main Content Area - Adjusted width calculation and background */}
             <Box
-              // Adjust margin left for desktop when sidebar is hidden
-              ml={{ base: 0, md: isCustomerMenuPage ? '0' : '64' }}
-              flex={1} // Takes up remaining space in the flex container
-              p={{ base: 4, md: 6 }}
-              overflowY="auto" // Enable scrolling ONLY for the main content area
-              // On mobile, padding-top accounts for the header, remove it for customer menu
-              pt={{ base: isCustomerMenuPage ? 0 : '60px', md: isCustomerMenuPage ? 0 : 6 }}
+              // Adjust margin-left based on sidebarOpen and isCustomerMenuPage
+              ml={{
+                base: 0,
+                md: isCustomerMenuPage ? '0' : (sidebarOpen ? '250px' : '0') //
+              }}
+              transition="margin-left 0.3s ease-in-out"
+              flex="1"
+              // Explicitly calculate width on desktop to subtract sidebar width
+              width={{
+                base: '100%',
+                md: isCustomerMenuPage ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%') //
+              }}
+              p={{ base: 0, md: 6 }}
+              bg="var(--light-gray-bg)"
             >
-              {/* Notifications Display */}
-              <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
-                {notifications.map((notification) => (
-                  <Alert
-                    key={notification.id}
-                    status={notification.type}
-                    variant="left-accent"
-                    rounded="md"
-                    shadow="md"
-                    width="full"
-                    maxWidth="600px" // Limit width for better appearance
+              {/* Header / Topbar - Visible only on mobile and not on customer menu page */}
+              <Flex
+                as="header"
+                position="fixed"
+                top="0"
+                left={{
+                  base: 0,
+                  md: isCustomerMenuPage ? '0' : (sidebarOpen ? '250px' : '0') //
+                }}
+                width={{
+                  base: '100%',
+                  md: isCustomerMenuPage ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%') //
+                }}
+                bg="var(--background-color-light)"
+                height="60px"
+                align="center"
+                px={4}
+                pr={6}
+                borderBottom="1px solid"
+                borderColor="var(--border-color)"
+                zIndex={10}
+                transition="all 0.3s ease-in-out"
+                display={{ base: isCustomerMenuPage ? 'none' : 'flex', md: 'none' }} // Hide on desktop and customer menu page
+              >
+                  <Button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    variant="ghost"
+                    aria-label="Toggle Menu"
+                    mr={4}
+                    color="#333"
                   >
-                    <AlertIcon />
-                    <Box flex="1">
-                      <AlertTitle>{notification.type === 'info' ? 'New Order!' : 'Notification'}</AlertTitle>
-                      <AlertDescription display="block">{notification.message}</AlertDescription>
-                    </Box>
-                    <CloseButton
-                      position="absolute"
-                      right="8px"
-                      top="8px"
-                      onClick={() => dismissNotification(notification.id)}
-                    />
-                  </Alert>
-                ))}
-              </VStack>
+                    <Menu size={24} />
+                  </Button>
+                
 
-              {children}
+                <Heading as="h1" size="md" color="var(--dark-gray-text)" fontFamily="var(--font-lexend-deca)">
+                  Resto Admin Dashboard
+                </Heading>
+                <Spacer />
+                {sidebarOpen && (
+                  <CloseButton onClick={() => setSidebarOpen(false)} />
+                )}
+              </Flex>
+
+              <Box
+                as="main"
+                flex="1"
+                minH="calc(100vh - 60px)"
+                pt={{ base: isCustomerMenuPage ? 0 : '60px', md: isCustomerMenuPage ? 0 : 6 }}
+              >
+                <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
+                  {notifications.map((notification) => (
+                    <Alert
+                      key={notification.id}
+                      status={notification.type}
+                      variant="left-accent"
+                      rounded="md"
+                      shadow="md"
+                      width="full"
+                      maxWidth="600px"
+                    >
+                      <AlertIcon />
+                      <Box flex="1">
+                        <AlertTitle>{notification.type === 'info' ? 'New Order!' : 'Notification'}</AlertTitle>
+                        <AlertDescription display="block">{notification.message}</AlertDescription>
+                      </Box>
+                      <CloseButton
+                        position="absolute"
+                        right="8px"
+                        top="8px"
+                        onClick={() => dismissNotification(notification.id)}
+                      />
+                    </Alert>
+                  ))}
+                </VStack>
+
+                {children}
+              </Box>
             </Box>
           </Flex>
         </ChakraProvider>

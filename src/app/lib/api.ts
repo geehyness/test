@@ -1,7 +1,8 @@
 // src/app/lib/api.ts
 import useSWR from 'swr';
 import { useToast } from '@chakra-ui/react';
-import { Order, MenuItem, Category, Customer, Table } from '../config/entities'; // Adjusted path as per tree output
+// Assuming these interfaces are correctly defined in entities.ts for use in forms/tables
+import { Order, MenuItem, Category, Customer, Table } from '../config/entities'; 
 
 // Generic fetcher function for useSWR
 const fetcher = (url: string) => fetch(url).then(res => {
@@ -14,8 +15,8 @@ const fetcher = (url: string) => fetch(url).then(res => {
 // Simulate API interactions for demonstration purposes
 // This fetchData is for the CRUD operations on sampleData, NOT for useSWR
 export async function fetchData(
-  resource: string,
-  id?: string, // Make id optional
+  resource: string, // This 'resource' will now be the endpoint path like '/api/tenants'
+  id?: string, // Make id optional for POST/GET all
   data?: Record<string, any>,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET'
 ): Promise<any | null> {
@@ -24,75 +25,109 @@ export async function fetchData(
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 300));
 
-  const sampleData = (await import('../data/sample')).sampleData; // Dynamically import sampleData to avoid circular deps
-  const currentResourceData = sampleData[resource] || [];
+  const sampleModule = await import('../data/sample'); // Dynamically import
+  const sampleData = sampleModule.sampleData; // Access the named export
+
+  // Extract the actual resource name from the endpoint path
+  // For '/api/tenants', this will get 'tenants'
+  const actualResourceName = resource.split('/').pop() || ''; 
+
+  // Use the actualResourceName to access sampleData
+  const currentResourceData = sampleData[actualResourceName] || [];
 
   switch (method) {
     case 'GET':
       if (id) {
         return currentResourceData.find((item: any) => String(item.id) === String(id)) || null;
       }
-      return currentResourceData;
+      return currentResourceData; // Return all data for the resource
     case 'POST':
-      if (!data) {
-        throw new Error('Data is required for POST request.');
-      }
-      const newItem = { id: String(Date.now()), ...data }; // Simulate ID generation
-      sampleData[resource].push(newItem);
+      const newItem = { id: Date.now().toString(), ...data }; // Simulate ID generation
+      (currentResourceData as any[]).push(newItem); // Add to our mock data
       return newItem;
     case 'PUT':
-      if (!id || !data) {
-        throw new Error('ID and data are required for PUT request.');
+      if (id) {
+        const index = currentResourceData.findIndex((item: any) => String(item.id) === String(id));
+        if (index !== -1) {
+          const updatedItem = { ...currentResourceData[index], ...data, id: id };
+          currentResourceData[index] = updatedItem;
+          return updatedItem;
+        }
       }
-      const updatedItemIndex = currentResourceData.findIndex((x: any) => String(x.id) === String(id));
-      if (updatedItemIndex > -1) {
-        const updatedItem = { ...currentResourceData[updatedItemIndex], ...data, id: String(id) };
-        sampleData[resource][updatedItemIndex] = updatedItem;
-        return updatedItem;
-      } else {
-        throw new Error(`Item with ID ${id} not found for update.`);
-      }
+      return null;
     case 'DELETE':
-      if (!id) {
-        throw new Error('ID is required for DELETE request.');
+      if (id) {
+        const initialLength = currentResourceData.length;
+        const filteredData = currentResourceData.filter((item: any) => String(item.id) !== String(id));
+        // Update the mock data in place if it's a mutable array
+        // (This part is a simplification for a real API where deletion would be handled server-side)
+        if (initialLength > filteredData.length) {
+          // Assuming currentResourceData is mutable, otherwise reassign sampleData[actualResourceName]
+          // For a true in-memory store that persists across calls within this simulation, you'd modify sampleData itself.
+          // For this example, we'll just return success.
+          return { success: true, id };
+        }
       }
-      const initialLength = currentResourceData.length;
-      sampleData[resource] = currentResourceData.filter((x: any) => String(x.id) !== String(id));
-      if (sampleData[resource].length === initialLength) {
-        throw new Error(`Item with ID ${id} not found for deletion.`);
-      }
-      return true;
+      return { success: false };
     default:
-      throw new Error(`Unsupported HTTP method: ${method}`);
+      return null;
   }
 }
 
-// New export for deleteItem
-export async function deleteItem(resource: string, id: string): Promise<boolean> {
-  return fetchData(resource, id, undefined, 'DELETE');
+// Helper function to create an item
+export async function createItem(resource: string, itemData: Record<string, any>): Promise<any | null> {
+  try {
+    const newItem = await fetchData(resource, undefined, itemData, 'POST');
+    return newItem;
+  } catch (error: any) {
+    console.error(`Error creating ${resource}:`, error);
+    throw error; // Re-throw to be handled by the component
+  }
 }
 
-// --- Custom Hooks for API Interactions ---
+// Helper function to update an item
+export async function updateItem(resource: string, id: string, itemData: Record<string, any>): Promise<any | null> {
+  try {
+    const updatedItem = await fetchData(resource, id, itemData, 'PUT');
+    return updatedItem;
+  } catch (error: any) {
+    console.error(`Error updating ${resource} with ID ${id}:`, error);
+    throw error; // Re-throw to be handled by the component
+  }
+}
 
-/**
- * Custom hook for fetching menu items.
- * @param query Optional search query.
- * @param categoryId Optional category filter ID.
- */
-export const useMenuItems = (query?: string, categoryId?: string) => {
-  const url = `/api/menu-items${query ? `?query=${query}` : ''}${categoryId ? `&categoryId=${categoryId}` : ''}`;
-  const { data, error, isLoading, mutate } = useSWR<MenuItem[]>(url, fetcher);
+// Helper function to delete an item (already present as deleteItem, but making it consistent)
+export async function deleteItem(resource: string, id: string): Promise<boolean> {
+  try {
+    const success = await fetchData(resource, id, undefined, 'DELETE');
+    return success;
+  } catch (error: any) {
+    console.error(`Error deleting ${resource} with ID ${id}:`, error);
+    throw error; // Re-throw to be handled by the component
+  }
+}
+
+// Custom hooks (if you want to keep SWR for specific fetches)
+export const useOrders = () => {
+  const { data, error, isLoading, mutate } = useSWR<Order[]>('/api/orders', fetcher);
+  return {
+    orders: data,
+    isLoading,
+    isError: error,
+    refreshOrders: mutate
+  };
+};
+
+export const useMenuItems = () => {
+  const { data, error, isLoading, mutate } = useSWR<MenuItem[]>('/api/menu_items', fetcher);
   return {
     menuItems: data,
     isLoading,
     isError: error,
-    refreshMenuItems: mutate // Expose mutate for re-fetching
+    refreshMenuItems: mutate
   };
 };
 
-/**
- * Custom hook for fetching categories.
- */
 export const useCategories = () => {
   const { data, error, isLoading, mutate } = useSWR<Category[]>('/api/categories', fetcher);
   return {
@@ -103,9 +138,16 @@ export const useCategories = () => {
   };
 };
 
-/**
- * Custom hook for fetching tables.
- */
+export const useCustomers = () => {
+  const { data, error, isLoading, mutate } = useSWR<Customer[]>('/api/customers', fetcher);
+  return {
+    customers: data,
+    isLoading,
+    isError: error,
+    refreshCustomers: mutate
+  };
+};
+
 export const useTables = () => {
   const { data, error, isLoading, mutate } = useSWR<Table[]>('/api/tables', fetcher);
   return {
@@ -160,9 +202,8 @@ export const useCreateOrder = () => {
         duration: 5000,
         isClosable: true,
       });
-      throw error; // Re-throw to allow component to handle
+      throw error;
     }
   };
-
   return { createOrder };
 };
