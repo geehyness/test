@@ -339,7 +339,7 @@ export default function ResourceListPage() {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      {/* View Details Modal (remains unchanged) */}
+      {/* View Details Modal (FIX APPLIED HERE) */}
       <Modal isOpen={isViewModalOpen} onClose={onViewModalClose} size="xl">
         <ModalOverlay />
         <ModalContent rounded="lg" shadow="xl" bg="var(--background-color-light)" color="var(--dark-gray-text)">
@@ -355,11 +355,17 @@ export default function ResourceListPage() {
                     <Text fontWeight="semibold" mr={2} textTransform="capitalize" color="var(--dark-gray-text)">
                       {key.replace(/_/g, ' ')}:
                     </Text>
-                    <Text color="var(--medium-gray-text)">
+                    {/* FIX: Replaced <Text> with <Box> and added styling to handle raw HTML/JSON correctly */}
+                    <Box
+                      as="div"
+                      color="var(--medium-gray-text)"
+                      whiteSpace="pre-wrap"
+                      wordBreak="break-word"
+                    >
                       {typeof value === 'object' && value !== null
                         ? JSON.stringify(value, null, 2)
                         : String(value)}
-                    </Text>
+                    </Box>
                   </Flex>
                 ))}
               </VStack>
