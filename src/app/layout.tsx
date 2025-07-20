@@ -41,16 +41,18 @@ export default function RootLayout({
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const pathname = usePathname();
 
-  const isCustomerMenuPage = pathname.startsWith('/customer-menu'); //
+  // This variable determines if the current page is a POS-related page
+  // It now includes any path starting with '/pos' or '/customer-menu'
+  const isPOSPage = pathname.startsWith('/customer-menu') || pathname.startsWith('/pos');
 
   useEffect(() => {
-    // Only set sidebarOpen based on screen size if it's not the customer menu page
-    if (!isCustomerMenuPage) {
+    // Only set sidebarOpen based on screen size if it's not a POS page
+    if (!isPOSPage) {
       setSidebarOpen(isLargerThanMd);
     } else {
-      setSidebarOpen(false); // Ensure sidebar is closed on customer menu page
+      setSidebarOpen(false); // Ensure sidebar is closed on POS pages
     }
-  }, [isLargerThanMd, isCustomerMenuPage]);
+  }, [isLargerThanMd, isPOSPage]);
 
   useEffect(() => {
     const handleNewOrderNotification = (event: Event) => {
@@ -104,40 +106,40 @@ export default function RootLayout({
       <body>
         <ChakraProvider>
           <Flex>
-            {/* Conditionally render Navbar based on isCustomerMenuPage */}
-            {!isCustomerMenuPage && ( //
+            {/* Conditionally render Navbar based on isPOSPage */}
+            {!isPOSPage && (
               <Navbar isOpen={sidebarOpen} ref={navbarRef} />
             )}
 
             {/* Main Content Area - Adjusted width calculation and background */}
             <Box
-              // Adjust margin-left based on sidebarOpen and isCustomerMenuPage
+              // Adjust margin-left based on sidebarOpen and isPOSPage
               ml={{
                 base: 0,
-                md: isCustomerMenuPage ? '0' : (sidebarOpen ? '250px' : '0') //
+                md: isPOSPage ? '0' : (sidebarOpen ? '250px' : '0')
               }}
               transition="margin-left 0.3s ease-in-out"
               flex="1"
               // Explicitly calculate width on desktop to subtract sidebar width
               width={{
                 base: '100%',
-                md: isCustomerMenuPage ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%') //
+                md: isPOSPage ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%')
               }}
               p={{ base: 0, md: 6 }}
               bg="var(--light-gray-bg)"
             >
-              {/* Header / Topbar - Visible only on mobile and not on customer menu page */}
+              {/* Header / Topbar - Visible only on mobile and not on POS page */}
               <Flex
                 as="header"
                 position="fixed"
                 top="0"
                 left={{
                   base: 0,
-                  md: isCustomerMenuPage ? '0' : (sidebarOpen ? '250px' : '0') //
+                  md: isPOSPage ? '0' : (sidebarOpen ? '250px' : '0')
                 }}
                 width={{
                   base: '100%',
-                  md: isCustomerMenuPage ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%') //
+                  md: isPOSPage ? '100%' : (sidebarOpen ? 'calc(100% - 250px)' : '100%')
                 }}
                 bg="var(--background-color-light)"
                 height="60px"
@@ -148,7 +150,7 @@ export default function RootLayout({
                 borderColor="var(--border-color)"
                 zIndex={10}
                 transition="all 0.3s ease-in-out"
-                display={{ base: isCustomerMenuPage ? 'none' : 'flex', md: 'none' }} // Hide on desktop and customer menu page
+                display={{ base: isPOSPage ? 'none' : 'flex', md: 'none' }} // Hide on desktop and POS page
               >
                   <Button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -159,7 +161,7 @@ export default function RootLayout({
                   >
                     <Menu size={24} />
                   </Button>
-                
+
 
                 <Heading as="h1" size="md" color="var(--dark-gray-text)" fontFamily="var(--font-lexend-deca)">
                   Resto Admin Dashboard
@@ -174,7 +176,7 @@ export default function RootLayout({
                 as="main"
                 flex="1"
                 minH="calc(100vh - 60px)"
-                pt={{ base: isCustomerMenuPage ? 0 : '60px', md: isCustomerMenuPage ? 0 : 6 }}
+                pt={{ base: isPOSPage ? 0 : '60px', md: isPOSPage ? 0 : 6 }}
               >
                 <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
                   {notifications.map((notification) => (

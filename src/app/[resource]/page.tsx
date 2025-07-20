@@ -3,7 +3,6 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-// Removed dynamic import for DataTable as it's now fully custom
 import DataTable from '../components/DataTable'; // Direct import
 
 import { entities } from '../config/entities';
@@ -65,11 +64,10 @@ export default function ResourceListPage() {
   // The 'resource' from the URL path, e.g., 'foods', 'sales'
   const mainResourcePath = Array.isArray(params.resource) ? params.resource[0] : params.resource || '';
 
-  // State for the currently active sub-menu tab (e.g., '/foods', '/food_categories')
-  // This will be the full href from the MenuItem
+  // State for the currently active sub-menu tab's full href (e.g., '/sales?tab=sale_items')
   const [activeSubMenuHref, setActiveSubMenuHref] = useState<string>('');
 
-  // State for the configuration of the currently active sub-menu tab
+  // State for the configuration of the currently active entity (e.g., entities.foods, entities.sale_items)
   const [currentCfg, setCurrentCfg] = useState<any>(null);
 
   const [data, setData] = useState<any[]>([]);
@@ -94,6 +92,10 @@ export default function ResourceListPage() {
     if (!currentCfg || !Array.isArray(currentCfg.fields)) {
       return [];
     }
+    // Extract the base path for CRUD operations (e.g., 'sales', 'sale_items')
+    // This will be used to construct /resource/new or /resource/edit/id
+    const baseCrudPath = currentCfg.endpoint.replace('/api/', '');
+
     return currentCfg.fields.map((fieldName: string) => {
       const header = fieldName.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
 
@@ -117,7 +119,7 @@ export default function ResourceListPage() {
               <Button
                 size="sm"
                 colorScheme="green"
-                onClick={() => router.push(`${activeSubMenuHref}/edit/${row.id}`)}
+                onClick={() => router.push(`/${baseCrudPath}/edit/${row.id}`)} // Use baseCrudPath
               >
                 Edit
               </Button>
@@ -141,7 +143,7 @@ export default function ResourceListPage() {
         isSortable: true, // Make most other columns sortable by default
       };
     });
-  }, [currentCfg, activeSubMenuHref, router, onViewModalOpen, onDeleteModalOpen, setItemToDelete, setViewItem]);
+  }, [currentCfg, router, onViewModalOpen, onDeleteModalOpen, setItemToDelete, setViewItem]);
 
 
   // Function to load data for the current configuration
@@ -167,35 +169,46 @@ export default function ResourceListPage() {
     }
   }, [currentCfg]);
 
-  // Effect to initialize activeSubMenuHref and currentCfg on component mount or mainResourcePath change
+  // Effect to determine the active entity configuration based on URL params and tabs
   useEffect(() => {
-    let initialTabHref = searchParams.get('tab');
+    let targetEntityKey: string | null = null;
+    let targetHref: string = '';
 
-    if (!initialTabHref && tabsToDisplay.length > 0) {
-      // If no 'tab' param, default to the first sub-menu item's href
-      initialTabHref = tabsToDisplay[0].href.replace('/', ''); // Ensure it's just the resource key
-    } else if (initialTabHref) {
-      // If 'tab' param exists, ensure it's just the resource key
-      initialTabHref = initialTabHref.replace('/', '');
+    const tabParam = searchParams.get('tab');
+
+    if (tabsToDisplay.length > 0) {
+      // This resource has sub-menus (tabs)
+      if (tabParam) {
+        // A specific tab is selected via URL param
+        targetEntityKey = tabParam;
+        targetHref = `/${mainResourcePath}?tab=${tabParam}`;
+      } else {
+        // No tab param, default to the first sub-menu item
+        targetEntityKey = tabsToDisplay[0].href.replace('/', '');
+        targetHref = tabsToDisplay[0].href; // Use the full href from dashboardMenu
+      }
+    } else {
+      // This resource does not have sub-menus, it's a direct entity
+      targetEntityKey = mainResourcePath;
+      targetHref = `/${mainResourcePath}`;
     }
 
-    // If initialTabHref is still null/empty, it means no sub-menus or no valid default
-    if (!initialTabHref) {
-      setError("No specific tab selected and no default sub-menus found for this section.");
+    if (!targetEntityKey) {
+      setError("Could not determine the entity to display.");
       setCurrentCfg(null);
       setActiveSubMenuHref('');
       setLoading(false);
       return;
     }
 
-    // Now, initialTabHref is the resource key (e.g., 'foods', 'food_categories')
-    setActiveSubMenuHref(`/${initialTabHref}`); // Store full href for router.push
-    const config = entities[initialTabHref]; // Look up config using the resource key
+    const config = entities[targetEntityKey];
 
     if (config) {
       setCurrentCfg(config);
+      setActiveSubMenuHref(targetHref);
+      setError(null); // Clear any previous errors
     } else {
-      setError(`Configuration not found for resource: ${initialTabHref}`);
+      setError(`Configuration not found for resource: ${targetEntityKey}`);
       setCurrentCfg(null);
       setData([]);
       setLoading(false);
@@ -214,7 +227,7 @@ export default function ResourceListPage() {
       try {
         await deleteItem(currentCfg.endpoint, itemToDelete.id);
         onDeleteModalClose();
-        loadData();
+        loadData(); // Reload data after successful deletion
       } catch (err: any) {
         console.error(`Failed to delete item:`, err);
         setError(`Failed to delete item: ${err.message || 'An unknown error occurred'}`);
@@ -224,26 +237,42 @@ export default function ResourceListPage() {
 
   const handleTabChange = (index: number) => {
     if (tabsToDisplay[index]) {
-      const newTabHref = tabsToDisplay[index].href;
-      setActiveSubMenuHref(newTabHref); // Update state with the new href
-      router.push(`${mainResourcePath}?tab=${newTabHref.replace('/', '')}`); // Update URL
+      const newTabItem = tabsToDisplay[index];
+      const newTabHref = newTabItem.href;
+      // Update URL with the main resource path and the new tab parameter
+      router.push(`/${mainResourcePath}?tab=${newTabHref.replace('/', '')}`);
     }
   };
 
   // Determine active tab index for display
   const activeTabIndex = tabsToDisplay.findIndex(
-    (item) => item.href === activeSubMenuHref
+    (item) => {
+      // For tabs, compare the resource key derived from the item.href with the targetEntityKey
+      const itemResourceKey = item.href.replace('/', '');
+      const currentTargetEntityKey = currentCfg?.endpoint.replace('/api/', '');
+      return itemResourceKey === currentTargetEntityKey;
+    }
   );
 
+
   // If there are no tabs to display for this main resource, show a message
-  if (tabsToDisplay.length === 0) {
+  // This condition should also handle cases where the mainResourcePath itself is the entity
+  if (tabsToDisplay.length === 0 && !currentCfg) {
+    // This means it's a direct entity like /tenants, and its config wasn't found or loaded yet
+    if (loading) {
+      return (
+        <Flex justify="center" align="center" minH="200px" p={4}>
+          <Spinner size="xl" color="var(--primary-green)" />
+        </Flex>
+      );
+    }
     return (
       <Box p={6} bg="var(--background-color-light)" rounded="lg" shadow="md" m={4}>
         <Alert status="info" rounded="md" shadow="md">
           <AlertIcon />
           <AlertTitle>No Tabs Available</AlertTitle>
           <AlertDescription>
-            There are no specific sub-categories or tabs defined for the &quot;{getEntityLabel(mainResourcePath)}&quot; section.
+            There are no specific sub-categories or tabs defined for the &quot;{getEntityLabel(mainResourcePath)}&quot; section, and no direct configuration found.
           </AlertDescription>
         </Alert>
       </Box>
@@ -260,7 +289,7 @@ export default function ResourceListPage() {
         {currentCfg && (
           <Button
             colorScheme="blue"
-            onClick={() => router.push(`${activeSubMenuHref}/new`)} // Use activeSubMenuHref
+            onClick={() => router.push(`/${currentCfg.endpoint.replace('/api/', '')}/new`)} // Use baseCrudPath
             px={6}
           >
             Add New {currentCfg.label.slice(0, -1)}
@@ -268,50 +297,76 @@ export default function ResourceListPage() {
         )}
       </Flex>
 
-      <Tabs
-        index={activeTabIndex !== -1 ? activeTabIndex : 0} // Ensure a valid index, default to 0
-        onChange={handleTabChange}
-        variant="enclosed"
-        colorScheme="blue"
-      >
-        <TabList className="scrollable-tabs">
-          {tabsToDisplay.map((item) => (
-            <Tab key={item.href} color="var(--dark-gray-text)" _selected={{ color: 'var(--primary-green)', borderColor: 'var(--primary-green)' }}>
-              {item.name}
-            </Tab>
-          ))}
-        </TabList>
-        <TabPanels>
-          {tabsToDisplay.map((item) => (
-            <TabPanel key={item.href} p={0} pt={4}>
-              {/* Only render content for the currently active tab */}
-              {item.href === activeSubMenuHref ? (
-                error ? (
-                  <Alert status="error" rounded="md" shadow="md">
-                    <AlertIcon />
-                    <AlertTitle>Error!</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                ) : loading ? (
-                  <Flex justify="center" align="center" minH="200px">
-                    <Spinner size="xl" color="var(--primary-green)" />
-                  </Flex>
-                ) : (
-                  currentCfg && Array.isArray(currentCfg.fields) && data.length > 0 ? (
-                    <DataTable columns={columns} data={data} />
+      {tabsToDisplay.length > 0 && (
+        <Tabs
+          index={activeTabIndex !== -1 ? activeTabIndex : 0} // Ensure a valid index, default to 0
+          onChange={handleTabChange}
+          variant="enclosed"
+          colorScheme="blue"
+        >
+          <TabList className="scrollable-tabs">
+            {tabsToDisplay.map((item) => (
+              <Tab key={item.href} color="var(--dark-gray-text)" _selected={{ color: 'var(--primary-green)', borderColor: 'var(--primary-green)' }}>
+                {item.name}
+              </Tab>
+            ))}
+          </TabList>
+          <TabPanels>
+            {tabsToDisplay.map((item) => (
+              <TabPanel key={item.href} p={0} pt={4}>
+                {/* Only render content for the currently active tab based on currentCfg's endpoint */}
+                {currentCfg && item.href.replace('/', '') === currentCfg.endpoint.replace('/api/', '') ? (
+                  error ? (
+                    <Alert status="error" rounded="md" shadow="md">
+                      <AlertIcon />
+                      <AlertTitle>Error!</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  ) : loading ? (
+                    <Flex justify="center" align="center" minH="200px">
+                      <Spinner size="xl" color="var(--primary-green)" />
+                    </Flex>
                   ) : (
-                    <Box p={4}>
-                      <Text color="var(--medium-gray-text)">No data available or configuration incomplete for this tab.</Text>
-                    </Box>
+                    currentCfg && Array.isArray(currentCfg.fields) && data.length > 0 ? (
+                      <DataTable columns={columns} data={data} />
+                    ) : (
+                      <Box p={4}>
+                        <Text color="var(--medium-gray-text)">No data available or configuration incomplete for this tab.</Text>
+                      </Box>
+                    )
                   )
-                )
-              ) : (
-                <Box minH="200px" /> // Placeholder for inactive tabs
-              )}
-            </TabPanel>
-          ))}
-        </TabPanels>
-      </Tabs>
+                ) : (
+                  <Box minH="200px" /> // Placeholder for inactive tabs
+                )}
+              </TabPanel>
+            ))}
+          </TabPanels>
+        </Tabs>
+      )}
+
+      {/* Render DataTable directly if no tabs are present but currentCfg is valid (e.g., for /tenants) */}
+      {tabsToDisplay.length === 0 && currentCfg && (
+        error ? (
+          <Alert status="error" rounded="md" shadow="md">
+            <AlertIcon />
+            <AlertTitle>Error!</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : loading ? (
+          <Flex justify="center" align="center" minH="200px">
+            <Spinner size="xl" color="var(--primary-green)" />
+          </Flex>
+        ) : (
+          currentCfg && Array.isArray(currentCfg.fields) && data.length > 0 ? (
+            <DataTable columns={columns} data={data} />
+          ) : (
+            <Box p={4}>
+              <Text color="var(--medium-gray-text)">No data available or configuration incomplete for this entity.</Text>
+            </Box>
+          )
+        )
+      )}
+
 
       {/* Delete Confirmation Dialog (remains unchanged) */}
       <AlertDialog
