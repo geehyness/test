@@ -88,7 +88,7 @@ export default function POSLoginPage() {
       align="center"
       justify="center"
       bg="var(--light-gray-bg)"
-      backgroundImage="url('/carte.png')" /* Assuming this is a background image for the login page */
+      backgroundImage="url('/login.jpg')" /* Assuming this is a background image for the login page */
       backgroundSize="cover"
       backgroundPosition="center"
     >

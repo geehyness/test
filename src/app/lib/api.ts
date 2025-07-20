@@ -1,8 +1,8 @@
 // src/app/lib/api.ts
 import useSWR from 'swr';
 import { useToast } from '@chakra-ui/react';
-// Assuming these interfaces are correctly defined in entities.ts for use in forms/tables
-import { Order, MenuItem, Category, Customer, Table } from '../config/entities'; 
+// Corrected imports based on updated entities.ts
+import { Order, Food, Category, Customer, Table, OrderItem, MenuItem } from '../config/entities'; 
 
 // Generic fetcher function for useSWR
 const fetcher = (url: string) => fetch(url).then(res => {
@@ -13,7 +13,6 @@ const fetcher = (url: string) => fetch(url).then(res => {
 });
 
 // Simulate API interactions for demonstration purposes
-// This fetchData is for the CRUD operations on sampleData, NOT for useSWR
 export async function fetchData(
   resource: string, // This 'resource' will now be the endpoint path like '/api/tenants'
   id?: string, // Make id optional for POST/GET all
@@ -29,7 +28,6 @@ export async function fetchData(
   const sampleData = sampleModule.sampleData; // Access the named export
 
   // Extract the actual resource name from the endpoint path
-  // For '/api/tenants', this will get 'tenants'
   const actualResourceName = resource.split('/').pop() || ''; 
 
   // Use the actualResourceName to access sampleData
@@ -37,12 +35,48 @@ export async function fetchData(
 
   switch (method) {
     case 'GET':
+      if (actualResourceName === 'orders') {
+        const orders: Order[] = currentResourceData as Order[];
+        const allOrderItems: OrderItem[] = sampleData['order_items'] as OrderItem[];
+        const allFoods: Food[] = sampleData['foods'] as Food[]; // Fetch all food items
+
+        // Helper to enrich an OrderItem with Food details
+        const enrichOrderItem = (orderItem: OrderItem): OrderItem => {
+          const food = allFoods.find(f => String(f.id) === String(orderItem.food_id));
+          return {
+            ...orderItem,
+            name: food?.name || 'Unknown Item', // Add name from food
+            price_at_sale: food?.price || orderItem.price, // Use food price, fallback to orderItem.price
+            sub_total: orderItem.quantity * (food?.price || orderItem.price || 0), // Recalculate sub_total
+          };
+        };
+
+        if (id) {
+          const order = orders.find((item: any) => String(item.id) === String(id));
+          if (order) {
+            order.items = allOrderItems
+              .filter(item => String(item.order_id) === String(order.id))
+              .map(enrichOrderItem);
+            return order;
+          }
+          return null;
+        } else {
+          return orders.map(order => ({
+            ...order,
+            items: allOrderItems
+              .filter(item => String(item.order_id) === String(order.id))
+              .map(enrichOrderItem)
+          }));
+        }
+      }
       if (id) {
         return currentResourceData.find((item: any) => String(item.id) === String(id)) || null;
       }
       return currentResourceData; // Return all data for the resource
     case 'POST':
-      const newItem = { id: Date.now().toString(), ...data }; // Simulate ID generation
+      // Simulate ID generation consistent with new string IDs
+      const newId = `${actualResourceName}-${Date.now()}`;
+      const newItem = { id: newId, ...data }; 
       (currentResourceData as any[]).push(newItem); // Add to our mock data
       return newItem;
     case 'PUT':
@@ -59,12 +93,8 @@ export async function fetchData(
       if (id) {
         const initialLength = currentResourceData.length;
         const filteredData = currentResourceData.filter((item: any) => String(item.id) !== String(id));
-        // Update the mock data in place if it's a mutable array
-        // (This part is a simplification for a real API where deletion would be handled server-side)
+        // In a real API, this would modify the backend data. Here, we just simulate success.
         if (initialLength > filteredData.length) {
-          // Assuming currentResourceData is mutable, otherwise reassign sampleData[actualResourceName]
-          // For a true in-memory store that persists across calls within this simulation, you'd modify sampleData itself.
-          // For this example, we'll just return success.
           return { success: true, id };
         }
       }
@@ -96,7 +126,7 @@ export async function updateItem(resource: string, id: string, itemData: Record<
   }
 }
 
-// Helper function to delete an item (already present as deleteItem, but making it consistent)
+// Helper function to delete an item
 export async function deleteItem(resource: string, id: string): Promise<boolean> {
   try {
     const success = await fetchData(resource, id, undefined, 'DELETE');
@@ -118,13 +148,14 @@ export const useOrders = () => {
   };
 };
 
-export const useMenuItems = () => {
-  const { data, error, isLoading, mutate } = useSWR<MenuItem[]>('/api/menu_items', fetcher);
+// Renamed useMenuItems to useFoods to reflect fetching actual food items
+export const useFoods = () => {
+  const { data, error, isLoading, mutate } = useSWR<Food[]>('/api/foods', fetcher);
   return {
-    menuItems: data,
+    foods: data, // Changed from menuItems to foods
     isLoading,
     isError: error,
-    refreshMenuItems: mutate
+    refreshFoods: mutate // Changed from refreshMenuItems to refreshFoods
   };
 };
 

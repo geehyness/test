@@ -8,1826 +8,1047 @@ export interface SampleData {
 export const sampleData: SampleData = {
   "tenants": [
     {
-      "id": 231,
-      "name": "provision",
-      "email": "Marcelina_Batz@gmail.com",
-      "password": "massage",
-      "remember_token": "smog",
+      "id": "tenant-231",
+      "name": "Provision Corp",
+      "email": "contact@provision.com",
+      "password": "hashedpassword1",
+      "remember_token": "token123",
+      "phone": "123-456-7890",
+      "address": "123 Main St, Anytown",
       "created_at": "2025-06-30T20:40:58.830Z",
       "updated_at": "2025-07-01T04:19:09.158Z"
     },
     {
-      "id": 748,
-      "name": "management",
-      "email": "Jarod.Metz@hotmail.com",
-      "password": "anticodon",
-      "remember_token": "courtroom",
+      "id": "tenant-748",
+      "name": "Management Solutions",
+      "email": "info@management.com",
+      "password": "hashedpassword2",
+      "remember_token": "token456",
+      "phone": "098-765-4321",
+      "address": "456 Oak Ave, Otherville",
       "created_at": "2025-06-30T18:47:36.323Z",
       "updated_at": "2025-07-01T04:40:35.633Z"
     },
     {
-      "id": 886,
-      "name": "hydrocarbon",
-      "email": "Nasir.McDermott@hotmail.com",
-      "password": "bungalow",
-      "remember_token": "loaf",
+      "id": "tenant-886",
+      "name": "Hydrocarbon Bistro",
+      "email": "sales@hydrocarbon.com",
+      "password": "hashedpassword3",
+      "remember_token": "token789",
+      "phone": "555-111-2222",
+      "address": "789 Pine Ln, Sometown",
       "created_at": "2025-06-30T15:35:37.178Z",
       "updated_at": "2025-07-01T04:21:39.067Z"
-    },
-    {
-      "id": 278,
-      "name": "hovel",
-      "email": "Thaddeus.Gibson63@gmail.com",
-      "password": "embossing",
-      "remember_token": "simple",
-      "created_at": "2025-06-30T13:04:55.149Z",
-      "updated_at": "2025-06-30T21:18:53.125Z"
-    },
-    {
-      "id": 837,
-      "name": "pigpen",
-      "email": "Frank.Ryan23@hotmail.com",
-      "password": "citizen",
-      "remember_token": "seafood",
-      "created_at": "2025-06-30T19:29:14.631Z",
-      "updated_at": "2025-06-30T23:53:31.980Z"
     }
   ],
   "domains": [
     {
-      "id": 758,
-      "tenant_id": 635,
-      "domain": "yarmulke",
-      "is_primary": false,
+      "id": "domain-758",
+      "tenant_id": "tenant-231",
+      "domain": "provision.com",
+      "is_primary": true,
       "created_at": "2025-06-30T18:39:55.760Z",
       "updated_at": "2025-07-01T05:03:39.558Z"
     },
     {
-      "id": 485,
-      "tenant_id": 230,
-      "domain": "longboat",
+      "id": "domain-485",
+      "tenant_id": "tenant-748",
+      "domain": "management.net",
       "is_primary": false,
       "created_at": "2025-06-30T16:23:16.939Z",
       "updated_at": "2025-07-01T02:15:56.744Z"
-    },
-    {
-      "id": 611,
-      "tenant_id": 281,
-      "domain": "wafer",
-      "is_primary": true,
-      "created_at": "2025-07-01T04:34:39.566Z",
-      "updated_at": "2025-06-30T11:47:21.050Z"
-    },
-    {
-      "id": 903,
-      "tenant_id": 43,
-      "domain": "rawhide",
-      "is_primary": false,
-      "created_at": "2025-06-30T15:10:43.569Z",
-      "updated_at": "2025-06-30T16:21:04.921Z"
-    },
-    {
-      "id": 216,
-      "tenant_id": 487,
-      "domain": "scale",
-      "is_primary": true,
-      "created_at": "2025-06-30T11:30:44.073Z",
-      "updated_at": "2025-06-30T22:54:34.840Z"
     }
   ],
   "jobs": [
     {
-      "id": 254,
-      "queue": "complication",
-      "payload": "milestone",
-      "attempts": "republican",
+      "id": "job-254",
+      "queue": "email_queue",
+      "payload": "{\"user_id\": \"user-1\", \"type\": \"welcome_email\"}",
+      "attempts": 1,
       "reserved_at": "2025-06-30T15:04:04.167Z",
       "available_at": "2025-07-01T07:24:14.656Z",
       "created_at": "2025-07-01T10:35:19.574Z"
-    },
-    {
-      "id": 506,
-      "queue": "bracelet",
-      "payload": "minority",
-      "attempts": "suitcase",
-      "reserved_at": "2025-06-30T18:31:43.873Z",
-      "available_at": "2025-06-30T16:42:46.194Z",
-      "created_at": "2025-06-30T21:56:10.707Z"
-    },
-    {
-      "id": 328,
-      "queue": "marksman",
-      "payload": "newsstand",
-      "attempts": "tackle",
-      "reserved_at": "2025-06-30T21:11:31.508Z",
-      "available_at": "2025-07-01T10:26:44.810Z",
-      "created_at": "2025-07-01T07:22:57.793Z"
-    },
-    {
-      "id": 441,
-      "queue": "optimal",
-      "payload": "cheese",
-      "attempts": "runway",
-      "reserved_at": "2025-06-30T19:39:13.323Z",
-      "available_at": "2025-07-01T02:33:03.289Z",
-      "created_at": "2025-06-30T17:33:51.967Z"
-    },
-    {
-      "id": 708,
-      "queue": "tabletop",
-      "payload": "printer",
-      "attempts": "flame",
-      "reserved_at": "2025-07-01T06:06:38.257Z",
-      "available_at": "2025-07-01T02:21:17.573Z",
-      "created_at": "2025-07-01T05:44:06.194Z"
     }
   ],
   "failed_jobs": [
     {
-      "id": 557,
-      "uuid": "hexagon",
-      "connection": "editor",
-      "queue": "squid",
-      "payload": "amnesty",
-      "exception": "rim",
+      "id": "failed-job-557",
+      "uuid": "uuid-12345",
+      "connection": "redis",
+      "queue": "payment_queue",
+      "payload": "{\"order_id\": \"order-101\"}",
+      "exception": "PaymentGatewayError",
       "failed_at": "2025-06-30T15:27:48.238Z"
-    },
-    {
-      "id": 449,
-      "uuid": "sideboard",
-      "connection": "utilization",
-      "queue": "priesthood",
-      "payload": "maintainer",
-      "exception": "porter",
-      "failed_at": "2025-07-01T03:02:02.619Z"
-    },
-    {
-      "id": 503,
-      "uuid": "siege",
-      "connection": "strategy",
-      "queue": "ownership",
-      "payload": "mythology",
-      "exception": "corral",
-      "failed_at": "2025-07-01T05:42:45.491Z"
-    },
-    {
-      "id": 828,
-      "uuid": "fisherman",
-      "connection": "formation",
-      "queue": "unibody",
-      "payload": "roundabout",
-      "exception": "wilderness",
-      "failed_at": "2025-06-30T23:55:45.374Z"
-    },
-    {
-      "id": 777,
-      "uuid": "self-confidence",
-      "connection": "ice-cream",
-      "queue": "precedent",
-      "payload": "wallaby",
-      "exception": "fax",
-      "failed_at": "2025-06-30T17:31:12.189Z"
     }
   ],
   "password_resets": [
     {
-      "email": "Deron_Daniel52@yahoo.com",
-      "token": "cauliflower",
+      "email": "user1@example.com",
+      "token": "resettoken1",
       "created_at": "2025-06-30T23:43:57.480Z"
-    },
-    {
-      "email": "Lessie31@yahoo.com",
-      "token": "instruction",
-      "created_at": "2025-07-01T08:53:07.663Z"
-    },
-    {
-      "email": "Ashley36@hotmail.com",
-      "token": "omelet",
-      "created_at": "2025-07-01T02:03:56.767Z"
-    },
-    {
-      "email": "Anabel.Altenwerth68@yahoo.com",
-      "token": "pension",
-      "created_at": "2025-06-30T22:52:54.633Z"
-    },
-    {
-      "email": "Guiseppe38@gmail.com",
-      "token": "stay",
-      "created_at": "2025-06-30T17:23:21.599Z"
     }
   ],
   "users": [
     {
-      "id": 649,
-      "name": "synergy",
-      "email": "David31@hotmail.com",
-      "email_verified_at": "Marcos.Pacocha79@yahoo.com",
-      "password": "barge",
-      "remember_token": "incandescence",
-      "cashAccounts": "chap",
-      "cardAccounts": "bar",
-      "onlineAccounts": "amendment",
-      "gpayAccounts": "jump",
-      "phonepeAccounts": "(616) 775-7496 x8903",
-      "amazonpayAccounts": "hutch",
-      "locations": "ferret",
+      "id": "user-649",
+      "name": "Alice Smith",
+      "email": "alice@example.com",
+      "email_verified_at": "2025-07-01T08:37:59.718Z",
+      "password": "hashedpasswordA",
+      "remember_token": "rememberA",
       "created_at": "2025-07-01T08:37:59.718Z",
-      "updated_at": "2025-07-01T09:24:06.863Z"
+      "updated_at": "2025-07-01T09:24:06.863Z",
+      "cashAccounts": "CASH001",
+      "cardAccounts": "CARD001",
+      "onlineAccounts": "ONLINE001",
+      "gpayAccounts": "GPAY001",
+      "phonepeAccounts": "PHONEPE001",
+      "amazonpayAccounts": "AMAZONPAY001",
+      "locations": "Main Store"
     },
     {
-      "id": 813,
-      "name": "yin",
-      "email": "Maeve_Jacobi20@yahoo.com",
-      "email_verified_at": "Raoul.Douglas@gmail.com",
-      "password": "tooth",
-      "remember_token": "louse",
-      "cashAccounts": "allegation",
-      "cardAccounts": "clamp",
-      "onlineAccounts": "humor",
-      "gpayAccounts": "marksman",
-      "phonepeAccounts": "478-658-7645 x28581",
-      "amazonpayAccounts": "chainstay",
-      "locations": "kielbasa",
+      "id": "user-813",
+      "name": "Bob Johnson",
+      "email": "bob@example.com",
+      "email_verified_at": "2025-06-30T14:20:19.561Z",
+      "password": "hashedpasswordB",
+      "remember_token": "rememberB",
       "created_at": "2025-06-30T14:20:19.561Z",
-      "updated_at": "2025-06-30T17:32:14.126Z"
-    },
-    {
-      "id": 384,
-      "name": "yak",
-      "email": "Irma.Heathcote@gmail.com",
-      "email_verified_at": "Reyes_Hauck-Williamson16@yahoo.com",
-      "password": "vista",
-      "remember_token": "bookend",
-      "cashAccounts": "cake",
-      "cardAccounts": "jump",
-      "onlineAccounts": "alligator",
-      "gpayAccounts": "fog",
-      "phonepeAccounts": "1-956-647-9394",
-      "amazonpayAccounts": "brook",
-      "locations": "pearl",
-      "created_at": "2025-07-01T07:53:45.037Z",
-      "updated_at": "2025-07-01T04:25:16.323Z"
-    },
-    {
-      "id": 574,
-      "name": "jet",
-      "email": "Myrl.Wolf24@gmail.com",
-      "email_verified_at": "Lucio_Lockman@gmail.com",
-      "password": "cutover",
-      "remember_token": "event",
-      "cashAccounts": "makeover",
-      "cardAccounts": "providence",
-      "onlineAccounts": "charlatan",
-      "gpayAccounts": "cricket",
-      "phonepeAccounts": "227.643.2035 x36591",
-      "amazonpayAccounts": "event",
-      "locations": "slide",
-      "created_at": "2025-06-30T19:36:07.601Z",
-      "updated_at": "2025-07-01T01:34:31.504Z"
-    },
-    {
-      "id": 147,
-      "name": "straw",
-      "email": "Vicenta6@gmail.com",
-      "email_verified_at": "Emmy.Boehm61@yahoo.com",
-      "password": "chasuble",
-      "remember_token": "tusk",
-      "cashAccounts": "velocity",
-      "cardAccounts": "technologist",
-      "onlineAccounts": "larva",
-      "gpayAccounts": "independence",
-      "phonepeAccounts": "613-203-8028 x6326",
-      "amazonpayAccounts": "vol",
-      "locations": "couch",
-      "created_at": "2025-06-30T12:10:44.279Z",
-      "updated_at": "2025-07-01T10:56:55.104Z"
+      "updated_at": "2025-06-30T17:32:14.126Z",
+      "cashAccounts": "CASH002",
+      "cardAccounts": "CARD002",
+      "onlineAccounts": "ONLINE002",
+      "gpayAccounts": "GPAY002",
+      "phonepeAccounts": "PHONEPE002",
+      "amazonpayAccounts": "AMAZONPAY002",
+      "locations": "Branch Store"
     }
   ],
   "user_stores": [
     {
-      "id": 773,
-      "user_id": 605,
-      "store_id": 156,
+      "id": "us-773",
+      "user_id": "user-649",
+      "store_id": "store-156",
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
-    },
-    {
-      "id": 142,
-      "user_id": 806,
-      "store_id": 542,
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
-    },
-    {
-      "id": 567,
-      "user_id": 309,
-      "store_id": 876,
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 296,
-      "user_id": 754,
-      "store_id": 986,
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 399,
-      "user_id": 158,
-      "store_id": 878,
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
   "roles": [
     {
-      "id": 61,
-      "name": "grass",
-      "guard_name": "couch",
+      "id": "role-61",
+      "name": "Admin",
+      "guard_name": "web",
+      "description": "Administrator role",
       "created_at": "2025-07-01T06:45:15.231Z",
       "updated_at": "2025-06-30T15:02:50.627Z"
     },
     {
-      "id": 101,
-      "name": "plumber",
-      "guard_name": "pigpen",
+      "id": "role-101",
+      "name": "Cashier",
+      "guard_name": "web",
+      "description": "Cashier role",
       "created_at": "2025-07-01T03:39:13.125Z",
       "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 894,
-      "name": "house",
-      "guard_name": "trousers",
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 776,
-      "name": "cathedral",
-      "guard_name": "scabies",
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 820,
-      "name": "shrubbery",
-      "guard_name": "earthquake",
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
     }
   ],
   "permissions": [
     {
-      "id": 737,
-      "name": "bunker",
-      "guard_name": "yard",
+      "id": "perm-737",
+      "name": "manage-orders",
+      "guard_name": "web",
+      "description": "Permission to manage orders",
       "created_at": "2025-06-30T14:59:40.758Z",
       "updated_at": "2025-07-01T03:22:15.158Z"
-    },
-    {
-      "id": 922,
-      "name": "plaintiff",
-      "guard_name": "fiancé",
-      "created_at": "2025-06-30T12:57:38.259Z",
-      "updated_at": "2025-07-01T06:06:40.457Z"
-    },
-    {
-      "id": 139,
-      "name": "yard",
-      "guard_name": "horse",
-      "created_at": "2025-06-30T22:58:34.994Z",
-      "updated_at": "2025-07-01T00:54:20.941Z"
-    },
-    {
-      "id": 353,
-      "name": "blossom",
-      "guard_name": "house",
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 819,
-      "name": "rhythm",
-      "guard_name": "graveyard",
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
   "role_has_permissions": [
     {
-      "role_id": 551,
-      "permission_id": 907
-    },
-    {
-      "role_id": 483,
-      "permission_id": 616
-    },
-    {
-      "role_id": 855,
-      "permission_id": 490
-    },
-    {
-      "role_id": 169,
-      "permission_id": 743
-    },
-    {
-      "role_id": 381,
-      "permission_id": 269
+      "role_id": "role-61",
+      "permission_id": "perm-737"
     }
   ],
   "model_has_permissions": [
     {
-      "permission_id": 873,
-      "model_type": "quiver",
-      "model_id": 887
-    },
-    {
-      "permission_id": 662,
-      "model_type": "earthquake",
-      "model_id": 393
-    },
-    {
-      "permission_id": 302,
-      "model_type": "yard",
-      "model_id": 395
-    },
-    {
-      "permission_id": 357,
-      "model_type": "railroad",
-      "model_id": 651
-    },
-    {
-      "permission_id": 542,
-      "model_type": "lizard",
-      "model_id": 885
+      "permission_id": "perm-737",
+      "model_type": "App\\Models\\User",
+      "model_id": "user-649"
     }
   ],
   "model_has_roles": [
     {
-      "role_id": 306,
-      "model_type": "spool",
-      "model_id": 432
-    },
-    {
-      "role_id": 801,
-      "model_type": "pavement",
-      "model_id": 396
-    },
-    {
-      "role_id": 774,
-      "model_type": "blossom",
-      "model_id": 548
-    },
-    {
-      "role_id": 222,
-      "model_type": "scabies",
-      "model_id": 648
-    },
-    {
-      "role_id": 257,
-      "model_type": "jumper",
-      "model_id": 331
+      "role_id": "role-61",
+      "model_type": "App\\Models\\User",
+      "model_id": "user-649"
     }
   ],
-  "products": [
+  "products": [ // Assuming these are general inventory products, not menu foods
     {
-      "id": 997,
-      "tenant_id": 88,
-      "name": "rhythm",
-      "description": "quiver",
-      "price": 100,
+      "id": "prod-997",
+      "tenant_id": "tenant-231",
+      "name": "Flour Bag",
+      "description": "5kg bag of all-purpose flour",
+      "price": 50,
       "stock_quantity": 298,
-      "category_id": "fiancé",
-      "supplier_id": "quiver",
+      "category_id": "cat-bakery",
+      "supplier_id": "sup-61",
       "created_at": "2025-06-30T17:15:22.518Z",
       "updated_at": "2025-06-30T17:34:04.225Z"
-    },
-    {
-      "id": 560,
-      "tenant_id": 74,
-      "name": "earthquake",
-      "description": "jumper",
-      "price": 100,
-      "stock_quantity": 489,
-      "category_id": "quiver",
-      "supplier_id": "horse",
-      "created_at": "2025-07-01T08:04:15.584Z",
-      "updated_at": "2025-06-30T16:04:47.362Z"
-    },
-    {
-      "id": 863,
-      "tenant_id": 48,
-      "name": "sundial",
-      "description": "blossom",
-      "price": 100,
-      "stock_quantity": 885,
-      "category_id": "house",
-      "supplier_id": "fiancé",
-      "created_at": "2025-06-30T21:40:48.423Z",
-      "updated_at": "2025-07-01T08:52:16.275Z"
-    },
-    {
-      "id": 648,
-      "tenant_id": 41,
-      "name": "spool",
-      "description": "blossom",
-      "price": 100,
-      "stock_quantity": 185,
-      "category_id": "pigpen",
-      "supplier_id": "blossom",
-      "created_at": "2025-07-01T07:37:34.904Z",
-      "updated_at": "2025-07-01T06:50:47.411Z"
-    },
-    {
-      "id": 505,
-      "tenant_id": 71,
-      "name": "scabies",
-      "description": "pavement",
-      "price": 100,
-      "stock_quantity": 563,
-      "category_id": "yard",
-      "supplier_id": "pavement",
-      "created_at": "2025-06-30T14:48:07.487Z",
-      "updated_at": "2025-06-30T19:54:19.349Z"
     }
   ],
   "purchases": [
     {
-      "id": 169,
-      "tenant_id": 36,
-      "supplier_id": "spool",
-      "total_amount": 100,
+      "id": "pur-169",
+      "tenant_id": "tenant-231",
+      "supplier_id": "sup-61",
+      "total_amount": 500,
       "purchase_date": "2025-07-01T00:09:44.209Z",
-      "status": "horse",
+      "status": "completed",
+      "notes": "Bulk order for flour",
       "created_at": "2025-07-01T07:23:40.857Z",
       "updated_at": "2025-06-30T19:15:58.219Z"
-    },
-    {
-      "id": 855,
-      "tenant_id": 14,
-      "supplier_id": "fiancé",
-      "total_amount": 100,
-      "purchase_date": "2025-07-01T08:08:14.343Z",
-      "status": "yard",
-      "created_at": "2025-07-01T04:29:43.918Z",
-      "updated_at": "2025-07-01T02:07:34.980Z"
-    },
-    {
-      "id": 483,
-      "tenant_id": 50,
-      "supplier_id": "pigpen",
-      "total_amount": 100,
-      "purchase_date": "2025-07-01T06:58:14.453Z",
-      "status": "house",
-      "created_at": "2025-06-30T14:02:18.423Z",
-      "updated_at": "2025-07-01T07:05:46.069Z"
-    },
-    {
-      "id": 306,
-      "tenant_id": 20,
-      "supplier_id": "earthquake",
-      "total_amount": 100,
-      "purchase_date": "2025-06-30T15:20:20.940Z",
-      "status": "blossom",
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 222,
-      "tenant_id": 48,
-      "supplier_id": "scabies",
-      "total_amount": 100,
-      "purchase_date": "2025-07-01T02:07:07.458Z",
-      "status": "pavement",
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
   "purchase_items": [
     {
-      "id": 551,
-      "purchase_id": "quiver",
-      "product_id": "fiancé",
-      "quantity": 100,
-      "unit_price": 100,
+      "id": "puri-551",
+      "purchase_id": "pur-169",
+      "food_id": "food-743", // Link to a food item
+      "quantity": 10,
+      "price": 50,
+      "sub_total": 500,
       "created_at": "2025-06-30T17:15:22.518Z",
       "updated_at": "2025-06-30T17:34:04.225Z"
-    },
-    {
-      "id": 483,
-      "purchase_id": "quiver",
-      "product_id": "quiver",
-      "quantity": 100,
-      "unit_price": 100,
-      "created_at": "2025-07-01T08:04:15.584Z",
-      "updated_at": "2025-06-30T16:04:47.362Z"
-    },
-    {
-      "id": 855,
-      "purchase_id": "horse",
-      "product_id": "horse",
-      "quantity": 100,
-      "unit_price": 100,
-      "created_at": "2025-06-30T21:40:48.423Z",
-      "updated_at": "2025-07-01T08:52:16.275Z"
-    },
-    {
-      "id": 306,
-      "purchase_id": "pigpen",
-      "product_id": "pigpen",
-      "quantity": 100,
-      "unit_price": 100,
-      "created_at": "2025-07-01T07:37:34.904Z",
-      "updated_at": "2025-07-01T06:50:47.411Z"
-    },
-    {
-      "id": 222,
-      "purchase_id": "yard",
-      "product_id": "yard",
-      "quantity": 100,
-      "unit_price": 100,
-      "created_at": "2025-06-30T14:48:07.487Z",
-      "updated_at": "2025-06-30T19:54:19.349Z"
     }
   ],
   "refunds": [
     {
-      "id": 743,
-      "order_id": "yard",
-      "customer_id": "blossom",
+      "id": "ref-743",
+      "order_id": "order-743",
+      "customer_id": "cust-156",
       "amount": 100,
-      "reason": "yard",
+      "reason": "Customer dissatisfied",
       "refund_date": "2025-06-30T22:05:27.430Z",
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
-    },
-    {
-      "id": 269,
-      "order_id": "house",
-      "customer_id": "scabies",
-      "amount": 100,
-      "reason": "house",
-      "refund_date": "2025-06-30T14:30:32.350Z",
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
-    },
-    {
-      "id": 490,
-      "order_id": "earthquake",
-      "customer_id": "pavement",
-      "amount": 100,
-      "reason": "earthquake",
-      "refund_date": "2025-06-30T13:34:09.476Z",
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 907,
-      "order_id": "jumper",
-      "customer_id": "quiver",
-      "amount": 100,
-      "reason": "jumper",
-      "refund_date": "2025-06-30T16:32:00.842Z",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "order_id": "fiancé",
-      "customer_id": "horse",
-      "amount": 100,
-      "reason": "fiancé",
-      "refund_date": "2025-07-01T10:28:05.607Z",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
   "refund_items": [
     {
-      "id": 743,
-      "refund_id": "yard",
-      "menu_item_id": "blossom",
-      "quantity": 100,
+      "id": "refi-743",
+      "refund_id": "ref-743",
+      "food_id": "food-743", // Link to a food item
+      "quantity": 1,
       "price": 100,
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
-    },
-    {
-      "id": 269,
-      "refund_id": "house",
-      "menu_item_id": "scabies",
-      "quantity": 100,
-      "price": 100,
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
-    },
-    {
-      "id": 490,
-      "refund_id": "earthquake",
-      "menu_item_id": "pavement",
-      "quantity": 100,
-      "price": 100,
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 907,
-      "refund_id": "jumper",
-      "menu_item_id": "quiver",
-      "quantity": 100,
-      "price": 100,
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "refund_id": "fiancé",
-      "menu_item_id": "horse",
-      "quantity": 100,
-      "price": 100,
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
   "shifts": [
     {
-      "id": 156,
-      "employee_id": "rhythm",
+      "id": "shift-156",
+      "employee_id": "user-649", // Link to a user/employee
       "start_time": "2025-07-01T06:45:15.231Z",
-      "end_time": "2025-06-30T15:02:50.627Z",
+      "end_time": "2025-07-01T14:45:15.231Z",
       "created_at": "2025-07-01T06:45:15.231Z",
       "updated_at": "2025-06-30T15:02:50.627Z"
-    },
-    {
-      "id": 542,
-      "employee_id": "earthquake",
-      "start_time": "2025-07-01T03:39:13.125Z",
-      "end_time": "2025-06-30T18:59:10.027Z",
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 876,
-      "employee_id": "sundial",
-      "start_time": "2025-07-01T07:11:21.033Z",
-      "end_time": "2025-06-30T16:47:33.268Z",
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 986,
-      "employee_id": "spool",
-      "start_time": "2025-07-01T08:55:04.281Z",
-      "end_time": "2025-07-01T00:10:40.165Z",
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 878,
-      "employee_id": "scabies",
-      "start_time": "2025-06-30T18:48:47.279Z",
-      "end_time": "2025-06-30T16:21:49.071Z",
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
     }
   ],
   "stock_adjustments": [
     {
-      "id": 737,
-      "product_id": "blossom",
-      "quantity_change": 100,
-      "reason": "blossom",
+      "id": "sa-737",
+      "stock_id": "stock-743", // Link to a stock item
+      "quantity_change": -5,
+      "reason": "Spoilage",
       "adjustment_date": "2025-06-30T14:59:40.758Z",
       "created_at": "2025-06-30T14:59:40.758Z",
       "updated_at": "2025-07-01T03:22:15.158Z"
-    },
-    {
-      "id": 922,
-      "product_id": "scabies",
-      "quantity_change": 100,
-      "reason": "scabies",
-      "adjustment_date": "2025-06-30T12:57:38.259Z",
-      "created_at": "2025-06-30T12:57:38.259Z",
-      "updated_at": "2025-07-01T06:06:40.457Z"
-    },
-    {
-      "id": 139,
-      "product_id": "pavement",
-      "quantity_change": 100,
-      "reason": "pavement",
-      "adjustment_date": "2025-06-30T22:58:34.994Z",
-      "created_at": "2025-06-30T22:58:34.994Z",
-      "updated_at": "2025-07-01T00:54:20.941Z"
-    },
-    {
-      "id": 353,
-      "product_id": "quiver",
-      "quantity_change": 100,
-      "reason": "quiver",
-      "adjustment_date": "2025-06-30T15:02:49.773Z",
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 819,
-      "product_id": "horse",
-      "quantity_change": 100,
-      "reason": "horse",
-      "adjustment_date": "2025-07-01T05:07:07.458Z",
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
   "suppliers": [
     {
-      "id": 61,
-      "name": "blossom",
-      "contact_person": "Mrs. Bernadine Barrows",
-      "phone": "1-562-421-3990 x33509",
-      "email": "Jamey_Connelly@hotmail.com",
-      "address": "9390 Bogan Square",
+      "id": "sup-61",
+      "name": "Global Food Supplies",
+      "contact_person": "Mr. John Doe",
+      "phone": "111-222-3333",
+      "email": "john.doe@globalfood.com",
+      "address": "100 Supply Rd, Supplytown",
       "created_at": "2025-07-01T06:45:15.231Z",
       "updated_at": "2025-06-30T15:02:50.627Z"
-    },
-    {
-      "id": 101,
-      "name": "scabies",
-      "contact_person": "Kayla Greenholt",
-      "phone": "(974) 628-9844 x4332",
-      "email": "Jerel.Runte65@yahoo.com",
-      "address": "4865 Raynor Course",
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 894,
-      "name": "pavement",
-      "contact_person": "Ms. Katelin Greenfelder",
-      "phone": "473.682.0232 x582",
-      "email": "Delia_Morissette@gmail.com",
-      "address": "52467 Mayert Pass",
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 776,
-      "name": "quiver",
-      "contact_person": "Cody Morissette",
-      "phone": "(563) 896-1555",
-      "email": "Adaline.Kessler61@hotmail.com",
-      "address": "906 Runte Mount",
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 820,
-      "name": "horse",
-      "contact_person": "Elias Hammes",
-      "phone": "1-628-868-2321 x9114",
-      "email": "Amya.Rutherford39@gmail.com",
-      "address": "335 Kerluke Via",
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
     }
   ],
   "taxes": [
     {
-      "id": 737,
-      "name": "quiver",
-      "percentage": 100,
-      "is_active": false,
+      "id": "tax-737",
+      "name": "VAT 15%",
+      "percentage": 15,
+      "is_active": true,
       "created_at": "2025-06-30T14:59:40.758Z",
       "updated_at": "2025-07-01T03:22:15.158Z"
-    },
-    {
-      "id": 922,
-      "name": "horse",
-      "percentage": 100,
-      "is_active": false,
-      "created_at": "2025-06-30T12:57:38.259Z",
-      "updated_at": "2025-07-01T06:06:40.457Z"
-    },
-    {
-      "id": 139,
-      "name": "pigpen",
-      "percentage": 100,
-      "is_active": false,
-      "created_at": "2025-06-30T22:58:34.994Z",
-      "updated_at": "2025-07-01T00:54:20.941Z"
-    },
-    {
-      "id": 353,
-      "name": "blossom",
-      "percentage": 100,
-      "is_active": false,
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 819,
-      "name": "scabies",
-      "percentage": 100,
-      "is_active": false,
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
   "transactions": [
     {
-      "id": 743,
-      "order_id": "yard",
-      "payment_method": "blossom",
+      "id": "tran-743",
+      "order_id": "order-743",
+      "payment_method": "Card",
       "amount": 100,
       "transaction_date": "2025-06-30T22:05:27.430Z",
-      "status": "yard",
+      "status": "completed",
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
-    },
-    {
-      "id": 269,
-      "order_id": "house",
-      "payment_method": "scabies",
-      "amount": 100,
-      "transaction_date": "2025-06-30T14:30:32.350Z",
-      "status": "house",
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
-    },
-    {
-      "id": 490,
-      "order_id": "earthquake",
-      "payment_method": "pavement",
-      "amount": 100,
-      "transaction_date": "2025-06-30T13:34:09.476Z",
-      "status": "earthquake",
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 907,
-      "order_id": "jumper",
-      "payment_method": "quiver",
-      "amount": 100,
-      "transaction_date": "2025-06-30T16:32:00.842Z",
-      "status": "jumper",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "order_id": "fiancé",
-      "payment_method": "horse",
-      "amount": 100,
-      "transaction_date": "2025-07-01T10:28:05.607Z",
-      "status": "fiancé",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
   "loyalty_points": [
     {
-      "id": 156,
-      "customer_id": "rhythm",
-      "points_earned": 100,
-      "points_redeemed": 100,
+      "id": "lp-156",
+      "customer_id": "cust-156",
+      "points_earned": 50,
+      "points_redeemed": 0,
       "date": "2025-07-01T06:45:15.231Z",
       "created_at": "2025-07-01T06:45:15.231Z",
       "updated_at": "2025-06-30T15:02:50.627Z"
-    },
-    {
-      "id": 542,
-      "customer_id": "earthquake",
-      "points_earned": 100,
-      "points_redeemed": 100,
-      "date": "2025-07-01T03:39:13.125Z",
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 876,
-      "customer_id": "sundial",
-      "points_earned": 100,
-      "points_redeemed": 100,
-      "date": "2025-07-01T07:11:21.033Z",
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 986,
-      "customer_id": "spool",
-      "points_earned": 100,
-      "points_redeemed": 100,
-      "date": "2025-07-01T08:55:04.281Z",
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 878,
-      "customer_id": "scabies",
-      "points_earned": 100,
-      "points_redeemed": 100,
-      "date": "2025-06-30T18:48:47.279Z",
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
     }
   ],
   "discounts": [
     {
-      "id": 737,
-      "name": "blossom",
-      "code": "rhythm",
+      "id": "disc-737",
+      "name": "Summer Sale",
+      "code": "SUMMER10",
       "type": "percentage",
-      "value": 100,
-      "min_order_amount": 100,
-      "max_discount_amount": 100,
-      "start_date": "2025-06-30T14:59:40.758Z",
-      "end_date": "2025-07-01T03:22:15.158Z",
-      "is_active": false,
+      "value": 10, // 10%
+      "min_order_amount": 50,
+      "max_discount_amount": 20,
+      "usage_limit": 100,
+      "expiry_date": "2025-08-31T23:59:59.000Z",
+      "is_active": true,
       "created_at": "2025-06-30T14:59:40.758Z",
       "updated_at": "2025-07-01T03:22:15.158Z"
-    },
-    {
-      "id": 922,
-      "name": "scabies",
-      "code": "earthquake",
-      "type": "fixed",
-      "value": 100,
-      "min_order_amount": 100,
-      "max_discount_amount": 100,
-      "start_date": "2025-06-30T12:57:38.259Z",
-      "end_date": "2025-07-01T06:06:40.457Z",
-      "is_active": true,
-      "created_at": "2025-06-30T12:57:38.259Z",
-      "updated_at": "2025-07-01T06:06:40.457Z"
-    },
-    {
-      "id": 139,
-      "name": "pavement",
-      "code": "sundial",
-      "type": "percentage",
-      "value": 100,
-      "min_order_amount": 100,
-      "max_discount_amount": 100,
-      "start_date": "2025-06-30T22:58:34.994Z",
-      "end_date": "2025-07-01T00:54:20.941Z",
-      "is_active": false,
-      "created_at": "2025-06-30T22:58:34.994Z",
-      "updated_at": "2025-07-01T00:54:20.941Z"
-    },
-    {
-      "id": 353,
-      "name": "quiver",
-      "code": "spool",
-      "type": "fixed",
-      "value": 100,
-      "min_order_amount": 100,
-      "max_discount_amount": 100,
-      "start_date": "2025-06-30T15:02:49.773Z",
-      "end_date": "2025-06-30T16:51:39.141Z",
-      "is_active": true,
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 819,
-      "name": "horse",
-      "code": "fiancé",
-      "type": "fixed",
-      "value": 100,
-      "min_order_amount": 100,
-      "max_discount_amount": 100,
-      "start_date": "2025-07-01T05:07:07.458Z",
-      "end_date": "2025-07-01T01:03:07.039Z",
-      "is_active": false,
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
   "payments": [
     {
-      "id": 743,
-      "order_id": "yard",
+      "id": "pay-743",
+      "order_id": "order-743",
       "amount": 100,
-      "method": "blossom",
-      "transaction_id": "yard",
+      "method": "Card", // Changed from 'method' to 'payment_method' in entities
+      "transaction_id": "transid123",
       "payment_date": "2025-06-30T22:05:27.430Z",
-      "status": "yard",
+      "status": "completed",
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
-    },
-    {
-      "id": 269,
-      "order_id": "house",
-      "amount": 100,
-      "method": "scabies",
-      "transaction_id": "house",
-      "payment_date": "2025-06-30T14:30:32.350Z",
-      "status": "house",
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
-    },
-    {
-      "id": 490,
-      "order_id": "earthquake",
-      "amount": 100,
-      "method": "pavement",
-      "transaction_id": "earthquake",
-      "payment_date": "2025-06-30T13:34:09.476Z",
-      "status": "earthquake",
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 907,
-      "order_id": "jumper",
-      "amount": 100,
-      "method": "quiver",
-      "transaction_id": "jumper",
-      "payment_date": "2025-06-30T16:32:00.842Z",
-      "status": "jumper",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "order_id": "fiancé",
-      "amount": 100,
-      "method": "horse",
-      "transaction_id": "fiancé",
-      "payment_date": "2025-07-01T10:28:05.607Z",
-      "status": "fiancé",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
   "invoices": [
     {
-      "id": 156,
-      "order_id": "rhythm",
-      "invoice_number": "rhythm",
+      "id": "inv-156",
+      "order_id": "order-743",
+      "invoice_number": "INV-2025-001",
+      "total_amount": 100,
       "invoice_date": "2025-07-01T06:45:15.231Z",
-      "total_amount": 100,
-      "tax_amount": 100,
-      "discount_amount": 100,
-      "customer_id": "rhythm",
+      "status": "paid",
       "created_at": "2025-07-01T06:45:15.231Z",
-      "updated_at": "2025-06-30T15:02:50.627Z"
-    },
-    {
-      "id": 542,
-      "order_id": "earthquake",
-      "invoice_number": "earthquake",
-      "invoice_date": "2025-07-01T03:39:13.125Z",
-      "total_amount": 100,
-      "tax_amount": 100,
-      "discount_amount": 100,
-      "customer_id": "earthquake",
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 876,
-      "order_id": "sundial",
-      "invoice_number": "sundial",
-      "invoice_date": "2025-07-01T07:11:21.033Z",
-      "total_amount": 100,
-      "tax_amount": 100,
-      "discount_amount": 100,
-      "customer_id": "sundial",
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 986,
-      "order_id": "spool",
-      "invoice_number": "spool",
-      "invoice_date": "2025-07-01T08:55:04.281Z",
-      "total_amount": 100,
-      "tax_amount": 100,
-      "discount_amount": 100,
-      "customer_id": "spool",
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 878,
-      "order_id": "scabies",
-      "invoice_number": "scabies",
-      "invoice_date": "2025-06-30T18:48:47.279Z",
-      "total_amount": 100,
-      "tax_amount": 100,
-      "discount_amount": 100,
-      "customer_id": "scabies",
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
+      "updated_at": "2025-06-30T15:02:50.627Z",
+      "tax_amount": 10,
+      "discount_amount": 0,
+      "customer_id": "cust-156"
     }
   ],
   "kitchens": [
     {
-      "id": 737,
-      "name": "blossom",
-      "description": "rhythm",
+      "id": "kitchen-737",
+      "name": "Main Kitchen",
+      "description": "Primary kitchen for all food preparation",
       "created_at": "2025-06-30T14:59:40.758Z",
       "updated_at": "2025-07-01T03:22:15.158Z"
-    },
-    {
-      "id": 922,
-      "name": "scabies",
-      "description": "earthquake",
-      "created_at": "2025-06-30T12:57:38.259Z",
-      "updated_at": "2025-07-01T06:06:40.457Z"
-    },
-    {
-      "id": 139,
-      "name": "pavement",
-      "description": "sundial",
-      "created_at": "2025-06-30T22:58:34.994Z",
-      "updated_at": "2025-07-01T00:54:20.941Z"
-    },
-    {
-      "id": 353,
-      "name": "quiver",
-      "description": "spool",
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 819,
-      "name": "horse",
-      "description": "fiancé",
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
   "menus": [
     {
-      "id": 61,
-      "name": "blossom",
-      "description": "rhythm",
-      "is_active": false,
+      "id": "menu-61",
+      "name": "Main Menu",
+      "description": "Standard daily menu",
+      "is_active": true,
       "created_at": "2025-07-01T06:45:15.231Z",
       "updated_at": "2025-06-30T15:02:50.627Z"
-    },
-    {
-      "id": 101,
-      "name": "scabies",
-      "description": "earthquake",
-      "is_active": false,
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 894,
-      "name": "pavement",
-      "description": "sundial",
-      "is_active": true,
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 776,
-      "name": "quiver",
-      "description": "spool",
-      "is_active": false,
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 820,
-      "name": "horse",
-      "description": "fiancé",
-      "is_active": true,
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
     }
   ],
   "notifications": [
     {
-      "id": 737,
-      "user_id": "blossom",
-      "message": "rhythm",
-      "type": "earthquake",
+      "id": "notif-737",
+      "user_id": "user-649",
+      "title": "New Order Received",
+      "message": "Order #743 has been placed.",
+      "type": "info",
       "is_read": false,
       "created_at": "2025-06-30T14:59:40.758Z",
       "updated_at": "2025-07-01T03:22:15.158Z"
-    },
-    {
-      "id": 922,
-      "user_id": "scabies",
-      "message": "earthquake",
-      "type": "sundial",
-      "is_read": true,
-      "created_at": "2025-06-30T12:57:38.259Z",
-      "updated_at": "2025-07-01T06:06:40.457Z"
-    },
-    {
-      "id": 139,
-      "user_id": "pavement",
-      "message": "sundial",
-      "type": "spool",
-      "is_read": false,
-      "created_at": "2025-06-30T22:58:34.994Z",
-      "updated_at": "2025-07-01T00:54:20.941Z"
-    },
-    {
-      "id": 353,
-      "user_id": "quiver",
-      "message": "spool",
-      "type": "fiancé",
-      "is_read": true,
-      "created_at": "2025-06-30T15:02:49.773Z",
-      "updated_at": "2025-06-30T16:51:39.141Z"
-    },
-    {
-      "id": 819,
-      "user_id": "horse",
-      "message": "fiancé",
-      "type": "pigpen",
-      "is_read": false,
-      "created_at": "2025-07-01T05:07:07.458Z",
-      "updated_at": "2025-07-01T01:03:07.039Z"
     }
   ],
-  "employees": [
+  "foods": [
     {
-      "id": 61,
-      "name": "rhythm",
-      "email": "Jamey_Connelly@hotmail.com",
-      "phone": "1-562-421-3990 x33509",
-      "role_id": "blossom",
-      "hire_date": "2025-07-01T06:45:15.231Z",
-      "salary": 100,
-      "created_at": "2025-07-01T06:45:15.231Z",
-      "updated_at": "2025-06-30T15:02:50.627Z"
+      "id": "food-743",
+      "name": "Blossom Burger",
+      "category_id": "cat-burger",
+      "brand_id": "brand-A",
+      "unit_id": "unit-pc",
+      "purchase_price": 50,
+      "sale_price": 100,
+      "description": "A delicious burger with special sauce.",
+      "image": "blossom_burger.jpg",
+      "is_active": true,
+      "is_featured": true,
+      "created_at": "2025-06-30T22:05:27.430Z",
+      "updated_at": "2025-07-01T02:25:49.986Z",
+      "code": "BGB001",
+      "hsn": "HSN123",
+      "cost": 40,
+      "price_include_gst": false,
+      "cost_include_gst": true,
+      "gst_percentage": 10,
+      "food_category_id": "cat-burger",
+      "food_brand_id": "brand-A",
+      "created_by": "admin",
+      "updated_by": "admin",
+      "kitchen_id": "kitchen-737",
+      "price": 100 // Ensure price is present for API enrichment
     },
     {
-      "id": 101,
-      "name": "earthquake",
-      "email": "Jerel.Runte65@yahoo.com",
-      "phone": "(974) 628-9844 x4332",
-      "role_id": "scabies",
-      "hire_date": "2025-07-01T03:39:13.125Z",
-      "salary": 100,
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
+      "id": "food-269",
+      "name": "Scabies Fries", // Renamed for clarity
+      "category_id": "cat-sides",
+      "brand_id": "brand-B",
+      "unit_id": "unit-g",
+      "purchase_price": 20,
+      "sale_price": 50,
+      "description": "Crispy golden fries.",
+      "image": "scabies_fries.jpg",
+      "is_active": true,
+      "is_featured": false,
+      "created_at": "2025-06-30T14:30:32.350Z",
+      "updated_at": "2025-06-30T12:11:28.951Z",
+      "code": "FRS001",
+      "hsn": "HSN124",
+      "cost": 15,
+      "price_include_gst": true,
+      "cost_include_gst": false,
+      "gst_percentage": 10,
+      "food_category_id": "cat-sides",
+      "food_brand_id": "brand-B",
+      "created_by": "admin",
+      "updated_by": "admin",
+      "kitchen_id": "kitchen-737",
+      "price": 50 // Ensure price is present for API enrichment
     },
     {
-      "id": 894,
-      "name": "sundial",
-      "email": "Delia_Morissette@gmail.com",
-      "phone": "473.682.0232 x582",
-      "role_id": "pavement",
-      "hire_date": "2025-07-01T07:11:21.033Z",
-      "salary": 100,
-      "created_at": "2025-07-01T07:11:21.033Z",
-      "updated_at": "2025-06-30T16:47:33.268Z"
+      "id": "food-490",
+      "name": "Pavement Pizza", // Renamed for clarity
+      "category_id": "cat-pizza",
+      "brand_id": "brand-C",
+      "unit_id": "unit-pc",
+      "purchase_price": 80,
+      "sale_price": 150,
+      "description": "Large pepperoni pizza.",
+      "image": "pavement_pizza.jpg",
+      "is_active": true,
+      "is_featured": true,
+      "created_at": "2025-06-30T13:34:09.476Z",
+      "updated_at": "2025-07-01T10:48:33.081Z",
+      "code": "PZ001",
+      "hsn": "HSN125",
+      "cost": 70,
+      "price_include_gst": false,
+      "cost_include_gst": true,
+      "gst_percentage": 10,
+      "food_category_id": "cat-pizza",
+      "food_brand_id": "brand-C",
+      "created_by": "admin",
+      "updated_by": "admin",
+      "kitchen_id": "kitchen-737",
+      "price": 150 // Ensure price is present for API enrichment
     },
     {
-      "id": 776,
-      "name": "spool",
-      "email": "Adaline.Kessler61@hotmail.com",
-      "phone": "(563) 896-1555",
-      "role_id": "quiver",
-      "hire_date": "2025-07-01T08:55:04.281Z",
-      "salary": 100,
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
+      "id": "food-907",
+      "name": "Quiver Quinoa Salad", // Renamed for clarity
+      "category_id": "cat-salad",
+      "brand_id": "brand-D",
+      "unit_id": "unit-bowl",
+      "purchase_price": 40,
+      "sale_price": 80,
+      "description": "Healthy quinoa salad with fresh veggies.",
+      "image": "quiver_salad.jpg",
+      "is_active": true,
+      "is_featured": false,
+      "created_at": "2025-06-30T16:32:00.842Z",
+      "updated_at": "2025-07-01T08:24:47.113Z",
+      "code": "SAL001",
+      "hsn": "HSN126",
+      "cost": 30,
+      "price_include_gst": true,
+      "cost_include_gst": false,
+      "gst_percentage": 10,
+      "food_category_id": "cat-salad",
+      "food_brand_id": "brand-D",
+      "created_by": "admin",
+      "updated_by": "admin",
+      "kitchen_id": "kitchen-737",
+      "price": 80 // Ensure price is present for API enrichment
     },
     {
-      "id": 820,
-      "name": "fiancé",
-      "email": "Amya.Rutherford39@gmail.com",
-      "phone": "1-628-868-2321 x9114",
-      "role_id": "horse",
-      "hire_date": "2025-06-30T18:48:47.279Z",
-      "salary": 100,
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
+      "id": "food-616",
+      "name": "Horse Hotdog", // Renamed for clarity
+      "category_id": "cat-hotdog",
+      "brand_id": "brand-E",
+      "unit_id": "unit-pc",
+      "purchase_price": 30,
+      "sale_price": 60,
+      "description": "Classic hotdog with all the fixings.",
+      "image": "horse_hotdog.jpg",
+      "is_active": true,
+      "is_featured": false,
+      "created_at": "2025-07-01T10:28:05.607Z",
+      "updated_at": "2025-06-30T21:14:27.304Z",
+      "code": "HDG001",
+      "hsn": "HSN127",
+      "cost": 25,
+      "price_include_gst": false,
+      "cost_include_gst": true,
+      "gst_percentage": 10,
+      "food_category_id": "cat-hotdog",
+      "food_brand_id": "brand-E",
+      "created_by": "admin",
+      "updated_by": "admin",
+      "kitchen_id": "kitchen-737",
+      "price": 60 // Ensure price is present for API enrichment
+    }
+  ],
+  "tables": [
+    {
+      "id": "table-743",
+      "name": "Table 1",
+      "code": "T1",
+      "created_at": "2025-06-30T22:05:27.430Z",
+      "updated_at": "2025-07-01T02:25:49.986Z",
+      "status": "occupied",
+      "current_order_id": "order-743"
+    },
+    {
+      "id": "table-269",
+      "name": "Table 2",
+      "code": "T2",
+      "created_at": "2025-06-30T14:30:32.350Z",
+      "updated_at": "2025-06-30T12:11:28.951Z",
+      "status": "available",
+      "current_order_id": null
+    },
+    {
+      "id": "table-490",
+      "name": "Table 3",
+      "code": "T3",
+      "created_at": "2025-06-30T13:34:09.476Z",
+      "updated_at": "2025-07-01T10:48:33.081Z",
+      "status": "occupied",
+      "current_order_id": "order-490"
     }
   ],
   "orders": [
     {
-      "id": 743,
-      "tenant_id": 36,
-      "table_id": "blossom",
-      "customer_id": "yard",
-      "total_amount": 100,
-      "status": "blossom",
-      "notes": "blossom",
+      "id": "order-743",
+      "tenant_id": "tenant-231",
+      "table_id": "table-743",
+      "customer_id": "cust-156",
+      "total_amount": 200.00,
+      "status": "preparing",
+      "notes": "No onions on burger",
       "created_at": "2025-06-30T22:05:27.430Z",
-      "updated_at": "2025-07-01T02:25:49.986Z"
+      "updated_at": "2025-07-01T02:25:49.986Z",
+      "subtotal_amount": 150.00,
+      "tax_amount": 15.00,
+      "discount_amount": 0.00,
+      "employee_id": "user-649",
+      "order_type": "dine-in"
     },
     {
-      "id": 269,
-      "tenant_id": 14,
-      "table_id": "scabies",
-      "customer_id": "house",
-      "total_amount": 100,
-      "status": "scabies",
-      "notes": "scabies",
+      "id": "order-269",
+      "tenant_id": "tenant-748",
+      "table_id": null, // Takeaway
+      "customer_id": null, // Walk-in
+      "total_amount": 50.00,
+      "status": "new",
+      "notes": "Customer waiting",
       "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
+      "updated_at": "2025-06-30T12:11:28.951Z",
+      "subtotal_amount": 50.00,
+      "tax_amount": 5.00,
+      "discount_amount": 0.00,
+      "employee_id": "user-813",
+      "order_type": "takeaway"
     },
     {
-      "id": 490,
-      "tenant_id": 50,
-      "table_id": "pavement",
-      "customer_id": "earthquake",
-      "total_amount": 100,
-      "status": "pavement",
-      "notes": "pavement",
+      "id": "order-490",
+      "tenant_id": "tenant-886",
+      "table_id": "table-490",
+      "customer_id": "cust-876",
+      "total_amount": 150.00,
+      "status": "ready",
+      "notes": "Extra crispy crust",
       "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 907,
-      "tenant_id": 20,
-      "table_id": "quiver",
-      "customer_id": "jumper",
-      "total_amount": 100,
-      "status": "quiver",
-      "notes": "quiver",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "tenant_id": 48,
-      "table_id": "horse",
-      "customer_id": "fiancé",
-      "total_amount": 100,
-      "status": "horse",
-      "notes": "horse",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
+      "updated_at": "2025-07-01T10:48:33.081Z",
+      "subtotal_amount": 150.00,
+      "tax_amount": 15.00,
+      "discount_amount": 0.00,
+      "employee_id": "user-649",
+      "order_type": "dine-in"
     }
   ],
   "order_items": [
     {
-      "id": 743,
-      "order_id": "yard",
-      "menu_item_id": "blossom",
-      "quantity": 100,
+      "id": "oi-743-1",
+      "order_id": "order-743",
+      "food_id": "food-743", // Blossom Burger
+      "quantity": 1,
       "price": 100,
-      "gst": 100,
-      "gst_percentage": 100,
-      "discount": 100,
-      "cost": 100,
-      "printed": false,
-      "created_at": "2025-06-30T22:05:27.430Z",
-      "updated_at": "2025-07-01T02:25:49.986Z",
-      "old_quantity": 100
-    },
-    {
-      "id": 269,
-      "order_id": "house",
-      "menu_item_id": "scabies",
-      "quantity": 100,
-      "price": 100,
-      "gst": 100,
-      "gst_percentage": 100,
-      "discount": 100,
-      "cost": 100,
-      "printed": true,
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z",
-      "old_quantity": 100
-    },
-    {
-      "id": 490,
-      "order_id": "earthquake",
-      "menu_item_id": "pavement",
-      "quantity": 100,
-      "price": 100,
-      "gst": 100,
-      "gst_percentage": 100,
-      "discount": 100,
-      "cost": 100,
-      "printed": false,
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z",
-      "old_quantity": 100
-    },
-    {
-      "id": 907,
-      "order_id": "jumper",
-      "menu_item_id": "quiver",
-      "quantity": 100,
-      "price": 100,
-      "gst": 100,
-      "gst_percentage": 100,
-      "discount": 100,
-      "cost": 100,
-      "printed": true,
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z",
-      "old_quantity": 100
-    },
-    {
-      "id": 616,
-      "order_id": "fiancé",
-      "menu_item_id": "horse",
-      "quantity": 100,
-      "price": 100,
-      "gst": 100,
-      "gst_percentage": 100,
-      "discount": 100,
-      "cost": 100,
-      "printed": false,
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z",
-      "old_quantity": 100
-    }
-  ],
-  "menu_items": [
-    {
-      "id": 743,
-      "menu_id": "blossom",
-      "food_id": "rhythm",
-      "position": 100,
+      "sub_total": 100,
+      "notes": "No pickles",
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
     },
     {
-      "id": 269,
-      "menu_id": "scabies",
-      "food_id": "earthquake",
-      "position": 100,
+      "id": "oi-743-2",
+      "order_id": "order-743",
+      "food_id": "food-269", // Scabies Fries
+      "quantity": 1,
+      "price": 50,
+      "sub_total": 50,
+      "notes": "",
+      "created_at": "2025-06-30T22:05:27.430Z",
+      "updated_at": "2025-07-01T02:25:49.986Z"
+    },
+    {
+      "id": "oi-269-1",
+      "order_id": "order-269",
+      "food_id": "food-269", // Scabies Fries
+      "quantity": 1,
+      "price": 50,
+      "sub_total": 50,
+      "notes": "Extra salty",
       "created_at": "2025-06-30T14:30:32.350Z",
       "updated_at": "2025-06-30T12:11:28.951Z"
     },
     {
-      "id": 490,
-      "menu_id": "pavement",
-      "food_id": "sundial",
-      "position": 100,
+      "id": "oi-490-1",
+      "order_id": "order-490",
+      "food_id": "food-490", // Pavement Pizza
+      "quantity": 1,
+      "price": 150,
+      "sub_total": 150,
+      "notes": "",
       "created_at": "2025-06-30T13:34:09.476Z",
       "updated_at": "2025-07-01T10:48:33.081Z"
+    }
+  ],
+  "menu_items": [ // Linking Menu to Food
+    {
+      "id": "mi-743",
+      "menu_id": "menu-61",
+      "food_id": "food-743", // Blossom Burger
+      "position": 1,
+      "created_at": "2025-06-30T22:05:27.430Z",
+      "updated_at": "2025-07-01T02:25:49.986Z"
     },
     {
-      "id": 907,
-      "menu_id": "quiver",
-      "food_id": "spool",
-      "position": 100,
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "menu_id": "horse",
-      "food_id": "fiancé",
-      "position": 100,
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
+      "id": "mi-269",
+      "menu_id": "menu-61",
+      "food_id": "food-269", // Scabies Fries
+      "position": 2,
+      "created_at": "2025-06-30T14:30:32.350Z",
+      "updated_at": "2025-06-30T12:11:28.951Z"
     }
   ],
   "categories": [
     {
-      "id": 743,
-      "name": "rhythm",
-      "code": "rhythm",
-      "image": "rhythm",
+      "id": "cat-burger",
+      "name": "Burgers",
+      "code": "B",
+      "image": "burger.png",
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
     },
     {
-      "id": 269,
-      "name": "earthquake",
-      "code": "earthquake",
-      "image": "earthquake",
+      "id": "cat-sides",
+      "name": "Sides",
+      "code": "S",
+      "image": "fries.png",
       "created_at": "2025-06-30T14:30:32.350Z",
       "updated_at": "2025-06-30T12:11:28.951Z"
     },
     {
-      "id": 490,
-      "name": "sundial",
-      "code": "sundial",
-      "image": "sundial",
+      "id": "cat-pizza",
+      "name": "Pizza",
+      "code": "P",
+      "image": "pizza.png",
       "created_at": "2025-06-30T13:34:09.476Z",
       "updated_at": "2025-07-01T10:48:33.081Z"
     },
     {
-      "id": 907,
-      "name": "spool",
-      "code": "spool",
-      "image": "spool",
+      "id": "cat-salad",
+      "name": "Salads",
+      "code": "L",
+      "image": "salad.png",
       "created_at": "2025-06-30T16:32:00.842Z",
       "updated_at": "2025-07-01T08:24:47.113Z"
     },
     {
-      "id": 616,
-      "name": "fiancé",
-      "code": "fiancé",
-      "image": "fiancé",
+      "id": "cat-hotdog",
+      "name": "Hotdogs",
+      "code": "H",
+      "image": "hotdog.png",
       "created_at": "2025-07-01T10:28:05.607Z",
       "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
   "customers": [
     {
-      "id": 156,
-      "name": "blossom",
-      "address": "blossom",
-      "area": "blossom",
-      "tax_number": "blossom",
-      "district": "blossom",
-      "phone": "blossom",
-      "points": 100,
-      "no_points": 100,
+      "id": "cust-156",
+      "name": "John Customer",
+      "address": "10 Customer St",
+      "area": "Downtown",
+      "tax_number": "TAX12345",
+      "district": "Central",
+      "phone": "555-123-4567",
+      "points": 150,
+      "no_points": 0,
       "created_at": "2025-07-01T06:45:15.231Z",
       "updated_at": "2025-06-30T15:02:50.627Z"
     },
     {
-      "id": 542,
-      "name": "scabies",
-      "address": "scabies",
-      "area": "scabies",
-      "tax_number": "scabies",
-      "district": "scabies",
-      "phone": "scabies",
-      "points": 100,
-      "no_points": 100,
-      "created_at": "2025-07-01T03:39:13.125Z",
-      "updated_at": "2025-06-30T18:59:10.027Z"
-    },
-    {
-      "id": 876,
-      "name": "pavement",
-      "address": "pavement",
-      "area": "pavement",
-      "tax_number": "pavement",
-      "district": "pavement",
-      "phone": "pavement",
-      "points": 100,
-      "no_points": 100,
+      "id": "cust-876",
+      "name": "Jane Doe",
+      "address": "20 Doe Rd",
+      "area": "Uptown",
+      "tax_number": "TAX67890",
+      "district": "North",
+      "phone": "555-987-6543",
+      "points": 200,
+      "no_points": 0,
       "created_at": "2025-07-01T07:11:21.033Z",
       "updated_at": "2025-06-30T16:47:33.268Z"
-    },
-    {
-      "id": 986,
-      "name": "quiver",
-      "address": "quiver",
-      "area": "quiver",
-      "tax_number": "quiver",
-      "district": "quiver",
-      "phone": "quiver",
-      "points": 100,
-      "no_points": 100,
-      "created_at": "2025-07-01T08:55:04.281Z",
-      "updated_at": "2025-07-01T00:10:40.165Z"
-    },
-    {
-      "id": 878,
-      "name": "horse",
-      "address": "horse",
-      "area": "horse",
-      "tax_number": "horse",
-      "district": "horse",
-      "phone": "horse",
-      "points": 100,
-      "no_points": 100,
-      "created_at": "2025-06-30T18:48:47.279Z",
-      "updated_at": "2025-06-30T16:21:49.071Z"
     }
   ],
-  "tables": [
+  "employees": [ // Adjusted to match User interface from entities.ts
     {
-      "id": 743,
-      "name": "rhythm",
-      "code": "rhythm",
+      "id": "emp-61",
+      "name": "Sarah Server",
+      "email": "sarah@example.com",
+      "phone": "555-100-2000",
+      "role_id": "role-101", // Cashier role
+      "hire_date": "2024-01-15T00:00:00.000Z",
+      "salary": 3000,
+      "created_at": "2025-07-01T06:45:15.231Z",
+      "updated_at": "2025-06-30T15:02:50.627Z"
+    },
+    {
+      "id": "emp-101",
+      "name": "Mike Manager",
+      "email": "mike@example.com",
+      "phone": "555-300-4000",
+      "role_id": "role-61", // Admin role
+      "hire_date": "2023-05-20T00:00:00.000Z",
+      "salary": 5000,
+      "created_at": "2025-07-01T03:39:13.125Z",
+      "updated_at": "2025-06-30T18:59:10.027Z"
+    }
+  ],
+  "expense_categories": [
+    {
+      "id": "expcat-1",
+      "name": "Utilities",
+      "description": "Electricity, water, gas bills",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "expenses": [
+    {
+      "id": "exp-1",
+      "category_id": "expcat-1",
+      "amount": 250.75,
+      "description": "Monthly electricity bill",
+      "expense_date": "2025-07-15T00:00:00.000Z",
+      "created_at": "2025-07-15T00:00:00.000Z",
+      "updated_at": "2025-07-15T00:00:00.000Z",
+      "tenant_id": "tenant-231"
+    }
+  ],
+  "units": [
+    {
+      "id": "unit-pc",
+      "name": "Piece",
+      "short_name": "pc",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    },
+    {
+      "id": "unit-g",
+      "name": "Gram",
+      "short_name": "g",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "stocks": [
+    {
+      "id": "stock-743",
+      "food_id": "food-743",
+      "quantity": 100,
+      "unit_id": "unit-pc",
+      "purchase_price": 50,
+      "sale_price": 100,
       "created_at": "2025-06-30T22:05:27.430Z",
       "updated_at": "2025-07-01T02:25:49.986Z"
     },
     {
-      "id": 269,
-      "name": "earthquake",
-      "code": "earthquake",
+      "id": "stock-269",
+      "food_id": "food-269",
+      "quantity": 200,
+      "unit_id": "unit-g",
+      "purchase_price": 20,
+      "sale_price": 50,
       "created_at": "2025-06-30T14:30:32.350Z",
       "updated_at": "2025-06-30T12:11:28.951Z"
-    },
-    {
-      "id": 490,
-      "name": "sundial",
-      "code": "sundial",
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
-    },
-    {
-      "id": 907,
-      "name": "spool",
-      "code": "spool",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": 616,
-      "name": "fiancé",
-      "code": "fiancé",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
     }
   ],
-  "foods": [
+  "store_timings": [
     {
-      "id": 743,
-      "name": "blossom",
-      "code": "rhythm",
-      "hsn": "rhythm",
-      "cost": 100,
-      "price": 100,
-      "price_include_gst": false,
-      "image": "rhythm",
-      "cost_include_gst": true,
-      "sale_price": 100,
-      "gst_percentage": 100,
-      "food_category_id": "rhythm",
-      "food_brand_id": "rhythm",
-      "created_by": "rhythm",
-      "updated_by": "rhythm",
-      "created_at": "2025-06-30T22:05:27.430Z",
-      "updated_at": "2025-07-01T02:25:49.986Z",
-      "kitchen_id": "rhythm"
-    },
+      "id": "st-1",
+      "store_id": "store-156", // Assuming a store ID
+      "day_of_week": "Monday",
+      "opening_time": "09:00",
+      "closing_time": "22:00",
+      "is_closed": false,
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "tables_sections": [
     {
-      "id": 269,
-      "name": "scabies",
-      "code": "earthquake",
-      "hsn": "earthquake",
-      "cost": 100,
-      "price": 100,
-      "price_include_gst": true,
-      "image": "earthquake",
-      "cost_include_gst": false,
-      "sale_price": 100,
-      "gst_percentage": 100,
-      "food_category_id": "earthquake",
-      "food_brand_id": "earthquake",
-      "created_by": "earthquake",
-      "updated_by": "earthquake",
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z",
-      "kitchen_id": "earthquake"
-    },
+      "id": "ts-1",
+      "name": "Main Dining Area",
+      "description": "Section for general dining tables",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "coupons": [
     {
-      "id": 490,
-      "name": "pavement",
-      "code": "sundial",
-      "hsn": "sundial",
-      "cost": 100,
-      "price": 100,
-      "price_include_gst": false,
-      "image": "sundial",
-      "cost_include_gst": true,
-      "sale_price": 100,
-      "gst_percentage": 100,
-      "food_category_id": "sundial",
-      "food_brand_id": "sundial",
-      "created_by": "sundial",
-      "updated_by": "sundial",
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z",
-      "kitchen_id": "sundial"
-    },
+      "id": "coup-737",
+      "code": "SAVE10",
+      "type": "percentage",
+      "value": 10,
+      "min_order_amount": 50,
+      "max_discount_amount": 20,
+      "usage_limit": 100,
+      "expiry_date": "2025-12-31T23:59:59.000Z",
+      "is_active": true,
+      "created_at": "2025-06-30T14:59:40.758Z",
+      "updated_at": "2025-07-01T03:22:15.158Z"
+    }
+  ],
+  "table_coupons": [
     {
-      "id": 907,
-      "name": "quiver",
-      "code": "spool",
-      "hsn": "spool",
-      "cost": 100,
-      "price": 100,
-      "price_include_gst": true,
-      "image": "spool",
-      "cost_include_gst": false,
-      "sale_price": 100,
-      "gst_percentage": 100,
-      "food_category_id": "spool",
-      "food_brand_id": "spool",
-      "created_by": "spool",
-      "updated_by": "spool",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z",
-      "kitchen_id": "spool"
-    },
+      "id": "tc-1",
+      "table_id": "table-743",
+      "coupon_id": "coup-737",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "product_coupons": [
     {
-      "id": 616,
-      "name": "horse",
-      "code": "fiancé",
-      "hsn": "fiancé",
-      "cost": 100,
+      "id": "pc-1",
+      "food_id": "food-743",
+      "coupon_id": "coup-737",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "customer_coupons": [
+    {
+      "id": "cc-1",
+      "customer_id": "cust-156",
+      "coupon_id": "coup-737",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-1",
+      "customer_id": "cust-156",
+      "food_id": "food-743",
+      "rating": 5,
+      "comment": "Absolutely delicious!",
+      "review_date": "2025-07-18T10:00:00.000Z",
+      "created_at": "2025-07-18T10:00:00.000Z",
+      "updated_at": "2025-07-18T10:00:00.000Z"
+    }
+  ],
+  "faqs": [
+    {
+      "id": "faq-1",
+      "question": "Do you offer vegetarian options?",
+      "answer": "Yes, we have a wide range of vegetarian dishes.",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "invoice_items": [
+    {
+      "id": "invi-1",
+      "invoice_id": "inv-156",
+      "food_id": "food-743",
+      "quantity": 1,
       "price": 100,
-      "price_include_gst": false,
-      "image": "fiancé",
-      "cost_include_gst": true,
-      "sale_price": 100,
-      "gst_percentage": 100,
-      "food_category_id": "fiancé",
-      "food_brand_id": "fiancé",
-      "created_by": "fiancé",
-      "updated_by": "fiancé",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z",
-      "kitchen_id": "fiancé"
+      "sub_total": 100,
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "payrolls": [
+    {
+      "id": "pay-1",
+      "employee_id": "emp-61",
+      "month": "July",
+      "year": 2025,
+      "basic_salary": 2500,
+      "allowances": 500,
+      "deductions": 100,
+      "net_salary": 2900,
+      "payment_date": "2025-07-20T00:00:00.000Z",
+      "created_at": "2025-07-20T00:00:00.000Z",
+      "updated_at": "2025-07-20T00:00:00.000Z"
+    }
+  ],
+  "administrators": [
+    {
+      "id": "admin-1",
+      "user_id": "user-649",
+      "role": "Super Admin",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "announcements": [
+    {
+      "id": "ann-1",
+      "title": "New Menu Items!",
+      "content": "Exciting new dishes added to our menu, check them out!",
+      "published_at": "2025-07-15T00:00:00.000Z",
+      "expires_at": "2025-08-15T00:00:00.000Z",
+      "created_at": "2025-07-15T00:00:00.000Z",
+      "updated_at": "2025-07-15T00:00:00.000Z"
+    }
+  ],
+  "settings": [
+    {
+      "id": "set-1",
+      "key": "tax_rate",
+      "value": "0.10",
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "carts": [
+    {
+      "id": "cart-1",
+      "customer_id": "cust-156",
+      "created_at": "2025-07-20T00:00:00.000Z",
+      "updated_at": "2025-07-20T00:00:00.000Z"
+    }
+  ],
+  "cart_items": [
+    {
+      "id": "ci-1",
+      "cart_id": "cart-1",
+      "food_id": "food-743",
+      "quantity": 1,
+      "price": 100,
+      "created_at": "2025-07-20T00:00:00.000Z",
+      "updated_at": "2025-07-20T00:00:00.000Z"
+    }
+  ],
+  "delivery_personnels": [
+    {
+      "id": "dp-1",
+      "name": "Delivery Dave",
+      "phone": "555-DELIVER",
+      "vehicle_details": "Motorbike ABC123",
+      "is_available": true,
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "wallets": [
+    {
+      "id": "wallet-1",
+      "customer_id": "cust-156",
+      "balance": 500,
+      "created_at": "2025-07-01T00:00:00.000Z",
+      "updated_at": "2025-07-01T00:00:00.000Z"
+    }
+  ],
+  "coupon_redemptions": [
+    {
+      "id": "cr-1",
+      "coupon_id": "coup-737",
+      "customer_id": "cust-156",
+      "order_id": "order-743",
+      "redemption_date": "2025-07-19T00:00:00.000Z",
+      "discount_amount": 10,
+      "created_at": "2025-07-19T00:00:00.000Z",
+      "updated_at": "2025-07-19T00:00:00.000Z"
+    }
+  ],
+  "cash_flows": [
+    {
+      "id": "cf-1",
+      "source_type": "Sale",
+      "source_id": "order-743",
+      "amount": 200,
+      "type": "inflow",
+      "description": "Sale of Order #743",
+      "flow_date": "2025-07-20T00:00:00.000Z",
+      "created_at": "2025-07-20T00:00:00.000Z",
+      "updated_at": "2025-07-20T00:00:00.000Z"
+    }
+  ],
+  "password_changes": [
+    {
+      "id": "pc-1",
+      "user_id": "user-649",
+      "changed_at": "2025-07-10T00:00:00.000Z"
+    }
+  ],
+  "stocks_movements": [
+    {
+      "id": "sm-1",
+      "stock_id": "stock-743",
+      "type": "out",
+      "quantity": 1,
+      "movement_date": "2025-07-20T00:00:00.000Z",
+      "notes": "Used for Order #743",
+      "created_at": "2025-07-20T00:00:00.000Z",
+      "updated_at": "2025-07-20T00:00:00.000Z"
+    }
+  ],
+  "contact_messages": [
+    {
+      "id": "cm-1",
+      "name": "Customer Inquiry",
+      "email": "customer@example.com",
+      "subject": "Feedback on service",
+      "message": "The service was excellent!",
+      "created_at": "2025-07-19T00:00:00.000Z",
+      "updated_at": "2025-07-19T00:00:00.000Z"
     }
   ]
 };

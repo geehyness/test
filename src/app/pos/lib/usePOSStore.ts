@@ -40,9 +40,9 @@ const calculateOrderTotals = (items: OrderItem[], discountValue: number = 0, dis
   let discountAmount = 0;
 
   if (discountType === 'percentage') {
-    discountAmount = subtotal * discountValue;
+    discountAmount = subtotal * value; // Use 'value' from the function parameter
   } else if (discountType === 'fixed') {
-    discountAmount = discountValue;
+    discountAmount = value; // Use 'value' from the function parameter
   }
 
   const netSubtotal = subtotal - discountAmount;
@@ -127,7 +127,8 @@ export const usePOSStore = create<POSState>()(
           const { subtotal, tax, discount, total } = calculateOrderTotals(
             updatedItems,
             state.currentOrder.discount_amount, // Pass current discount
-            state.currentOrder.discount_amount > 0 && state.currentOrder.subtotal_amount > 0 && (state.currentOrder.discount_amount / state.currentOrder.subtotal_amount) < 1 ? 'percentage' : 'fixed' // Infer type
+            // Infer type based on how discount was previously applied, or default to fixed
+            state.currentOrder.discount_amount > 0 && state.currentOrder.subtotal_amount > 0 && (state.currentOrder.discount_amount / state.currentOrder.subtotal_amount) < 1 ? 'percentage' : 'fixed'
           );
 
           return {
@@ -152,7 +153,7 @@ export const usePOSStore = create<POSState>()(
           const { subtotal, tax, discount, total } = calculateOrderTotals(
             updatedItems,
             state.currentOrder.discount_amount, // Pass current discount
-            state.currentOrder.discount_amount > 0 && state.currentOrder.subtotal_amount > 0 && (state.currentOrder.discount_amount / state.currentOrder.subtotal_amount) < 1 ? 'percentage' : 'fixed' // Infer type
+            state.currentOrder.discount_amount > 0 && state.currentOrder.subtotal_amount > 0 && (state.currentOrder.discount_amount / state.currentOrder.subtotal_amount) < 1 ? 'percentage' : 'fixed'
           );
 
           return {
@@ -181,7 +182,7 @@ export const usePOSStore = create<POSState>()(
           const { subtotal, tax, discount, total } = calculateOrderTotals(
             updatedItems,
             state.currentOrder.discount_amount, // Pass current discount
-            state.currentOrder.discount_amount > 0 && state.currentOrder.subtotal_amount > 0 && (state.currentOrder.discount_amount / state.currentOrder.subtotal_amount) < 1 ? 'percentage' : 'fixed' // Infer type
+            state.currentOrder.discount_amount > 0 && state.currentOrder.subtotal_amount > 0 && (state.currentOrder.discount_amount / state.currentOrder.subtotal_amount) < 1 ? 'percentage' : 'fixed'
           );
 
           return {
@@ -261,17 +262,17 @@ export const usePOSStore = create<POSState>()(
         }));
       },
 
-      updateOrder: (orderId: any, updatedOrder: any) => {
-        set((state: { activeOrders: { id: any; }[]; }) => ({
-          activeOrders: state.activeOrders.map((order: { id: any; }) =>
+      updateOrder: (orderId: string, updatedOrder: Partial<Order>) => {
+        set((state) => ({
+          activeOrders: state.activeOrders.map((order) =>
             order.id === orderId ? { ...order, ...updatedOrder } : order
           ),
         }));
       },
 
-      setActiveOrders: (orders: any) => set({ activeOrders: orders }),
+      setActiveOrders: (orders: Order[]) => set({ activeOrders: orders }),
 
-      processOrderPayment: async (order: { id: any; }, paymentMethod: any, tenderedAmount: any) => {
+      processOrderPayment: async (order: Order, paymentMethod: 'cash' | 'card' | 'split', tenderedAmount?: number) => {
         // Here you would typically make an API call to your backend
         // For demonstration, we'll simulate it.
         console.log(`Processing payment for order ${order.id} via ${paymentMethod}`);
@@ -291,11 +292,11 @@ export const usePOSStore = create<POSState>()(
         console.log('Payment processed successfully (simulated).');
 
         // Update the order status in activeOrders to 'paid'
-        set((state: { activeOrders: any[]; tables: { current_order_id: any; }[]; }) => ({
+        set((state) => ({
           activeOrders: state.activeOrders.map((o) =>
             o.id === order.id ? { ...o, status: 'paid' } : o
           ),
-          tables: state.tables.map((table: { current_order_id: any; }) =>
+          tables: state.tables.map((table) =>
             table.current_order_id === order.id ? { ...table, status: 'available', current_order_id: null } : table
           )
         }));
@@ -305,7 +306,7 @@ export const usePOSStore = create<POSState>()(
       name: 'pos-storage', // unique name
       storage: createJSONStorage(() => sessionStorage), // Use sessionStorage for temporary persistence
       // Optionally, only persist specific parts of the state
-      partialize: (state: { currentStaff: any; activeOrders: any; }) => ({
+      partialize: (state) => ({
         currentStaff: state.currentStaff,
         activeOrders: state.activeOrders,
         // Do NOT persist currentOrder as it should be fresh on page load or login
