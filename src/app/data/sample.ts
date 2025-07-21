@@ -387,14 +387,14 @@ export const sampleData: SampleData = {
   "foods": [
     {
       "id": "food-743",
-      "name": "Blossom Burger",
-      "category_id": "cat-burger",
+      "name": "Classic Burger",
+      "category_id": "1",
       "brand_id": "brand-A",
       "unit_id": "unit-pc",
       "purchase_price": 50,
       "sale_price": 100,
       "description": "A delicious burger with special sauce.",
-      "image": "blossom_burger.jpg",
+      "image": "https://images.unsplash.com/photo-1571091718767-18b5b1457add?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "is_active": true,
       "is_featured": true,
       "created_at": "2025-06-30T22:05:27.430Z",
@@ -666,44 +666,44 @@ export const sampleData: SampleData = {
   ],
   "categories": [
     {
-      "id": "cat-burger",
-      "name": "Burgers",
-      "code": "B",
-      "image": "burger.png",
-      "created_at": "2025-06-30T22:05:27.430Z",
-      "updated_at": "2025-07-01T02:25:49.986Z"
+      "id": 1,
+      "name": "Appetizers",
+      "code": "APP",
+      "image": "https://cdn-icons-png.flaticon.com/512/1069/1069354.png",
+      "created_at": "2025-07-01T09:00:00Z",
+      "updated_at": "2025-07-01T09:00:00Z"
     },
     {
-      "id": "cat-sides",
-      "name": "Sides",
-      "code": "S",
-      "image": "fries.png",
-      "created_at": "2025-06-30T14:30:32.350Z",
-      "updated_at": "2025-06-30T12:11:28.951Z"
+      "id": 2,
+      "name": "Main Courses",
+      "code": "MAIN",
+      "image": "https://cdn3.iconfinder.com/data/icons/wedding-276/512/Food-1024.png",
+      "created_at": "2025-07-01T09:05:00Z",
+      "updated_at": "2025-07-01T09:05:00Z"
     },
     {
-      "id": "cat-pizza",
-      "name": "Pizza",
-      "code": "P",
-      "image": "pizza.png",
-      "created_at": "2025-06-30T13:34:09.476Z",
-      "updated_at": "2025-07-01T10:48:33.081Z"
+      "id": 3,
+      "name": "Desserts",
+      "code": "DESSERT",
+      "image": "https://cdn2.iconfinder.com/data/icons/sweets-2-filled/64/dessert-16-1024.png",
+      "created_at": "2025-07-01T09:10:00Z",
+      "updated_at": "2025-07-01T09:10:00Z"
     },
     {
-      "id": "cat-salad",
+      "id": 4,
+      "name": "Beverages",
+      "code": "BEV",
+      "image": "https://cdn-icons-png.flaticon.com/512/6190/6190582.png",
+      "created_at": "2025-07-01T09:15:00Z",
+      "updated_at": "2025-07-01T09:15:00Z"
+    },
+    {
+      "id": 5,
       "name": "Salads",
-      "code": "L",
-      "image": "salad.png",
-      "created_at": "2025-06-30T16:32:00.842Z",
-      "updated_at": "2025-07-01T08:24:47.113Z"
-    },
-    {
-      "id": "cat-hotdog",
-      "name": "Hotdogs",
-      "code": "H",
-      "image": "hotdog.png",
-      "created_at": "2025-07-01T10:28:05.607Z",
-      "updated_at": "2025-06-30T21:14:27.304Z"
+      "code": "SALAD",
+      "image": "https://i.pinimg.com/originals/03/08/4b/03084b165106d2df9310fede29283b40.png",
+      "created_at": "2025-07-01T09:20:00Z",
+      "updated_at": "2025-07-01T09:20:00Z"
     }
   ],
   "customers": [

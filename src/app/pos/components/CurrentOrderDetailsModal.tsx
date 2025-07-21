@@ -43,7 +43,7 @@ interface CurrentOrderDetailsModalProps {
   onApplyDiscount: () => void;
   onSelectTable: () => void;
   onSendToKitchen: () => void;
-  onCheckout: () => void;
+  onCheckout: (paymentMethod: 'cash' | 'card' | 'split') => void;
   onClearOrder: () => void;
   tables: Table[]; // Pass tables to display table name
 }
@@ -194,7 +194,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
             onCheckout={onCheckout}
             onClearOrder={onClearOrder}
             // Pass currentOrder to enable/disable buttons based on order state
-            currentOrder={currentOrder} 
+            currentOrder={currentOrder}
           />
         </ModalFooter>
       </ModalContent>

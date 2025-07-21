@@ -19,10 +19,10 @@ export interface Order {
   created_at: string;
   updated_at: string;
   // Properties added for app logic/convenience, not directly from PDF 'orders' fields
-  items: OrderItem[]; 
-  subtotal_amount: number; 
-  tax_amount: number; 
-  discount_amount: number; 
+  items: OrderItem[];
+  subtotal_amount: number;
+  tax_amount: number;
+  discount_amount: number;
   employee_id?: string; // Assuming employee who took the order
   order_type?: 'dine-in' | 'takeaway'; // Type of order
 }
@@ -70,7 +70,10 @@ export interface Food { // Renamed from MenuItem, now represents the 'Foods' ent
   kitchen_id?: string; // Assuming this links to a Kitchen entity
 }
 
-export interface MenuItem { // This now represents 'Menu Items' from PDF, linking Menu to Food
+export interface MenuItem {
+  category_id: string;
+  name: any;
+  description: any; // This now represents 'Menu Items' from PDF, linking Menu to Food
   id: string;
   menu_id: string; // Links to Menu.id
   food_id: string; // Links to Food.id
@@ -109,8 +112,8 @@ export interface Table {
   created_at: string;
   updated_at: string;
   // Added for app logic/convenience
-  status?: 'available' | 'occupied'; 
-  current_order_id?: string | null; 
+  status?: 'available' | 'occupied';
+  current_order_id?: string | null;
 }
 
 // --- Other Entities from PDF ---
@@ -580,7 +583,7 @@ export const entities: Record<string, EntityConfig> = {
     fields: [
       "id", "name", "email", "password", "remember_token", "created_at", "updated_at",
       // Custom fields not in PDF, keep if needed by app
-      "phone", "address" 
+      "phone", "address"
     ],
   },
   domains: {

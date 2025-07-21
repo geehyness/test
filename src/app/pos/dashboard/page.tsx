@@ -42,32 +42,32 @@ const DynamicChevronRightIcon = dynamic(() => import('@chakra-ui/icons').then(mo
 const DynamicCheckCircleIcon = dynamic(() => import('@chakra-ui/icons').then(mod => mod.CheckCircleIcon), { ssr: false });
 const DynamicCloseIcon = dynamic(() => import('@chakra-ui/icons').then(mod => mod.CloseIcon), { ssr: false });
 
-import { FaShoppingCart, FaClipboardList, FaMoneyBillWave, FaCreditCard, FaUtensils, FaBell, FaChair } from 'react-icons/fa'; 
+import { FaShoppingCart, FaClipboardList, FaMoneyBillWave, FaCreditCard, FaUtensils, FaBell, FaChair } from 'react-icons/fa';
 import MenuCategoryFilter from '../components/MenuCategoryFilter';
 import MenuItemList from '../components/MenuItemList';
 import TableSelectionModal from '../components/TableSelectionModal';
 import PaymentModal from '../components/PaymentModal';
 import { usePOSStore } from '../lib/usePOSStore';
-import { Food, Category, Table, Order, OrderItem } from '@/app/config/entities'; 
-import { fetchData } from '@/app/lib/api'; 
+import { Food, Category, Table, Order, OrderItem } from '@/app/config/entities';
+import { fetchData } from '@/app/lib/api';
 
 // New components for different views
 import OrderManagementView from '../components/OrderManagementView';
 import KitchenDisplayView from '../components/KitchenDisplayView';
 import ServerView from '../components/ServerView';
-import CurrentOrderDetailsModal from '../components/CurrentOrderDetailsModal'; 
+import CurrentOrderDetailsModal from '../components/CurrentOrderDetailsModal';
 
 export default function POSDashboardPage() {
   const toast = useToast();
 
   // Destructure state and actions from the POS store
   const {
-    menuItems, 
+    menuItems,
     categories,
     tables,
     currentOrder,
     activeOrders,
-    setMenuItems, 
+    setMenuItems,
     setCategories,
     setTables,
     addOrderItem,
@@ -96,7 +96,7 @@ export default function POSDashboardPage() {
   const { isOpen: isTrackOrderModalOpen, onOpen: onTrackOrderModalOpen, onClose: onTrackOrderModalClose } = useDisclosure();
   const { isOpen: isNotesModalOpen, onOpen: onNotesModalOpen, onClose: onNotesModalClose } = useDisclosure();
   const { isOpen: isDiscountModalOpen, onOpen: onDiscountModalOpen, onClose: onDiscountModalClose } = useDisclosure();
-  const { isOpen: isCurrentOrderDetailsModalOpen, onOpen: onCurrentOrderDetailsModalOpen, onClose: onCurrentOrderDetailsModalClose } = useDisclosure(); 
+  const { isOpen: isCurrentOrderDetailsModalOpen, onOpen: onCurrentOrderDetailsModalOpen, onClose: onCurrentOrderDetailsModalClose } = useDisclosure();
 
   // Local state for notes and discount
   const [currentNotes, setCurrentNotes] = useState(currentOrder.notes || '');
@@ -109,7 +109,7 @@ export default function POSDashboardPage() {
         setLoading(true);
         // Fetch all necessary data concurrently using fetchData from api.ts
         const [fetchedFoods, fetchedCategories, fetchedTables, fetchedOrders] = await Promise.all([
-          fetchData('foods'), 
+          fetchData('foods'),
           fetchData('categories'),
           fetchData('tables'),
           fetchData('orders')
@@ -124,7 +124,7 @@ export default function POSDashboardPage() {
         console.log('------------------------------------------');
 
         // Update the POS store with the fetched data
-        setMenuItems(fetchedFoods || []); 
+        setMenuItems(fetchedFoods || []);
         setCategories(fetchedCategories || []);
         setTables(fetchedTables || []);
 
@@ -189,9 +189,9 @@ export default function POSDashboardPage() {
 
   // Memoized filtering of menu items based on search term and selected category
   const filteredMenuItems = React.useMemo(() => {
-    let items = menuItems; 
+    let items = menuItems;
     if (selectedCategory) {
-      items = items.filter(item => item.category_id === selectedCategory); 
+      items = items.filter(item => item.category_id === selectedCategory);
     }
     if (searchTerm) {
       items = items.filter(item =>
@@ -229,7 +229,7 @@ export default function POSDashboardPage() {
       });
       onDiscountModalClose();
       console.log('LOG: Discount "SAVE10" applied.');
-    } else if (discountCode === 'FREEDELIVERY') { 
+    } else if (discountCode === 'FREEDELIVERY') {
       applyDiscountToOrder(5.00, 'fixed');
       toast({
         title: 'Discount Applied',
@@ -280,13 +280,13 @@ export default function POSDashboardPage() {
         order_type: currentOrder.table_id ? 'dine-in' : 'takeaway',
         items: (currentOrder.items ?? []).map(item => ({ // Safely map items
           ...item, // Keep existing properties
-          food_id: item.food_id, 
-          name: item.name, 
-          price: item.price, 
-          sub_total: item.sub_total, 
+          food_id: item.food_id,
+          name: item.name,
+          price: item.price,
+          sub_total: item.sub_total,
           notes: item.notes,
         })),
-      } as Order; 
+      } as Order;
 
       // Process payment (simulated)
       await processOrderPayment(orderToSubmit, paymentMethod);
@@ -378,10 +378,10 @@ export default function POSDashboardPage() {
         order_type: currentOrder.table_id ? 'dine-in' : 'takeaway',
         items: (currentOrder.items ?? []).map(item => ({ // Safely map items
           ...item, // Keep existing properties
-          food_id: item.food_id, 
-          name: item.name, 
-          price: item.price, 
-          sub_total: item.sub_total, 
+          food_id: item.food_id,
+          name: item.name,
+          price: item.price,
+          sub_total: item.sub_total,
           notes: item.notes,
         })),
       } as Order;
@@ -473,142 +473,158 @@ export default function POSDashboardPage() {
         </TabList>
 
         <TabPanels flex="1" p={4}>
-          {/* POS Tab Panel */}
+          {/* POS Tab Panel (now contains sub-tabs) */}
           <TabPanel h="100%" p={0}>
-            <Flex h="100%" gap={6}> {/* Changed to Flex for column control */}
-              {/* Left Column: Menu, Categories, and Table Layout (2/3 width) */}
-              <Box flex="2" bg="var(--background-color-light)" p={6} rounded="lg" shadow="md" overflowY="auto"> {/* flex="2" for 2/3 width */}
-                <VStack spacing={6} align="stretch" h="100%">
-                  {/* Table Layout Section */}
-                  <Box>
-                    <Text fontSize="xl" fontWeight="bold" mb={4} color="var(--dark-gray-text)">Restaurant Tables</Text>
-                    <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={4}> {/* Adjusted columns for better display */}
-                      {tables.map(table => (
-                        <Box
-                          key={table.id}
-                          p={2} // Reduced padding
-                          borderWidth="1px"
-                          rounded="lg"
-                          shadow="sm"
-                          bg={table.status === 'occupied' ? 'var(--primary-red-light)' : 'var(--primary-green-light)'}
-                          textAlign="center"
-                          cursor="pointer"
-                          _hover={{ transform: 'scale(1.02)', shadow: 'md' }}
-                          transition="all 0.2s ease-in-out"
-                          position="relative" // For positioning chairs and info
-                          height="120px" // Fixed height for visual consistency
-                          display="flex"
-                          flexDirection="column"
-                          justifyContent="center"
-                          alignItems="center"
-                          onClick={() => {
-                            if (table.status === 'occupied' && table.current_order_id) {
-                              const orderToLoad = activeOrders.find(order => order.id === table.current_order_id);
-                              if (orderToLoad) {
-                                usePOSStore.setState({ currentOrder: orderToLoad });
-                                onCurrentOrderDetailsModalOpen();
-                                toast({
-                                  title: 'Order Loaded',
-                                  description: `Order #${orderToLoad.id} loaded for modification.`,
-                                  status: 'info',
-                                  duration: 3000,
-                                  isClosable: true,
-                                });
-                              }
-                            } else {
-                              setCurrentOrderTable(table.id);
-                              toast({
-                                title: 'Table Selected',
-                                description: `Current order assigned to ${table.name}.`,
-                                status: 'info',
-                                duration: 2000,
-                                isClosable: true,
-                              });
-                            }
-                          }}
-                        >
-                          {/* Tabletop */}
-                          <Box
-                            width="60px"
-                            height="60px"
-                            bg={table.status === 'occupied' ? 'var(--primary-red)' : 'var(--primary-green)'}
-                            rounded="md"
-                            position="relative"
-                            display="flex"
-                            justifyContent="center"
-                            alignItems="center"
-                            color="white"
-                            fontWeight="bold"
-                            fontSize="md"
-                            zIndex="1"
-                          >
-                            {/* Table Info Overlay */}
-                            <VStack spacing={0} p={1} bg="rgba(0,0,0,0.5)" rounded="md" position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)" zIndex="2">
-                              <Text fontSize="sm" lineHeight="1.2">{table.name}</Text>
-                              <Badge
-                                colorScheme={table.status === 'occupied' ? 'red' : 'green'}
-                                variant="solid"
-                                px={1}
-                                py={0}
-                                rounded="full"
-                                fontSize="xx-small"
-                              >
-                                {table.status?.toUpperCase()}
-                              </Badge>
-                              {table.current_order_id && (
-                                <Text fontSize="xx-small" lineHeight="1.2">Order: #{table.current_order_id}</Text>
-                              )}
-                            </VStack>
-                          </Box>
+            <Flex h="100%" gap={6}>
+              {/* Left Column: Contains sub-tabs for Menu and Tables */}
+              <Box flex="2" bg="var(--background-color-light)" p={6} rounded="lg" shadow="md" overflowY="auto">
+                <Tabs variant="soft-rounded" colorScheme="green" h="100%" display="flex" flexDirection="column">
+                  <TabList mb={4}>
+                    <Tab _selected={{ bg: 'var(--primary-green)', color: 'white' }} fontSize="md" fontWeight="semibold">
+                      <Icon as={FaUtensils} mr={2} /> Menu
+                    </Tab>
+                    <Tab _selected={{ bg: 'var(--primary-green)', color: 'white' }} fontSize="md" fontWeight="semibold">
+                      <Icon as={FaChair} mr={2} /> Tables
+                    </Tab>
+                  </TabList>
 
-                          {/* Chairs (simplified visual representation) */}
-                          <Flex position="absolute" width="100%" height="100%" top="0" left="0" justifyContent="space-between" alignItems="space-between" p={1}>
-                            <Box w="10px" h="10px" bg="gray.500" rounded="full" mt={1} ml={1} />
-                            <Box w="10px" h="10px" bg="gray.500" rounded="full" mt={1} mr={1} />
-                          </Flex>
-                          <Flex position="absolute" width="100%" height="100%" bottom="0" left="0" justifyContent="space-between" alignItems="space-between" p={1}>
-                            <Box w="10px" h="10px" bg="gray.500" rounded="full" mb={1} ml={1} />
-                            <Box w="10px" h="10px" bg="gray.500" rounded="full" mb={1} mr={1} />
-                          </Flex>
+                  <TabPanels flex="1" p={0}>
+                    {/* Menu Sub-Tab Panel */}
+                    <TabPanel h="100%" p={0}>
+                      <VStack spacing={6} align="stretch" h="100%">
+                        <Box flex="1">
+                          <Text fontSize="xl" fontWeight="bold" mb={4} color="var(--dark-gray-text)">Menu Items</Text>
+                          <InputGroup mb={4}>
+                            <InputLeftElement pointerEvents="none">
+                              <DynamicSearchIcon color="gray.300" />
+                            </InputLeftElement>
+                            <Input
+                              placeholder="Search menu items..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              rounded="md"
+                              borderColor="var(--border-color)"
+                              focusBorderColor="var(--primary-green)"
+                              color="var(--dark-gray-text)"
+                            />
+                          </InputGroup>
+
+                          <MenuCategoryFilter
+                            categories={categories}
+                            selectedCategory={selectedCategory}
+                            onSelectCategory={setSelectedCategory}
+                          />
+
+                          <MenuItemList
+                            menuItems={filteredMenuItems}
+                            onAddItem={addOrderItem}
+                          />
                         </Box>
-                      ))}
-                    </SimpleGrid>
-                  </Box>
+                      </VStack>
+                    </TabPanel>
 
-                  {/* Menu and Categories Section */}
-                  <Box mt={6} flex="1"> {/* Added flex:1 to make it take remaining space */}
-                    <Text fontSize="xl" fontWeight="bold" mb={4} color="var(--dark-gray-text)">Menu</Text>
-                    <InputGroup mb={4}>
-                      <InputLeftElement pointerEvents="none">
-                        <DynamicSearchIcon color="gray.300" /> 
-                      </InputLeftElement>
-                      <Input
-                        placeholder="Search menu items..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        rounded="md"
-                        borderColor="var(--border-color)"
-                        focusBorderColor="var(--primary-green)"
-                        color="var(--dark-gray-text)"
-                      />
-                    </InputGroup>
+                    {/* Tables Sub-Tab Panel */}
+                    <TabPanel h="100%" p={0}>
+                      <VStack spacing={6} align="stretch" h="100%">
+                        <Box>
+                          <Text fontSize="xl" fontWeight="bold" mb={4} color="var(--dark-gray-text)">Restaurant Tables</Text>
+                          <SimpleGrid columns={{ base: 2, md: 3, lg: 4 }} spacing={4}>
+                            {tables.map(table => (
+                              <Box
+                                key={table.id}
+                                p={2}
+                                borderWidth="1px"
+                                rounded="lg"
+                                shadow="sm"
+                                bg={table.status === 'occupied' ? 'var(--primary-red-light)' : 'var(--primary-green-light)'}
+                                textAlign="center"
+                                cursor="pointer"
+                                _hover={{ transform: 'scale(1.02)', shadow: 'md' }}
+                                transition="all 0.2s ease-in-out"
+                                position="relative"
+                                height="120px"
+                                display="flex"
+                                flexDirection="column"
+                                justifyContent="center"
+                                alignItems="center"
+                                onClick={() => {
+                                  if (table.status === 'occupied' && table.current_order_id) {
+                                    const orderToLoad = activeOrders.find(order => order.id === table.current_order_id);
+                                    if (orderToLoad) {
+                                      usePOSStore.setState({ currentOrder: orderToLoad });
+                                      onCurrentOrderDetailsModalOpen(); // Open the CurrentOrderDetailsModal
+                                      toast({
+                                        title: 'Order Loaded',
+                                        description: `Order #${orderToLoad.id} loaded for modification.`,
+                                        status: 'info',
+                                        duration: 3000,
+                                        isClosable: true,
+                                      });
+                                    }
+                                  } else {
+                                    setCurrentOrderTable(table.id);
+                                    toast({
+                                      title: 'Table Selected',
+                                      description: `Current order assigned to ${table.name}.`,
+                                      status: 'info',
+                                      duration: 2000,
+                                      isClosable: true,
+                                    });
+                                  }
+                                }}
+                              >
+                                <Box
+                                  width="60px"
+                                  height="60px"
+                                  bg={table.status === 'occupied' ? 'var(--primary-red)' : 'var(--primary-green)'}
+                                  rounded="md"
+                                  position="relative"
+                                  display="flex"
+                                  justifyContent="center"
+                                  alignItems="center"
+                                  color="white"
+                                  fontWeight="bold"
+                                  fontSize="md"
+                                  zIndex="1"
+                                >
+                                  <VStack spacing={0} p={1} bg="rgba(0,0,0,0.5)" rounded="md" position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)" zIndex="2">
+                                    <Text fontSize="sm" lineHeight="1.2">{table.name}</Text>
+                                    <Badge
+                                      colorScheme={table.status === 'occupied' ? 'red' : 'green'}
+                                      variant="solid"
+                                      px={1}
+                                      py={0}
+                                      rounded="full"
+                                      fontSize="xx-small"
+                                    >
+                                      {table.status?.toUpperCase()}
+                                    </Badge>
+                                    {table.current_order_id && (
+                                      <Text fontSize="xx-small" lineHeight="1.2">Order: #{table.current_order_id}</Text>
+                                    )}
+                                  </VStack>
+                                </Box>
 
-                    <MenuCategoryFilter
-                      categories={categories}
-                      selectedCategory={selectedCategory}
-                      onSelectCategory={setSelectedCategory}
-                    />
-
-                    <MenuItemList
-                      menuItems={filteredMenuItems} 
-                      onAddItem={addOrderItem} 
-                    />
-                  </Box>
-                </VStack>
+                                <Flex position="absolute" width="100%" height="100%" top="0" left="0" justifyContent="space-between" alignItems="space-between" p={1}>
+                                  <Box w="10px" h="10px" bg="gray.500" rounded="full" mt={1} ml={1} />
+                                  <Box w="10px" h="10px" bg="gray.500" rounded="full" mt={1} mr={1} />
+                                </Flex>
+                                <Flex position="absolute" width="100%" height="100%" bottom="0" left="0" justifyContent="space-between" alignItems="space-between" p={1}>
+                                  <Box w="10px" h="10px" bg="gray.500" rounded="full" mb={1} ml={1} />
+                                  <Box w="10px" h="10px" bg="gray.500" rounded="full" mb={1} mr={1} />
+                                </Flex>
+                              </Box>
+                            ))}
+                          </SimpleGrid>
+                        </Box>
+                      </VStack>
+                    </TabPanel>
+                  </TabPanels>
+                </Tabs>
               </Box>
 
-              {/* Right Column: Live Orders / Active Orders (1/3 width) */}
-              <Box flex="1" bg="var(--background-color-light)" p={6} rounded="lg" shadow="md" overflowY="auto"> {/* flex="1" for 1/3 width */}
+              {/* Right Column: Live Orders / Active Orders (1/3 width) - remains the same */}
+              <Box flex="1" bg="var(--background-color-light)" p={6} rounded="lg" shadow="md" overflowY="auto">
                 <Flex justifyContent="space-between" alignItems="center" mb={4}>
                   <Text fontSize="xl" fontWeight="bold" color="var(--dark-gray-text)">Live Orders</Text>
                   <Button size="sm" onClick={onTrackOrderModalOpen} colorScheme="teal" variant="outline">
@@ -619,18 +635,18 @@ export default function POSDashboardPage() {
                   <Text textAlign="center" py={10} color="var(--medium-gray-text)">No active orders at the moment.</Text>
                 ) : (
                   <VStack spacing={4} align="stretch">
-                    {activeOrders.slice(0, 5).map(order => ( // Display top 5 active orders
-                      <Box 
-                        key={order.id} 
-                        p={4} 
-                        borderWidth="1px" 
-                        rounded="md" 
-                        shadow="sm" 
+                    {activeOrders.slice(0, 5).map(order => (
+                      <Box
+                        key={order.id}
+                        p={4}
+                        borderWidth="1px"
+                        rounded="md"
+                        shadow="sm"
                         bg="var(--light-gray-bg)"
-                        cursor="pointer" // Make the box clickable
+                        cursor="pointer"
                         _hover={{ transform: 'scale(1.02)', shadow: 'md' }}
                         transition="all 0.2s ease-in-out"
-                        onClick={() => { // Click handler for the order box
+                        onClick={() => { // Click handler for the order box itself
                           usePOSStore.setState({ currentOrder: order }); // Load order into currentOrder
                           onCurrentOrderDetailsModalOpen(); // Open the current order details modal
                           toast({
@@ -657,11 +673,11 @@ export default function POSDashboardPage() {
                         </Text>
                         <HStack mt={3} justifyContent="flex-end">
                           <Button size="sm" colorScheme="blue" onClick={(e) => {
-                            e.stopPropagation(); // Prevent opening modal twice
+                            e.stopPropagation(); // Prevent opening modal twice from parent Box click
                             const fullOrder = activeOrders.find(ao => ao.id === order.id);
                             if (fullOrder) {
                               usePOSStore.setState({ currentOrder: fullOrder });
-                              onTrackOrderModalClose();
+                              onCurrentOrderDetailsModalOpen(); // *** MODIFIED HERE ***
                               toast({
                                 title: 'Order Loaded',
                                 description: `Order #${order.id} loaded for modification.`,
@@ -709,6 +725,7 @@ export default function POSDashboardPage() {
               updateOrder={updateOrder}
               onLoadOrder={(order) => {
                 usePOSStore.setState({ currentOrder: order });
+                onCurrentOrderDetailsModalOpen(); // Ensure this is called here as well if OrderManagementView has its own load order logic
                 toast({
                   title: 'Order Loaded',
                   description: `Order #${order.id} loaded for modification.`,
@@ -746,7 +763,6 @@ export default function POSDashboardPage() {
                 This section will provide detailed insights into sales, orders, and performance.
                 (Coming Soon!)
               </Text>
-              {/* You can add charts or data summaries here later */}
             </VStack>
           </TabPanel>
 
@@ -772,7 +788,7 @@ export default function POSDashboardPage() {
         right="20px"
         bg="var(--primary-green)"
         color="white"
-        zIndex="tooltip" // Ensure it's above other content
+        zIndex="tooltip"
       >
         <Icon as={FaShoppingCart} w={6} h={6} />
         {(currentOrder.items ?? []).length > 0 && (
@@ -809,10 +825,10 @@ export default function POSDashboardPage() {
           transition="all 0.2s ease-in-out"
           position="absolute"
           bottom="20px"
-          right="90px" // Adjusted right position
+          right="90px"
           bg="blue.500"
           color="white"
-          zIndex="tooltip" // Ensure it's above other content
+          zIndex="tooltip"
         >
           <Icon as={FaClipboardList} w={6} h={6} />
           <Badge
@@ -923,8 +939,8 @@ export default function POSDashboardPage() {
                       <Button size="sm" colorScheme="blue" onClick={() => {
                         const fullOrder = activeOrders.find(ao => ao.id === order.id);
                         if (fullOrder) {
-                          usePOSStore.setState({ currentOrder: fullOrder }); // Load order into currentOrder
-                          onTrackOrderModalClose(); // Close the modal
+                          usePOSStore.setState({ currentOrder: fullOrder });
+                          onTrackOrderModalClose();
                           toast({
                             title: 'Order Loaded',
                             description: `Order #${order.id} loaded for modification.`,
@@ -972,9 +988,9 @@ export default function POSDashboardPage() {
         onApplyDiscount={onDiscountModalOpen}
         onSelectTable={onTableModalOpen}
         onSendToKitchen={handleSendToKitchen}
-        onCheckout={handleCheckout} 
+        onCheckout={handleCheckout}
         onClearOrder={clearCurrentOrder}
-        tables={tables} 
+        tables={tables}
       />
     </Flex>
   );
