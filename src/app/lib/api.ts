@@ -42,7 +42,7 @@ export async function fetchData(
 
   // Use the actualResourceName to access sampleData
   // We'll work with a mutable copy for POST/PUT/DELETE operations
-  let currentResourceData = sampleData[actualResourceName] || [];
+  const currentResourceData = sampleData[actualResourceName] || []; // Changed let to const
 
   switch (method) {
     case "GET":

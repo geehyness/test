@@ -1,7 +1,7 @@
 // src/app/customer-menu/page.tsx
-'use client';
+"use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Heading,
@@ -44,8 +44,8 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-} from '@chakra-ui/react';
-import { AddIcon, MinusIcon, DeleteIcon, SearchIcon } from '@chakra-ui/icons';
+} from "@chakra-ui/react";
+import { AddIcon, MinusIcon, DeleteIcon, SearchIcon } from "@chakra-ui/icons";
 import {
   FaShoppingCart,
   FaPizzaSlice,
@@ -60,10 +60,10 @@ import {
   FaCreditCard,
   FaMoneyBillWave,
   FaCheckCircle,
-  FaClipboardList
-} from 'react-icons/fa';
-import { fetchData } from '../lib/api';
-import { Table, Food, Category } from '../config/entities'; // Import Table, Food, and Category from entities.ts
+  FaClipboardList,
+} from "react-icons/fa";
+import { fetchData } from "../lib/api";
+import { Table, Food, Category } from "../config/entities"; // Import Table, Food, and Category from entities.ts
 
 // Define a new interface for displaying food items, extending the base Food entity
 interface DisplayFoodItem extends Food {
@@ -71,7 +71,7 @@ interface DisplayFoodItem extends Food {
   displayPrice: number; // The price to display (e.g., sale_price)
 }
 
-interface FoodCategoryData extends Category {} // Alias for clarity, if needed, otherwise directly use Category
+// REMOVED THE FOLLOWING LINE: interface FoodCategoryData extends Category {}
 
 interface FoodCategory {
   id: string;
@@ -85,7 +85,7 @@ interface CartItem extends DisplayFoodItem {
 }
 
 interface OrderedMeal extends CartItem {
-  status: 'Preparing' | 'Ready' | 'Served';
+  status: "Preparing" | "Ready" | "Served";
   orderTime: string;
 }
 
@@ -96,18 +96,25 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, children, isActive, onClick }) => {
-  const activeBg = useColorModeValue('#333', '#333'); // Changed to #333 for both light and dark modes
-  const hoverBg = useColorModeValue('var(--navbar-main-item-hover-bg)', 'var(--navbar-main-item-hover-bg)');
-  const activeColor = 'var(--primary-green)';
-  const inactiveColor = useColorModeValue('var(--dark-gray-text)', 'var(--navbar-main-item-inactive-text)');
+const NavItem: React.FC<NavItemProps> = ({
+  icon,
+  children,
+  isActive,
+  onClick,
+}) => {
+  const activeBg = useColorModeValue("#333", "#333"); // Changed to #333 for both light and dark modes
+  const hoverBg = useColorModeValue(
+    "var(--navbar-main-item-hover-bg)",
+    "var(--navbar-main-item-hover-bg)"
+  );
+  const activeColor = "var(--primary-green)";
+  const inactiveColor = useColorModeValue(
+    "var(--dark-gray-text)",
+    "var(--navbar-main-item-inactive-text)"
+  );
 
   return (
-    <ChakraLink
-      href="#"
-      _hover={{ textDecoration: 'none' }}
-      onClick={onClick}
-    >
+    <ChakraLink href="#" _hover={{ textDecoration: "none" }} onClick={onClick}>
       <Flex
         align="center"
         p="3"
@@ -115,7 +122,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, children, isActive, onClick }) 
         borderRadius="lg"
         role="group"
         cursor="pointer"
-        bg={isActive ? activeBg : 'transparent'}
+        bg={isActive ? activeBg : "transparent"}
         color={isActive ? activeColor : inactiveColor}
         _hover={{
           bg: hoverBg,
@@ -134,30 +141,62 @@ const NavItem: React.FC<NavItemProps> = ({ icon, children, isActive, onClick }) 
 const CustomerMenuPage: React.FC = () => {
   // --- ALL Hooks MUST be declared at the top level and unconditionally ---
   const [foods, setFoods] = useState<DisplayFoodItem[]>([]);
-  const [randomlySelectedTable, setRandomlySelectedTable] = useState<Table | null>(null);
+  const [randomlySelectedTable, setRandomlySelectedTable] =
+    useState<Table | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderedMeals, setOrderedMeals] = useState<OrderedMeal[]>([]);
-  const { isOpen: isCartOpen, onOpen: onCartOpen, onClose: onCartClose } = useDisclosure();
+  const {
+    isOpen: isCartOpen,
+    onOpen: onCartOpen,
+    onClose: onCartClose,
+  } = useDisclosure();
 
-  const { isOpen: isDetailsModalOpen, onOpen: onDetailsModalOpen, onClose: onDetailsModalClose } = useDisclosure();
-  const [selectedFood, setSelectedFood] = useState<DisplayFoodItem | null>(null);
+  const {
+    isOpen: isDetailsModalOpen,
+    onOpen: onDetailsModalOpen,
+    onClose: onDetailsModalClose,
+  } = useDisclosure();
+  const [selectedFood, setSelectedFood] = useState<DisplayFoodItem | null>(
+    null
+  );
 
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [dynamicCategories, setDynamicCategories] = useState<FoodCategory[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [dynamicCategories, setDynamicCategories] = useState<FoodCategory[]>(
+    []
+  );
 
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('cash');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("cash");
 
   // Move ALL useColorModeValue hooks to the top level
-  const primaryGreen = useColorModeValue('var(--primary-green)', 'var(--primary-green)');
-  const textColor = useColorModeValue('var(--dark-gray-text)', 'var(--dark-gray-text)');
-  const cardBg = useColorModeValue('var(--background-color-light)', 'var(--background-color-light)');
-  const borderColor = useColorModeValue('var(--border-color)', 'var(--border-color)');
-  const modalContentBg = useColorModeValue('var(--background-color-light)', 'var(--background-color-light)');
-  const topBarBg = useColorModeValue('var(--background-color-light)', 'var(--background-color-light)');
+  const primaryGreen = useColorModeValue(
+    "var(--primary-green)",
+    "var(--primary-green)"
+  );
+  const textColor = useColorModeValue(
+    "var(--dark-gray-text)",
+    "var(--dark-gray-text)"
+  );
+  const cardBg = useColorModeValue(
+    "var(--background-color-light)",
+    "var(--background-color-light)"
+  );
+  const borderColor = useColorModeValue(
+    "var(--border-color)",
+    "var(--border-color)"
+  );
+  const modalContentBg = useColorModeValue(
+    "var(--background-color-light)",
+    "var(--background-color-light)"
+  );
+  const topBarBg = useColorModeValue(
+    "var(--background-color-light)",
+    "var(--background-color-light)"
+  );
 
   // IMPORTANT: If you have any `useContext`, `useRef`, or `useId` calls in your
   // full file, they also need to be declared here at the top, unconditionally.
@@ -167,19 +206,27 @@ const CustomerMenuPage: React.FC = () => {
   // const myRef = useRef(null);
   // const myId = useId();
 
-
   // Helper function to map category names to icons
   const getCategoryIcon = (categoryName: string): React.ElementType => {
     switch (categoryName.toLowerCase()) {
-      case 'pizza': return FaPizzaSlice;
-      case 'burgers': return FaHamburger;
-      case 'drinks': return FaCoffee;
-      case 'desserts': return FaWineGlass;
-      case 'chicken': return FaDrumstickBite;
-      case 'hotdogs': return FaHotdog;
-      case 'cocktails': return FaCocktail;
-      case 'breads': return FaBreadSlice;
-      default: return FaUtensils;
+      case "pizza":
+        return FaPizzaSlice;
+      case "burgers":
+        return FaHamburger;
+      case "drinks":
+        return FaCoffee;
+      case "desserts":
+        return FaWineGlass;
+      case "chicken":
+        return FaDrumstickBite;
+      case "hotdogs":
+        return FaHotdog;
+      case "cocktails":
+        return FaCocktail;
+      case "breads":
+        return FaBreadSlice;
+      default:
+        return FaUtensils;
     }
   };
 
@@ -187,20 +234,22 @@ const CustomerMenuPage: React.FC = () => {
     try {
       setLoading(true);
       const [foodsData, categoriesData] = await Promise.all([
-        fetchData('foods'),
-        fetchData('categories'),
+        fetchData("foods"),
+        fetchData("categories"),
       ]);
 
       const categoryMap = new Map<string, string>();
-      categoriesData.forEach((cat: Category) => { // Use imported Category interface
+      categoriesData.forEach((cat: Category) => {
+        // Use imported Category interface
         categoryMap.set(cat.id, cat.name);
       });
 
-      const processedFoods: DisplayFoodItem[] = foodsData.map((food: Food) => ({ // Use imported Food interface
+      const processedFoods: DisplayFoodItem[] = foodsData.map((food: Food) => ({
+        // Use imported Food interface
         ...food,
-        categoryName: categoryMap.get(food.category_id) || 'Uncategorized', // Map category_id to name
+        categoryName: categoryMap.get(food.category_id) || "Uncategorized", // Map category_id to name
         displayPrice: food.sale_price, // Use sale_price for display
-        description: food.description || 'No description available.',
+        description: food.description || "No description available.",
       }));
 
       setFoods(processedFoods);
@@ -212,20 +261,21 @@ const CustomerMenuPage: React.FC = () => {
         }
       });
 
-      const generatedCategories: FoodCategory[] = [{ id: 'All', name: 'All', icon: FaUtensils }];
+      const generatedCategories: FoodCategory[] = [
+        { id: "All", name: "All", icon: FaUtensils },
+      ];
       Array.from(uniqueCategories)
         .sort((a, b) => a.localeCompare(b))
-        .forEach(cat => {
+        .forEach((cat) => {
           generatedCategories.push({
             id: cat,
             name: cat,
-            icon: getCategoryIcon(cat)
+            icon: getCategoryIcon(cat),
           });
         });
       setDynamicCategories(generatedCategories);
-
     } catch (err) {
-      setError('Failed to load menu items.');
+      setError("Failed to load menu items.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -234,13 +284,13 @@ const CustomerMenuPage: React.FC = () => {
 
   const fetchTablesData = useCallback(async () => {
     try {
-      const tableData: Table[] = await fetchData('tables'); // Use imported Table interface
+      const tableData: Table[] = await fetchData("tables"); // Use imported Table interface
       if (tableData.length > 0) {
         const randomIndex = Math.floor(Math.random() * tableData.length);
         setRandomlySelectedTable(tableData[randomIndex]);
       }
     } catch (err) {
-      console.error('Error fetching tables:', err);
+      console.error("Error fetching tables:", err);
     }
   }, []);
 
@@ -260,38 +310,53 @@ const CustomerMenuPage: React.FC = () => {
   };
 
   const filteredFoods = foods.filter((food) => {
-    const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (food.description && food.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch =
+      food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (food.description &&
+        food.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesCategory = selectedCategory === 'All' || (food.categoryName && food.categoryName.toLowerCase() === selectedCategory.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "All" ||
+      (food.categoryName &&
+        food.categoryName.toLowerCase() === selectedCategory.toLowerCase());
     return matchesSearch && matchesCategory;
   });
 
   const groupedFoods = [];
 
-  if (selectedCategory === 'All') {
+  if (selectedCategory === "All") {
     groupedFoods.push({
-      id: 'All',
-      name: 'All',
+      id: "All",
+      name: "All",
       icon: FaUtensils,
       items: filteredFoods,
     });
   } else {
-    const selectedCat = dynamicCategories.find(cat => cat.id === selectedCategory);
+    const selectedCat = dynamicCategories.find(
+      (cat) => cat.id === selectedCategory
+    );
     if (selectedCat) {
       groupedFoods.push({
         ...selectedCat,
-        items: filteredFoods.filter(food => food.categoryName && food.categoryName.toLowerCase() === selectedCategory.toLowerCase())
+        items: filteredFoods.filter(
+          (food) =>
+            food.categoryName &&
+            food.categoryName.toLowerCase() === selectedCategory.toLowerCase()
+        ),
       });
     }
   }
 
   const addToCart = (item: DisplayFoodItem) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((cartItem) => cartItem.id === item.id);
+      const existingItem = prevItems.find(
+        (cartItem) => cartItem.id === item.id
+      );
       if (existingItem) {
         return prevItems.map((cartItem) =>
-          cartItem.id === item.id ? { ...cartItem, quantity: cartItem.quantity + 1 } : cartItem
+          cartItem.id === item.id
+            ? { ...cartItem, quantity: cartItem.quantity + 1 }
+            : cartItem
         );
       } else {
         return [...prevItems, { ...item, quantity: 1 }];
@@ -319,22 +384,34 @@ const CustomerMenuPage: React.FC = () => {
     return item ? item.quantity : 0;
   };
 
-  const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const totalCartPrice = cartItems.reduce((total, item) => total + item.displayPrice * item.quantity, 0); // Use displayPrice
-  const activeOrdersCount = orderedMeals.filter(meal => meal.status !== 'Served').length; // Calculate active orders
+  const totalCartItems = cartItems.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+  const totalCartPrice = cartItems.reduce(
+    (total, item) => total + item.displayPrice * item.quantity,
+    0
+  ); // Use displayPrice
+  const activeOrdersCount = orderedMeals.filter(
+    (meal) => meal.status !== "Served"
+  ).length; // Calculate active orders
 
   const handlePlaceOrder = () => {
     if (cartItems.length > 0) {
-      const newOrderedMeals: OrderedMeal[] = cartItems.map(item => ({
+      const newOrderedMeals: OrderedMeal[] = cartItems.map((item) => ({
         ...item,
-        status: 'Preparing',
+        status: "Preparing",
         orderTime: new Date().toLocaleString(),
       }));
-      setOrderedMeals(prev => [...prev, ...newOrderedMeals]);
+      setOrderedMeals((prev) => [...prev, ...newOrderedMeals]);
       setCartItems([]);
       // Use a custom message box instead of alert()
       // You would replace this with a Chakra UI Modal or Toast
-      console.log(`Order placed for Table ${randomlySelectedTable?.name || 'N/A'}! Total: R ${totalCartPrice.toFixed(2)}`);
+      console.log(
+        `Order placed for Table ${
+          randomlySelectedTable?.name || "N/A"
+        }! Total: R ${totalCartPrice.toFixed(2)}`
+      );
       onCartClose();
     }
   };
@@ -374,8 +451,8 @@ const CustomerMenuPage: React.FC = () => {
         transition="background-color 0.3s ease-in-out"
       >
         <Flex
-          direction={{ base: 'column', md: 'row' }}
-          align={{ base: 'flex-start', md: 'center' }}
+          direction={{ base: "column", md: "row" }}
+          align={{ base: "flex-start", md: "center" }}
           justify="space-between"
           mb={4}
           wrap="wrap"
@@ -404,7 +481,9 @@ const CustomerMenuPage: React.FC = () => {
         </Flex>
 
         {/* Search Bar on its own line */}
-        <Box px={{ base: 4, md: 8 }} mb={6} mt={4}> {/* Added margin-top for spacing from title, and padding */}
+        <Box px={{ base: 4, md: 8 }} mb={6} mt={4}>
+          {" "}
+          {/* Added margin-top for spacing from title, and padding */}
           <InputGroup width="100%">
             <InputLeftElement pointerEvents="none">
               <SearchIcon color="gray.400" />
@@ -421,7 +500,7 @@ const CustomerMenuPage: React.FC = () => {
               px={5}
               py={3}
               boxShadow="sm"
-              _hover={{ borderColor: primaryGreen, boxShadow: 'md' }}
+              _hover={{ borderColor: primaryGreen, boxShadow: "md" }}
               transition="all 0.2s ease-in-out"
             />
           </InputGroup>
@@ -433,11 +512,11 @@ const CustomerMenuPage: React.FC = () => {
           gap={{ base: 2, md: 4 }}
           justifyContent="flex-start"
           css={{
-            '&::-webkit-scrollbar': {
-              display: 'none',
+            "&::-webkit-scrollbar": {
+              display: "none",
             },
-            msOverflowStyle: 'none',
-            scrollbarWidth: 'none',
+            msOverflowStyle: "none",
+            scrollbarWidth: "none",
           }}
           py={2}
           px={{ base: 4, md: 8 }}
@@ -455,9 +534,13 @@ const CustomerMenuPage: React.FC = () => {
         </Flex>
       </Box>
 
-      
-      <Flex direction={{ base: 'column', md: 'row' }} gap={8}>
-        <Box flex={1} overflowY="auto" maxH="calc(100vh - 180px)" pr={{ base: 0, md: 4 }}>
+      <Flex direction={{ base: "column", md: "row" }} gap={8}>
+        <Box
+          flex={1}
+          overflowY="auto"
+          maxH="calc(100vh - 180px)"
+          pr={{ base: 0, md: 4 }}
+        >
           {error && (
             <Alert status="error" mb={4}>
               <AlertIcon />
@@ -468,8 +551,19 @@ const CustomerMenuPage: React.FC = () => {
 
           {groupedFoods.map((group) => (
             <Box key={group.id} mb={10}>
-              <br /><br />
-              <Heading as="h2" size="lg" mb={6} color={textColor} borderBottom="2px solid" borderColor={primaryGreen} pb={2} display="inline-block" fontFamily="var(--font-lexend-deca)">
+              <br />
+              <br />
+              <Heading
+                as="h2"
+                size="lg"
+                mb={6}
+                color={textColor}
+                borderBottom="2px solid"
+                borderColor={primaryGreen}
+                pb={2}
+                display="inline-block"
+                fontFamily="var(--font-lexend-deca)"
+              >
                 {group.name}
               </Heading>
               <SimpleGrid
@@ -491,8 +585,8 @@ const CustomerMenuPage: React.FC = () => {
                       cursor="pointer"
                       onClick={() => openDetailsModal(item)}
                       _hover={{
-                        shadow: 'lg',
-                        transform: 'translateY(-5px)',
+                        shadow: "lg",
+                        transform: "translateY(-5px)",
                         borderColor: primaryGreen,
                       }}
                     >
@@ -531,7 +625,8 @@ const CustomerMenuPage: React.FC = () => {
                             fontWeight="extrabold"
                             fontFamily="var(--font-lexend-deca)"
                           >
-                            R {item.displayPrice.toFixed(2)} {/* Use displayPrice */}
+                            R {item.displayPrice.toFixed(2)}{" "}
+                            {/* Use displayPrice */}
                           </Text>
                         </VStack>
                       </CardBody>
@@ -546,11 +641,14 @@ const CustomerMenuPage: React.FC = () => {
                             size="md"
                             width="full"
                             rounded="lg"
-                            onClick={(e) => { e.stopPropagation(); addToCart(item); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              addToCart(item);
+                            }}
                             fontWeight="semibold"
                             fontSize="md"
                             bg={primaryGreen}
-                            _hover={{ bg: 'green.600', shadow: 'md' }}
+                            _hover={{ bg: "green.600", shadow: "md" }}
                             fontFamily="var(--font-lexend-deca)"
                           >
                             Add to Cart
@@ -561,7 +659,13 @@ const CustomerMenuPage: React.FC = () => {
                               aria-label="Decrease quantity"
                               icon={<MinusIcon />}
                               size="md"
-                              onClick={(e) => { e.stopPropagation(); updateCartItemQuantity(item.id, currentQuantity - 1); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateCartItemQuantity(
+                                  item.id,
+                                  currentQuantity - 1
+                                );
+                              }}
                               isDisabled={currentQuantity <= 0}
                               rounded="lg"
                               colorScheme="red"
@@ -579,7 +683,13 @@ const CustomerMenuPage: React.FC = () => {
                               aria-label="Increase quantity"
                               icon={<AddIcon />}
                               size="md"
-                              onClick={(e) => { e.stopPropagation(); updateCartItemQuantity(item.id, currentQuantity + 1); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateCartItemQuantity(
+                                  item.id,
+                                  currentQuantity + 1
+                                );
+                              }}
                               rounded="lg"
                               colorScheme="green"
                               variant="outline"
@@ -597,11 +707,22 @@ const CustomerMenuPage: React.FC = () => {
       </Flex>
 
       {/* Item Details Modal */}
-      <Modal isOpen={isDetailsModalOpen} onClose={closeDetailsModal} size="xl" isCentered>
+      <Modal
+        isOpen={isDetailsModalOpen}
+        onClose={closeDetailsModal}
+        size="xl"
+        isCentered
+      >
         <ModalOverlay />
         <ModalContent bg={modalContentBg} rounded="xl" overflow="hidden">
           <ModalCloseButton color={textColor} />
-          <ModalHeader borderBottomWidth="1px" borderColor={borderColor} color={textColor} fontFamily="var(--font-lexend-deca)" pb={3}>
+          <ModalHeader
+            borderBottomWidth="1px"
+            borderColor={borderColor}
+            color={textColor}
+            fontFamily="var(--font-lexend-deca)"
+            pb={3}
+          >
             {selectedFood?.name}
           </ModalHeader>
 
@@ -610,7 +731,7 @@ const CustomerMenuPage: React.FC = () => {
               <ChakraImage
                 src={selectedFood.image}
                 alt={selectedFood.name}
-                height={{ base: '250px', md: '300px' }}
+                height={{ base: "250px", md: "300px" }}
                 objectFit="cover"
                 width="100%"
               />
@@ -629,7 +750,8 @@ const CustomerMenuPage: React.FC = () => {
                 fontWeight="extrabold"
                 fontFamily="var(--font-lexend-deca)"
               >
-                R {selectedFood?.displayPrice.toFixed(2)} {/* Use displayPrice */}
+                R {selectedFood?.displayPrice.toFixed(2)}{" "}
+                {/* Use displayPrice */}
               </Text>
 
               {selectedFood && (
@@ -641,11 +763,14 @@ const CustomerMenuPage: React.FC = () => {
                       size="lg"
                       width="full"
                       rounded="lg"
-                      onClick={() => { addToCart(selectedFood); closeDetailsModal(); }}
+                      onClick={() => {
+                        addToCart(selectedFood);
+                        closeDetailsModal();
+                      }}
                       fontWeight="semibold"
                       fontSize="lg"
                       bg={primaryGreen}
-                      _hover={{ bg: 'green.600', shadow: 'md' }}
+                      _hover={{ bg: "green.600", shadow: "md" }}
                       fontFamily="var(--font-lexend-deca)"
                     >
                       Add to Cart
@@ -656,7 +781,12 @@ const CustomerMenuPage: React.FC = () => {
                         aria-label="Decrease quantity"
                         icon={<MinusIcon />}
                         size="lg"
-                        onClick={() => updateCartItemQuantity(selectedFood.id, getCartItemQuantity(selectedFood.id) - 1)}
+                        onClick={() =>
+                          updateCartItemQuantity(
+                            selectedFood.id,
+                            getCartItemQuantity(selectedFood.id) - 1
+                          )
+                        }
                         isDisabled={getCartItemQuantity(selectedFood.id) <= 0}
                         rounded="lg"
                         colorScheme="red"
@@ -674,7 +804,12 @@ const CustomerMenuPage: React.FC = () => {
                         aria-label="Increase quantity"
                         icon={<AddIcon />}
                         size="lg"
-                        onClick={() => updateCartItemQuantity(selectedFood.id, getCartItemQuantity(selectedFood.id) + 1)}
+                        onClick={() =>
+                          updateCartItemQuantity(
+                            selectedFood.id,
+                            getCartItemQuantity(selectedFood.id) + 1
+                          )
+                        }
                         rounded="lg"
                         colorScheme="green"
                         variant="outline"
@@ -692,22 +827,28 @@ const CustomerMenuPage: React.FC = () => {
       <Modal
         isOpen={isCartOpen}
         onClose={onCartClose}
-        size={{ base: 'full', sm: 'md' }}
+        size={{ base: "full", sm: "md" }}
         isCentered
         scrollBehavior="inside"
       >
         <ModalOverlay />
-        <ModalContent
-          bg={modalContentBg}
-          rounded="xl"
-          maxH="80vh"
-        >
-          <ModalHeader borderBottomWidth="1px" borderColor={borderColor} color={textColor} fontFamily="var(--font-lexend-deca)}" mt={8}>
+        <ModalContent bg={modalContentBg} rounded="xl" maxH="80vh">
+          <ModalHeader
+            borderBottomWidth="1px"
+            borderColor={borderColor}
+            color={textColor}
+            fontFamily="var(--font-lexend-deca)}"
+            mt={8}
+          >
             <Flex justifyContent="space-between" alignItems="center">
               <Text>Your Order ({totalCartItems} items)</Text>
               <HStack spacing={1}>
-                <Text fontSize="md" color="var(--medium-gray-text)">Table:</Text>
-                <Text fontWeight="bold" color={primaryGreen}>{randomlySelectedTable?.name || 'N/A'}</Text>
+                <Text fontSize="md" color="var(--medium-gray-text)">
+                  Table:
+                </Text>
+                <Text fontWeight="bold" color={primaryGreen}>
+                  {randomlySelectedTable?.name || "N/A"}
+                </Text>
               </HStack>
             </Flex>
           </ModalHeader>
@@ -722,14 +863,31 @@ const CustomerMenuPage: React.FC = () => {
               onChange={(index) => setActiveTabIndex(index)}
             >
               <TabList mb="1em">
-                <Tab _selected={{ color: primaryGreen, borderColor: primaryGreen, borderBottomColor: 'transparent' }} fontFamily="var(--font-lexend-deca)">
+                <Tab
+                  _selected={{
+                    color: primaryGreen,
+                    borderColor: primaryGreen,
+                    borderBottomColor: "transparent",
+                  }}
+                  fontFamily="var(--font-lexend-deca)"
+                >
                   Your Order
                 </Tab>
-                <Tab _selected={{ color: primaryGreen, borderColor: primaryGreen, borderBottomColor: 'transparent' }} fontFamily="var(--font-lexend-deca)">
+                <Tab
+                  _selected={{
+                    color: primaryGreen,
+                    borderColor: primaryGreen,
+                    borderBottomColor: "transparent",
+                  }}
+                  fontFamily="var(--font-lexend-deca)"
+                >
                   Order Progress
                   {orderedMeals.length > 0 && (
                     <Badge ml={2} colorScheme="orange" rounded="full" px={2}>
-                      {orderedMeals.filter(meal => meal.status !== 'Served').length}
+                      {
+                        orderedMeals.filter((meal) => meal.status !== "Served")
+                          .length
+                      }
                     </Badge>
                   )}
                 </Tab>
@@ -738,12 +896,33 @@ const CustomerMenuPage: React.FC = () => {
               <TabPanels>
                 <TabPanel>
                   {cartItems.length === 0 ? (
-                    <Flex direction="column" align="center" justify="center" height="full" minH="200px">
-                      <Icon as={FaShoppingCart} w={12} h={12} color="gray.400" mb={4} />
-                      <Text fontSize="lg" color="gray.500" fontFamily="var(--font-lexend-deca)">
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="center"
+                      height="full"
+                      minH="200px"
+                    >
+                      <Icon
+                        as={FaShoppingCart}
+                        w={12}
+                        h={12}
+                        color="gray.400"
+                        mb={4}
+                      />
+                      <Text
+                        fontSize="lg"
+                        color="gray.500"
+                        fontFamily="var(--font-lexend-deca)"
+                      >
                         Your cart is empty.
                       </Text>
-                      <Text fontSize="md" color="gray.500" mt={2} fontFamily="var(--font-lexend-deca)">
+                      <Text
+                        fontSize="md"
+                        color="gray.500"
+                        mt={2}
+                        fontFamily="var(--font-lexend-deca)"
+                      >
                         Add some delicious items from the menu!
                       </Text>
                     </Flex>
@@ -772,12 +951,30 @@ const CustomerMenuPage: React.FC = () => {
                               />
                             )}
                             <Box flex="1">
-                              <Text fontWeight="semibold" color={textColor} noOfLines={1} fontFamily="var(--font-lexend-deca)}">{item.name}</Text>
-                              <Text fontSize="sm" color="var(--medium-gray-text)" fontFamily="var(--font-lexend-deca)}">
-                                R {item.displayPrice.toFixed(2)} x {item.quantity} {/* Use displayPrice */}
+                              <Text
+                                fontWeight="semibold"
+                                color={textColor}
+                                noOfLines={1}
+                                fontFamily="var(--font-lexend-deca)}"
+                              >
+                                {item.name}
                               </Text>
-                              <Text fontWeight="bold" color={primaryGreen} fontFamily="var(--font-lexend-deca)}">
-                                R {(item.displayPrice * item.quantity).toFixed(2)} {/* Use displayPrice */}
+                              <Text
+                                fontSize="sm"
+                                color="var(--medium-gray-text)"
+                                fontFamily="var(--font-lexend-deca)}"
+                              >
+                                R {item.displayPrice.toFixed(2)} x{" "}
+                                {item.quantity} {/* Use displayPrice */}
+                              </Text>
+                              <Text
+                                fontWeight="bold"
+                                color={primaryGreen}
+                                fontFamily="var(--font-lexend-deca)}"
+                              >
+                                R{" "}
+                                {(item.displayPrice * item.quantity).toFixed(2)}{" "}
+                                {/* Use displayPrice */}
                               </Text>
                             </Box>
                             <HStack spacing={2}>
@@ -785,18 +982,34 @@ const CustomerMenuPage: React.FC = () => {
                                 aria-label="Decrease quantity"
                                 icon={<MinusIcon />}
                                 size="sm"
-                                onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                                onClick={() =>
+                                  updateCartItemQuantity(
+                                    item.id,
+                                    item.quantity - 1
+                                  )
+                                }
                                 isDisabled={item.quantity <= 1}
                                 rounded="md"
                                 colorScheme="red"
                                 variant="ghost"
                               />
-                              <Text fontWeight="bold" color={textColor} fontFamily="var(--font-lexend-deca)}">{item.quantity}</Text>
+                              <Text
+                                fontWeight="bold"
+                                color={textColor}
+                                fontFamily="var(--font-lexend-deca)}"
+                              >
+                                {item.quantity}
+                              </Text>
                               <IconButton
                                 aria-label="Increase quantity"
                                 icon={<AddIcon />}
                                 size="sm"
-                                onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                                onClick={() =>
+                                  updateCartItemQuantity(
+                                    item.id,
+                                    item.quantity + 1
+                                  )
+                                }
                                 rounded="md"
                                 colorScheme="green"
                                 variant="ghost"
@@ -820,26 +1033,67 @@ const CustomerMenuPage: React.FC = () => {
 
                 <TabPanel>
                   {orderedMeals.length === 0 ? (
-                    <Flex direction="column" align="center" justify="center" height="full" minH="200px">
-                      <Icon as={FaUtensils} w={12} h={12} color="gray.400" mb={4} />
-                      <Text fontSize="lg" color="gray.500" fontFamily="var(--font-lexend-deca)">
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="center"
+                      height="full"
+                      minH="200px"
+                    >
+                      <Icon
+                        as={FaUtensils}
+                        w={12}
+                        h={12}
+                        color="gray.400"
+                        mb={4}
+                      />
+                      <Text
+                        fontSize="lg"
+                        color="gray.500"
+                        fontFamily="var(--font-lexend-deca)"
+                      >
                         No active orders. Place an order to see its progress!
                       </Text>
                     </Flex>
                   ) : (
                     <VStack spacing={4} align="stretch">
                       {orderedMeals.map((meal, index) => (
-                        <Card key={index} p={4} rounded="md" borderWidth="1px" borderColor={borderColor} bg={cardBg}>
+                        <Card
+                          key={index}
+                          p={4}
+                          rounded="md"
+                          borderWidth="1px"
+                          borderColor={borderColor}
+                          bg={cardBg}
+                        >
                           <HStack justifyContent="space-between" mb={2}>
-                            <Text fontWeight="semibold" color={textColor} fontFamily="var(--font-lexend-deca)}">{meal.name} x {meal.quantity}</Text>
+                            <Text
+                              fontWeight="semibold"
+                              color={textColor}
+                              fontFamily="var(--font-lexend-deca)}"
+                            >
+                              {meal.name} x {meal.quantity}
+                            </Text>
                             <Badge
-                              colorScheme={meal.status === 'Preparing' ? 'orange' : meal.status === 'Ready' ? 'blue' : 'green'}
+                              colorScheme={
+                                meal.status === "Preparing"
+                                  ? "orange"
+                                  : meal.status === "Ready"
+                                  ? "blue"
+                                  : "green"
+                              }
                               fontFamily="var(--font-lexend-deca)}"
                             >
                               {meal.status}
                             </Badge>
                           </HStack>
-                          <Text fontSize="sm" color="var(--medium-gray-text)" fontFamily="var(--font-lexend-deca)}">Ordered: {meal.orderTime}</Text>
+                          <Text
+                            fontSize="sm"
+                            color="var(--medium-gray-text)"
+                            fontFamily="var(--font-lexend-deca)}"
+                          >
+                            Ordered: {meal.orderTime}
+                          </Text>
                         </Card>
                       ))}
                     </VStack>
@@ -853,29 +1107,53 @@ const CustomerMenuPage: React.FC = () => {
             <ModalFooter borderTopWidth="1px" borderColor={borderColor}>
               <VStack width="full" spacing={4}>
                 <Box width="full">
-                  <Heading size="sm" mb={2} color={textColor} fontFamily="var(--font-lexend-deca)">
+                  <Heading
+                    size="sm"
+                    mb={2}
+                    color={textColor}
+                    fontFamily="var(--font-lexend-deca)"
+                  >
                     Payment Method
                   </Heading>
                   <HStack spacing={4} justify="center" flexWrap="wrap">
                     <Button
                       variant="outline"
                       borderWidth="2px"
-                      borderColor={selectedPaymentMethod === 'cash' ? primaryGreen : 'gray.200'}
+                      borderColor={
+                        selectedPaymentMethod === "cash"
+                          ? primaryGreen
+                          : "gray.200"
+                      }
                       rounded="lg"
                       p={3}
-                      onClick={() => setSelectedPaymentMethod('cash')}
-                      bg={selectedPaymentMethod === 'cash' ? 'green.50' : 'transparent'}
-                      _hover={{ bg: 'green.50' }}
+                      onClick={() => setSelectedPaymentMethod("cash")}
+                      bg={
+                        selectedPaymentMethod === "cash"
+                          ? "green.50"
+                          : "transparent"
+                      }
+                      _hover={{ bg: "green.50" }}
                       flexDir="column"
                       height="auto"
                       width="100px"
                     >
-                      <Icon as={FaMoneyBillWave} w={6} h={6} color="gray.500" mb={1} />
+                      <Icon
+                        as={FaMoneyBillWave}
+                        w={6}
+                        h={6}
+                        color="gray.500"
+                        mb={1}
+                      />
                       <Text fontSize="sm" color="var(--medium-gray-text)">
                         Cash
                       </Text>
-                      {selectedPaymentMethod === 'cash' && (
-                        <Box position="absolute" top={1} right={1} color={primaryGreen}>
+                      {selectedPaymentMethod === "cash" && (
+                        <Box
+                          position="absolute"
+                          top={1}
+                          right={1}
+                          color={primaryGreen}
+                        >
                           <Icon as={FaCheckCircle} />
                         </Box>
                       )}
@@ -884,22 +1162,41 @@ const CustomerMenuPage: React.FC = () => {
                     <Button
                       variant="outline"
                       borderWidth="2px"
-                      borderColor={selectedPaymentMethod === 'card' ? primaryGreen : 'gray.200'}
+                      borderColor={
+                        selectedPaymentMethod === "card"
+                          ? primaryGreen
+                          : "gray.200"
+                      }
                       rounded="lg"
                       p={3}
-                      onClick={() => setSelectedPaymentMethod('card')}
-                      bg={selectedPaymentMethod === 'card' ? 'green.50' : 'transparent'}
-                      _hover={{ bg: 'green.50' }}
+                      onClick={() => setSelectedPaymentMethod("card")}
+                      bg={
+                        selectedPaymentMethod === "card"
+                          ? "green.50"
+                          : "transparent"
+                      }
+                      _hover={{ bg: "green.50" }}
                       flexDir="column"
                       height="auto"
                       width="100px"
                     >
-                      <Icon as={FaCreditCard} w={6} h={6} color="gray.500" mb={1} />
+                      <Icon
+                        as={FaCreditCard}
+                        w={6}
+                        h={6}
+                        color="gray.500"
+                        mb={1}
+                      />
                       <Text fontSize="sm" color="var(--medium-gray-text)">
                         Card
                       </Text>
-                      {selectedPaymentMethod === 'card' && (
-                        <Box position="absolute" top={1} right={1} color={primaryGreen}>
+                      {selectedPaymentMethod === "card" && (
+                        <Box
+                          position="absolute"
+                          top={1}
+                          right={1}
+                          color={primaryGreen}
+                        >
                           <Icon as={FaCheckCircle} />
                         </Box>
                       )}
@@ -908,10 +1205,20 @@ const CustomerMenuPage: React.FC = () => {
                 </Box>
 
                 <Flex width="full" justify="space-between" align="center">
-                  <Text fontSize="xl" fontWeight="bold" color={textColor} fontFamily="var(--font-lexend-deca)}">
+                  <Text
+                    fontSize="xl"
+                    fontWeight="bold"
+                    color={textColor}
+                    fontFamily="var(--font-lexend-deca)}"
+                  >
                     Total:
                   </Text>
-                  <Text fontSize="xl" fontWeight="bold" color={primaryGreen} fontFamily="var(--font-lexend-deca)}">
+                  <Text
+                    fontSize="xl"
+                    fontWeight="bold"
+                    color={primaryGreen}
+                    fontFamily="var(--font-lexend-deca)}"
+                  >
                     R {totalCartPrice.toFixed(2)}
                   </Text>
                 </Flex>
@@ -921,13 +1228,14 @@ const CustomerMenuPage: React.FC = () => {
                   width="full"
                   colorScheme="green"
                   bg={primaryGreen}
-                  _hover={{ bg: 'green.600', shadow: 'md' }}
+                  _hover={{ bg: "green.600", shadow: "md" }}
                   onClick={handlePlaceOrder}
                   isDisabled={cartItems.length === 0}
                   fontWeight="semibold"
                   fontFamily="var(--font-lexend-deca)}"
                 >
-                  Place Order with {selectedPaymentMethod === 'cash' ? 'Cash' : 'Card'}
+                  Place Order with{" "}
+                  {selectedPaymentMethod === "cash" ? "Cash" : "Card"}
                 </Button>
               </VStack>
             </ModalFooter>
@@ -936,12 +1244,7 @@ const CustomerMenuPage: React.FC = () => {
       </Modal>
 
       {/* Floating Cart Button */}
-      <Box
-        position="fixed"
-        bottom={4}
-        right={4}
-        zIndex={100}
-      >
+      <Box position="fixed" bottom={4} right={4} zIndex={100}>
         <Button
           onClick={handleCartButtonClick}
           colorScheme="green"
@@ -951,13 +1254,13 @@ const CustomerMenuPage: React.FC = () => {
           width="50px"
           shadow="lg"
           _hover={{
-            bg: 'green.600',
-            transform: 'scale(1.05)',
+            bg: "green.600",
+            transform: "scale(1.05)",
           }}
           transition="all 0.2s ease-in-out"
           position="relative"
           bg={primaryGreen}
-          mb={totalCartItems > 0 || activeOrdersCount > 0 ? '60px' : '0'}
+          mb={totalCartItems > 0 || activeOrdersCount > 0 ? "60px" : "0"}
         >
           <Icon as={FaShoppingCart} w={5} h={5} />
           {totalCartItems > 0 && (
@@ -988,8 +1291,8 @@ const CustomerMenuPage: React.FC = () => {
             width="50px"
             shadow="lg"
             _hover={{
-              bg: 'blue.600',
-              transform: 'scale(1.05)',
+              bg: "blue.600",
+              transform: "scale(1.05)",
             }}
             transition="all 0.2s ease-in-out"
             position="absolute"

@@ -1,96 +1,130 @@
 // src/app/pos/components/MenuItemCard.tsx
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
   Card,
   CardBody,
-  Image as ChakraImage,
+  Image,
   Stack,
   Heading,
   Text,
   Divider,
   CardFooter,
+  ButtonGroup,
   Button,
   Flex,
-  useToast
-} from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
-import { MenuItem as MenuItemType } from '@/app/config/entities'; // Alias to avoid conflict
+  Spacer,
+  IconButton,
+  Box,
+} from "@chakra-ui/react";
+import { AddIcon, MinusIcon } from "@chakra-ui/icons";
+import { Food as MenuItemType } from "@/app/config/entities"; // Changed import from MenuItem to Food
 
 interface MenuItemCardProps {
-  item: MenuItemType;
+  item: MenuItemType; // Now correctly typed as Food
   onAddItem: (item: MenuItemType) => void;
+  onUpdateQuantity: (foodId: string, quantity: number) => void;
+  currentQuantity: number;
 }
 
-export default function MenuItemCard({ item, onAddItem }: MenuItemCardProps) {
-  const toast = useToast();
-
-  const handleAddItemClick = () => {
-    onAddItem(item);
-    toast({
-      title: 'Item Added',
-      description: `${item.name} added to order.`,
-      status: 'success',
-      duration: 1500,
-      isClosable: true,
-      position: 'top-right',
-    });
+export default function MenuItemCard({
+  item,
+  onAddItem,
+  onUpdateQuantity,
+  currentQuantity,
+}: MenuItemCardProps) {
+  const handleIncreaseQuantity = () => {
+    onUpdateQuantity(item.id, currentQuantity + 1);
   };
 
-  // Ensure item.description is a string before using string methods
-  const itemDescription = item.description || '';
+  const handleDecreaseQuantity = () => {
+    if (currentQuantity > 0) {
+      onUpdateQuantity(item.id, currentQuantity - 1);
+    }
+  };
 
   return (
     <Card
       maxW="sm"
-      rounded="lg"
+      borderWidth="1px"
+      borderRadius="lg"
+      overflow="hidden"
       shadow="md"
       bg="var(--background-color-light)"
-      overflow="hidden"
-      transition="transform 0.2s ease, box-shadow 0.2s ease"
-      _hover={{ transform: 'translateY(-5px)', boxShadow: 'lg' }}
     >
-      <ChakraImage
-        src={item.image_url || 'https://placehold.co/400x200/E0E0E0/000000?text=No+Image'}
+      <Image
+        src={
+          item.image ||
+          "https://placehold.co/400x200/E0E0E0/000000?text=No+Image"
+        }
         alt={item.name}
+        borderRadius="lg"
         objectFit="cover"
         height="150px"
         width="100%"
+        fallbackSrc="https://placehold.co/400x200/E0E0E0/000000?text=No+Image"
       />
 
-      <CardBody p={4}>
-        <Stack spacing={2}>
-          <Heading size="md" color="var(--dark-gray-text)" fontFamily="var(--font-lexend-deca)">
+      <CardBody>
+        <Stack mt="6" spacing="3">
+          <Heading size="md" color="var(--dark-gray-text)">
             {item.name}
           </Heading>
-          <Text fontSize="sm" color="var(--medium-gray-text)">
-            {itemDescription.substring(0, 70)}{itemDescription.length > 70 ? '...' : ''}
-          </Text>
-          <Text color="var(--primary-green)" fontSize="xl" fontWeight="bold">
-            R {(item.price || 0).toFixed(2)} {/* Added || 0 to handle undefined price */}
+          <Text color="var(--medium-gray-text)">{item.description}</Text>
+          <Text color="var(--primary-green)" fontSize="2xl" fontWeight="bold">
+            R {item.sale_price ? item.sale_price.toFixed(2) : "0.00"}{" "}
+            {/* Use sale_price from Food */}
           </Text>
         </Stack>
       </CardBody>
-
       <Divider borderColor="var(--border-color)" />
-
-      <CardFooter p={4}>
-        <Flex justify="center" width="100%">
-          <Button
-            variant="solid"
-            bg="var(--primary-green)"
-            color="white"
-            _hover={{ bg: 'darken(var(--primary-green), 10%)' }}
-            leftIcon={<AddIcon />}
-            onClick={handleAddItemClick}
-            isDisabled={!item.is_available}
-            width="full"
-            rounded="md"
-            py={2}
-          >
-            {item.is_available ? 'Add to Order' : 'Unavailable'}
-          </Button>
+      <CardFooter>
+        <Flex width="full" align="center">
+          {currentQuantity > 0 ? (
+            <ButtonGroup size="sm" isAttached variant="outline" rounded="md">
+              <IconButton
+                aria-label="Decrease quantity"
+                icon={<MinusIcon />}
+                onClick={handleDecreaseQuantity}
+                rounded="l-md"
+                borderColor="var(--border-color)"
+                color="var(--dark-gray-text)"
+                _hover={{ bg: "var(--light-gray-bg)" }}
+              />
+              <Button
+                rounded="none"
+                borderColor="var(--border-color)"
+                color="var(--dark-gray-text)"
+                _hover={{ bg: "transparent" }}
+                cursor="default"
+              >
+                {currentQuantity}
+              </Button>
+              <IconButton
+                aria-label="Increase quantity"
+                icon={<AddIcon />}
+                onClick={handleIncreaseQuantity}
+                rounded="r-md"
+                borderColor="var(--border-color)"
+                color="var(--dark-gray-text)"
+                _hover={{ bg: "var(--light-gray-bg)" }}
+              />
+            </ButtonGroup>
+          ) : (
+            <Button
+              variant="solid"
+              colorScheme="green"
+              onClick={() => onAddItem(item)}
+              width="full"
+              rounded="md"
+              bg="var(--primary-green)"
+              color="white"
+              _hover={{ bg: "darken(var(--primary-green), 10%)" }}
+            >
+              Add to Order
+            </Button>
+          )}
         </Flex>
       </CardFooter>
     </Card>

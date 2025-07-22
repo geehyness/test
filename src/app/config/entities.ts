@@ -110,7 +110,7 @@ export interface Table {
   created_at: string;
   updated_at: string;
   // Added for app logic/convenience
-  status?: "available" | "occupied";
+  status?: "available" | "occupied" | "reserved" | "cleaning"; // This is what it uses
   current_order_id?: string | null;
 }
 

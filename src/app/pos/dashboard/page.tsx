@@ -967,6 +967,8 @@ export default function POSDashboardPage() {
                           <MenuItemList
                             menuItems={filteredMenuItems}
                             onAddItem={addOrderItem}
+                            onUpdateQuantity={updateOrderItemQuantity} // Pass the prop
+                            currentOrderItems={currentOrder.items} // Pass the prop
                           />
                         </Box>
                       </VStack>
