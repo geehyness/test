@@ -63,35 +63,15 @@ import {
   FaClipboardList
 } from 'react-icons/fa';
 import { fetchData } from '../lib/api';
+import { Table, Food, Category } from '../config/entities'; // Import Table, Food, and Category from entities.ts
 
-// Define the Table interface based on entities.ts
-interface Table {
-  id: number;
-  name: string;
-  capacity: number;
-  status: 'available' | 'occupied' | 'reserved';
-  created_at: string;
-  updated_at: string;
+// Define a new interface for displaying food items, extending the base Food entity
+interface DisplayFoodItem extends Food {
+  categoryName: string; // The human-readable category name
+  displayPrice: number; // The price to display (e.g., sale_price)
 }
 
-// Define the FoodItem interface based on your data structure
-interface FoodItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  category: string;
-  image?: string;
-}
-
-interface FoodCategoryData {
-  id: string;
-  name: string;
-  code: string;
-  image?: string;
-  created_at: string;
-  updated_at: string;
-}
+interface FoodCategoryData extends Category {} // Alias for clarity, if needed, otherwise directly use Category
 
 interface FoodCategory {
   id: string;
@@ -99,7 +79,8 @@ interface FoodCategory {
   icon: React.ElementType;
 }
 
-interface CartItem extends FoodItem {
+// CartItem now extends DisplayFoodItem to include display-specific properties
+interface CartItem extends DisplayFoodItem {
   quantity: number;
 }
 
@@ -152,7 +133,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, children, isActive, onClick }) 
 
 const CustomerMenuPage: React.FC = () => {
   // --- ALL Hooks MUST be declared at the top level and unconditionally ---
-  const [foods, setFoods] = useState<FoodItem[]>([]);
+  const [foods, setFoods] = useState<DisplayFoodItem[]>([]);
   const [randomlySelectedTable, setRandomlySelectedTable] = useState<Table | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +142,7 @@ const CustomerMenuPage: React.FC = () => {
   const { isOpen: isCartOpen, onOpen: onCartOpen, onClose: onCartClose } = useDisclosure();
 
   const { isOpen: isDetailsModalOpen, onOpen: onDetailsModalOpen, onClose: onDetailsModalClose } = useDisclosure();
-  const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
+  const [selectedFood, setSelectedFood] = useState<DisplayFoodItem | null>(null);
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -207,26 +188,27 @@ const CustomerMenuPage: React.FC = () => {
       setLoading(true);
       const [foodsData, categoriesData] = await Promise.all([
         fetchData('foods'),
-        fetchData('food_categories'),
+        fetchData('categories'),
       ]);
 
       const categoryMap = new Map<string, string>();
-      categoriesData.forEach((cat: FoodCategoryData) => {
+      categoriesData.forEach((cat: Category) => { // Use imported Category interface
         categoryMap.set(cat.id, cat.name);
       });
 
-      const processedFoods: FoodItem[] = foodsData.map((food: any) => ({
+      const processedFoods: DisplayFoodItem[] = foodsData.map((food: Food) => ({ // Use imported Food interface
         ...food,
-        category: categoryMap.get(food.food_category_id) || 'Uncategorized',
+        categoryName: categoryMap.get(food.category_id) || 'Uncategorized', // Map category_id to name
+        displayPrice: food.sale_price, // Use sale_price for display
         description: food.description || 'No description available.',
       }));
 
       setFoods(processedFoods);
 
       const uniqueCategories = new Set<string>();
-      processedFoods.forEach((food: FoodItem) => {
-        if (food.category) {
-          uniqueCategories.add(food.category);
+      processedFoods.forEach((food: DisplayFoodItem) => {
+        if (food.categoryName) {
+          uniqueCategories.add(food.categoryName);
         }
       });
 
@@ -252,7 +234,7 @@ const CustomerMenuPage: React.FC = () => {
 
   const fetchTablesData = useCallback(async () => {
     try {
-      const tableData = await fetchData('tables');
+      const tableData: Table[] = await fetchData('tables'); // Use imported Table interface
       if (tableData.length > 0) {
         const randomIndex = Math.floor(Math.random() * tableData.length);
         setRandomlySelectedTable(tableData[randomIndex]);
@@ -267,7 +249,7 @@ const CustomerMenuPage: React.FC = () => {
     fetchTablesData();
   }, [fetchFoodsAndCategories, fetchTablesData]);
 
-  const openDetailsModal = (food: FoodItem) => {
+  const openDetailsModal = (food: DisplayFoodItem) => {
     setSelectedFood(food);
     onDetailsModalOpen();
   };
@@ -281,7 +263,7 @@ const CustomerMenuPage: React.FC = () => {
     const matchesSearch = food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (food.description && food.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesCategory = selectedCategory === 'All' || (food.category && food.category.toLowerCase() === selectedCategory.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || (food.categoryName && food.categoryName.toLowerCase() === selectedCategory.toLowerCase());
     return matchesSearch && matchesCategory;
   });
 
@@ -299,12 +281,12 @@ const CustomerMenuPage: React.FC = () => {
     if (selectedCat) {
       groupedFoods.push({
         ...selectedCat,
-        items: filteredFoods.filter(food => food.category && food.category.toLowerCase() === selectedCategory.toLowerCase())
+        items: filteredFoods.filter(food => food.categoryName && food.categoryName.toLowerCase() === selectedCategory.toLowerCase())
       });
     }
   }
 
-  const addToCart = (item: FoodItem) => {
+  const addToCart = (item: DisplayFoodItem) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((cartItem) => cartItem.id === item.id);
       if (existingItem) {
@@ -338,7 +320,7 @@ const CustomerMenuPage: React.FC = () => {
   };
 
   const totalCartItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const totalCartPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const totalCartPrice = cartItems.reduce((total, item) => total + item.displayPrice * item.quantity, 0); // Use displayPrice
   const activeOrdersCount = orderedMeals.filter(meal => meal.status !== 'Served').length; // Calculate active orders
 
   const handlePlaceOrder = () => {
@@ -350,7 +332,9 @@ const CustomerMenuPage: React.FC = () => {
       }));
       setOrderedMeals(prev => [...prev, ...newOrderedMeals]);
       setCartItems([]);
-      alert(`Order placed for Table ${randomlySelectedTable?.name || 'N/A'}! Total: R ${totalCartPrice.toFixed(2)}`);
+      // Use a custom message box instead of alert()
+      // You would replace this with a Chakra UI Modal or Toast
+      console.log(`Order placed for Table ${randomlySelectedTable?.name || 'N/A'}! Total: R ${totalCartPrice.toFixed(2)}`);
       onCartClose();
     }
   };
@@ -547,7 +531,7 @@ const CustomerMenuPage: React.FC = () => {
                             fontWeight="extrabold"
                             fontFamily="var(--font-lexend-deca)"
                           >
-                            R {item.price.toFixed(2)}
+                            R {item.displayPrice.toFixed(2)} {/* Use displayPrice */}
                           </Text>
                         </VStack>
                       </CardBody>
@@ -645,7 +629,7 @@ const CustomerMenuPage: React.FC = () => {
                 fontWeight="extrabold"
                 fontFamily="var(--font-lexend-deca)"
               >
-                R {selectedFood?.price.toFixed(2)}
+                R {selectedFood?.displayPrice.toFixed(2)} {/* Use displayPrice */}
               </Text>
 
               {selectedFood && (
@@ -790,10 +774,10 @@ const CustomerMenuPage: React.FC = () => {
                             <Box flex="1">
                               <Text fontWeight="semibold" color={textColor} noOfLines={1} fontFamily="var(--font-lexend-deca)}">{item.name}</Text>
                               <Text fontSize="sm" color="var(--medium-gray-text)" fontFamily="var(--font-lexend-deca)}">
-                                R {item.price.toFixed(2)} x {item.quantity}
+                                R {item.displayPrice.toFixed(2)} x {item.quantity} {/* Use displayPrice */}
                               </Text>
                               <Text fontWeight="bold" color={primaryGreen} fontFamily="var(--font-lexend-deca)}">
-                                R {(item.price * item.quantity).toFixed(2)}
+                                R {(item.displayPrice * item.quantity).toFixed(2)} {/* Use displayPrice */}
                               </Text>
                             </Box>
                             <HStack spacing={2}>
