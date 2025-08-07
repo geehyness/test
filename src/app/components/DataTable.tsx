@@ -201,7 +201,7 @@ export default function DataTable({
           <Tbody>
             {paginatedData.length > 0 ? (
               paginatedData.map((row, rowIndex) => (
-                <Tr key={row.id || rowIndex} _hover={{ bg: 'var(--light-gray-bg)' }}> {/* Use row.id for key if available */}
+                <Tr key={row.id || rowIndex} _hover={{ bg: 'var(--light-gray-bg)' }}>
                   {columns.map((column, colIndex) => (
                     <Td key={column.accessorKey + '-' + rowIndex} color="var(--medium-gray-text)">
                       {column.cell ? column.cell(row) : String(row[column.accessorKey])}

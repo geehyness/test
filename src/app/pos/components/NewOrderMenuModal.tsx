@@ -93,10 +93,10 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
         return prevItems.map((item) =>
           item.food_id === food.id
             ? {
-                ...item,
-                quantity: item.quantity + 1,
-                sub_total: (item.quantity + 1) * (food.sale_price || 0),
-              }
+              ...item,
+              quantity: item.quantity + 1,
+              sub_total: (item.quantity + 1) * (food.price || 0), // Use food.price
+            }
             : item
         );
       } else {
@@ -109,10 +109,10 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
             order_id: "", // Will be set when order is created
             food_id: food.id,
             quantity: 1,
-            price: food.sale_price || 0, // Price at time of adding
-            sub_total: food.sale_price || 0,
+            price: food.price || 0, // Changed from food.sale_price to food.price
+            sub_total: food.price || 0, // Changed from food.sale_price to food.price
             name: food.name, // Add name for display
-            price_at_sale: food.sale_price || 0, // Add price_at_sale for consistency
+            price_at_sale: food.price || 0, // Changed from food.sale_price to food.price
             notes: "",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -135,7 +135,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
       const updated = prevItems.map((item) => {
         if (item.food_id === foodId) {
           const food = menuItems.find((f) => f.id === foodId);
-          const itemPrice = food?.sale_price || item.price;
+          const itemPrice = food?.price || item.price; // Changed from food?.sale_price to food?.price
           return { ...item, quantity, sub_total: quantity * (itemPrice || 0) };
         }
         return item;
@@ -234,9 +234,8 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                   >
                     <Image
                       src={
-                        item.image ||
-                        `https://placehold.co/150x100/E0E0E0/333333?text=${
-                          item.name.split(" ")[0]
+                        item.image_url || // Changed from item.image to item.image_url
+                        `https://placehold.co/150x100/E0E0E0/333333?text=${item.name.split(" ")[0]
                         }`
                       }
                       alt={item.name}
@@ -247,9 +246,8 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                       width="full"
                       onError={(e: any) => {
                         e.target.onerror = null;
-                        e.target.src = `https://placehold.co/150x100/E0E0E0/333333?text=${
-                          item.name.split(" ")[0]
-                        }`;
+                        e.target.src = `https://placehold.co/150x100/E0E0E0/333333?text=${item.name.split(" ")[0]
+                          }`;
                       }}
                     />
                     <Text
@@ -273,7 +271,8 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                       mt={2}
                     >
                       <Text fontWeight="bold" color="var(--primary-green)">
-                        R {item.sale_price?.toFixed(2)}
+                        R {item.price?.toFixed(2)}{" "}
+                        {/* Changed from item.sale_price to item.price */}
                       </Text>
                       <Badge colorScheme="purple" fontSize="xx-small">
                         {categories.find((cat) => cat.id === item.category_id)

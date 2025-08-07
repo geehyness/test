@@ -13,27 +13,29 @@ import {
   Text,
   Image as ChakraImage,
   VStack,
-  useToast // For notifications
+  useToast
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-// import { loginStaff } from '@/app/lib/api'; // Assuming you'll have an API function for login
+import { usePOSStore } from '../lib/usePOSStore';
+import { loginEmployee } from '@/app/lib/api';
 
 export default function POSLoginPage() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const router = useRouter();
+  const { loginStaff } = usePOSStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Basic client-side validation for demonstration
-    if (!username || !password) {
+    // Input validation
+    if (!email.trim() || !password.trim()) {
       toast({
         title: 'Login Error',
-        description: 'Please enter both username and password.',
+        description: 'Please enter both email and password.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -43,38 +45,22 @@ export default function POSLoginPage() {
     }
 
     try {
-      // Replace with actual API call to your backend
-      // const response = await loginStaff({ username, password });
-      // if (response.success) {
+      const employee = await loginEmployee(email, password);
 
-      // Mock login for now
-      if (username === 'staff' && password === 'password') {
-        toast({
-          title: 'Login Successful',
-          description: 'Redirecting to POS Dashboard...',
-          status: 'success',
-          duration: 2000,
-          isClosable: true,
-        });
-        // Simulate a delay for async operation
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        router.push('/pos/dashboard'); // Redirect to the main POS dashboard
-      } else {
-        toast({
-          title: 'Login Failed',
-          description: 'Invalid username or password.',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
+      // Await the state update from Zustand before proceeding
+      await loginStaff(employee);
+
+      // The redirection is now handled by the POSLayout component,
+      // which listens for the currentStaff state change.
+      // We no longer need to get the state here or push to a specific route.
+
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login failed:', error);
       toast({
-        title: 'Login Error',
-        description: 'An unexpected error occurred during login.',
+        title: 'Login failed.',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
@@ -87,56 +73,51 @@ export default function POSLoginPage() {
       minH="100vh"
       align="center"
       justify="center"
-      bg="var(--light-gray-bg)"
-      backgroundImage="url('/login.jpg')" /* Assuming this is a background image for the login page */
-      backgroundSize="cover"
-      backgroundPosition="center"
+      bg="var(--background-color)"
     >
       <Box
         p={8}
-        maxWidth="md"
-        borderWidth="1px"
-        borderRadius="lg"
-        shadow="xl"
+        maxWidth="500px"
+        width="full"
         bg="var(--background-color-light)"
-        textAlign="center"
-        py={10}
-        px={8}
+        borderRadius="md"
+        shadow="lg"
       >
-        <VStack spacing={6}>
+        <VStack spacing={6} align="center">
           <ChakraImage
-            src="/c2.png" /* Your restaurant logo */
-            alt="Restaurant Logo"
-            width="100px"
-            height="auto"
-            objectFit="contain"
-            mx="auto"
+            src="https://placehold.co/150x150/2f4f4f/ffffff?text=POS+Logo"
+            alt="POS System Logo"
+            borderRadius="full"
+            boxSize="150px"
+            objectFit="cover"
+            mb={4}
           />
-          <Heading as="h2" size="xl" color="var(--primary-green)" fontFamily="var(--font-lexend-deca)">
-            POS Login
+          <Heading as="h1" size="xl" color="var(--primary-green)">
+            Point of Sale
           </Heading>
-          <Text color="var(--dark-gray-text)">
-            Enter your credentials to access the Point of Sale.
+          <Text fontSize="md" color="var(--dark-gray-text)">
+            Staff Login
           </Text>
 
-          <Box as="form" onSubmit={handleLogin} width="100%">
+          <Box as="form" onSubmit={handleLogin} width="full">
             <VStack spacing={4}>
-              <FormControl id="username">
-                <FormLabel color="var(--dark-gray-text)">Username</FormLabel>
+              <FormControl id="email" isRequired>
+                <FormLabel color="var(--dark-gray-text)">Email address</FormLabel>
                 <Input
-                  type="text"
-                  placeholder="Enter username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  placeholder="Enter email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   size="lg"
                   rounded="md"
                   borderColor="var(--border-color)"
                   focusBorderColor="var(--primary-green)"
                   color="var(--dark-gray-text)"
+                  autoComplete="username"
                 />
               </FormControl>
 
-              <FormControl id="password">
+              <FormControl id="password" isRequired>
                 <FormLabel color="var(--dark-gray-text)">Password</FormLabel>
                 <Input
                   type="password"
@@ -148,6 +129,7 @@ export default function POSLoginPage() {
                   borderColor="var(--border-color)"
                   focusBorderColor="var(--primary-green)"
                   color="var(--dark-gray-text)"
+                  autoComplete="current-password"
                 />
               </FormControl>
 
@@ -161,7 +143,7 @@ export default function POSLoginPage() {
                 loadingText="Logging In..."
                 bg="var(--primary-green)"
                 color="white"
-                _hover={{ bg: 'darken(var(--primary-green), 10%)' }} /* Adjust hover color */
+                _hover={{ bg: '#2a6b45' }} // Darker shade for hover
                 rounded="md"
               >
                 Log In

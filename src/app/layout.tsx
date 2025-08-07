@@ -152,15 +152,15 @@ export default function RootLayout({
                 transition="all 0.3s ease-in-out"
                 display={{ base: isPOSPage ? 'none' : 'flex', md: 'none' }} // Hide on desktop and POS page
               >
-                  <Button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    variant="ghost"
-                    aria-label="Toggle Menu"
-                    mr={4}
-                    color="#333"
-                  >
-                    <Menu size={24} />
-                  </Button>
+                <Button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  variant="ghost"
+                  aria-label="Toggle Menu"
+                  mr={4}
+                  color="#333"
+                >
+                  <Menu size={24} />
+                </Button>
 
 
                 <Heading as="h1" size="md" color="var(--dark-gray-text)" fontFamily="var(--font-lexend-deca)">

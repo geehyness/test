@@ -1,4 +1,7 @@
 // src/app/config/entities.ts
+
+import { ReactNode } from "react";
+
 export interface EntityConfig {
   subMenus?: any; // Marked as optional as it's not consistently used
   label: string; // human-readable name
@@ -8,9 +11,43 @@ export interface EntityConfig {
 
 // --- Core POS Entities ---
 
+// Updated Food Interface to include recipes
+export interface Food {
+  id: string;
+  name: string;
+  description: string;
+  price: number; // Sale price
+  category_id: string; // Linking to Category.id
+  image_url?: string; // Optional URL for an image of the item
+  preparation_time?: number; // Added: Estimated time to prepare in minutes
+  allergens?: string[]; // Added: List of common allergens (e.g., ["Gluten", "Dairy", "Nuts"])
+  created_at?: string; // Added for consistency
+  updated_at?: string; // Added for consistency
+  tenant_id: string; // Modified: To link the food item to a specific tenant
+  recipes?: RecipeItem[]; // NEW: The list of raw materials and quantities required to make this food item
+}
+
+// NEW: StoreFood Interface
+export interface StoreFood {
+  food_id: string; // Links to Food.id
+  store_id: string; // Links to Store.id
+  is_available: boolean; // Indicates if the food item is currently available at this store
+}
+
+// NEW: RecipeItem Interface for linking food items to inventory products
+export interface RecipeItem {
+  id: string; // A unique ID for the recipe item
+  food_id: string; // Links to Food.id
+  inventory_product_id: string; // Links to InventoryProduct.id
+  quantity_used: number; // How much of the raw material is used
+  unit_of_measure: string; // e.g., "grams", "ml", "unit"
+  created_at?: string; // Added for consistency
+  updated_at?: string; // Added for consistency
+}
+// Order interface (adding payment details)
 export interface Order {
   id: string;
-  tenant_id: string;
+  store_id?: string; // Corrected: Use store_id instead of tenant_id
   table_id: string | null; // Can be null for takeaway orders
   customer_id: string | null; // Can be null for walk-in customers
   total_amount: number;
@@ -18,122 +55,137 @@ export interface Order {
   notes: string;
   created_at: string;
   updated_at: string;
-  // Properties added for app logic/convenience, not directly from PDF 'orders' fields
+  // Properties added for app logic/convenience
   items: OrderItem[];
   subtotal_amount: number;
   tax_amount: number;
   discount_amount: number;
   employee_id?: string; // Assuming employee who took the order
   order_type?: "dine-in" | "takeaway"; // Type of order
+  payment_status?: string; // Added: e.g., 'pending', 'paid', 'refunded'
+  payment_method?: string; // Added: e.g., 'cash', 'card', 'mobile_pay'
 }
 
+// OrderItem interface remains the same
 export interface OrderItem {
   id: string;
-  order_id: string; // Links to Order.id
-  food_id: string; // Links to Food.id (changed from menu_item_id to match PDF)
+  order_id: string;
+  food_id: string; // Links to Food.id
   quantity: number;
-  price: number; // Price from sample data
-  sub_total: number; // Changed from subtotal to match PDF
-  notes?: string; // Optional notes for this specific item
+  price: number;
+  sub_total: number;
+  notes?: string;
   created_at: string;
   updated_at: string;
-  // Properties added by API for convenience, not directly from PDF 'order_items' fields
   name: string; // Name of the food item (from Food entity)
   price_at_sale: number; // Price of the item when added to order (from Food entity)
 }
 
-export interface Food {
-  // Renamed from MenuItem, now represents the 'Foods' entity from PDF
-  id: string;
-  name: string;
-  category_id: string; // Links to Category.id (from PDF)
-  brand_id: string; // (from PDF)
-  unit_id: string; // (from PDF)
-  purchase_price: number; // (from PDF)
-  sale_price: number; // (from PDF)
-  description: string; // (from PDF)
-  image: string; // (from PDF)
-  is_active: boolean; // (from PDF)
-  is_featured: boolean; // (from PDF)
-  created_at: string;
-  updated_at: string;
-  // Additional fields from your previous MenuItem/Food structure, keep if needed by app
-  code?: string;
-  hsn?: string;
-  cost?: number;
-  price_include_gst?: boolean;
-  cost_include_gst?: boolean;
-  gst_percentage?: number;
-  kitchen_id?: string; // Assuming this links to a Kitchen entity
-}
-
-export interface MenuItem {
-  category_id: string;
-  name: any;
-  description: any; // This now represents 'Menu Items' from PDF, linking Menu to Food
-  id: string;
-  menu_id: string; // Links to Menu.id
-  food_id: string; // Links to Food.id
-  position: number;
-  created_at: string;
-  updated_at: string;
-}
-
+// Category interface remains the same, adjusted fields for simplicity
 export interface Category {
   id: string;
   name: string;
-  code: string; // Not in PDF for Category, but useful. Keep.
-  image: string; // Not in PDF for Category, but useful. Keep.
-  created_at: string;
-  updated_at: string;
+  description?: string; // Added description for consistency
+  created_at?: string; // Added for consistency
+  updated_at?: string; // Added for consistency
+}
+// Category interface remains the same, adjusted fields for simplicity
+export interface invCategory {
+  id: string;
+  name: string;
+  description?: string; // Added description for consistency
+  created_at?: string; // Added for consistency
+  updated_at?: string; // Added for consistency
 }
 
+// Updated Customer Interface
 export interface Customer {
   id: string;
-  name: string;
-  address: string;
-  area: string;
-  tax_number: string;
-  district: string;
-  phone: string;
-  points: number;
-  no_points: number;
-  created_at: string;
-  updated_at: string;
+  first_name: string; // Changed from 'name'
+  last_name?: string; // Added, optional
+  email?: string; // Added, optional
+  phone_number?: string; // Added, optional, renamed from 'phone'
+  loyalty_points?: number; // Added: e.g., for a loyalty program, renamed from 'points'
+  created_at?: string;
+  updated_at?: string;
+  store_id: string; // Added: To link the customer to a specific store
 }
 
+// Updated Table Interface
 export interface Table {
-  capacity: number;
   id: string;
-  name: string;
-  code: string;
-  created_at: string;
-  updated_at: string;
-  // Added for app logic/convenience
-  status?: "available" | "occupied" | "reserved" | "cleaning"; // This is what it uses
-  current_order_id?: string | null;
+  name: string; // User-friendly name, e.g., "Table 1"
+  capacity: number; // Max number of guests
+  location: string; // Added: e.g., "Indoor", "Outdoor", "Bar Area", replaces 'code'
+  status: string; // e.g., 'available', 'occupied', 'reserved', 'needs_cleaning'
+  current_order_id?: string | null; // ID of the order currently assigned to this table
+  created_at?: string; // Added for consistency
+  updated_at?: string; // Added for consistency
+  store_id: string; // Added: To link the table to a specific store
 }
 
-// --- Other Entities from PDF ---
+export interface AccessRole {
+  id: string;
+  name: string; // e.g., "Cashier", "Server", "Kitchen Staff", "Manager"
+  description: string;
+  permissions: string[]; // An array of strings representing permissions (e.g., "can_process_payments", "can_view_kitchen_orders")
+  landing_page: string; // e.g., "/pos/dashboard/cashier", "/pos/dashboard/server"
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Updated Employee Interface
+export interface Employee {
+  id: string;
+  user_id: string;
+  job_title_id: string;
+  access_role_ids: string[];
+  tenant_id: string;
+  store_id: string; // Corrected: Use store_id instead of 
+  main_access_role_id: string;
+  hire_date: string;
+  salary: number;
+  first_name: string;
+  last_name?: string;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+
+// New Reservation Interface
+export interface Reservation {
+  id: string;
+  customer_id: string; // Links to Customer.id
+  table_id: string | null; // Can be null if for general seating or takeaway
+  date_time: string; // ISO string for reservation time
+  number_of_guests: number;
+  status: string; // e.g., 'confirmed', 'pending', 'cancelled', 'seated', 'no-show'
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+  store_id: string; // Added: To link the reservation to a specific store
+}
+
+// --- Other Entities (Retained from previous file, adjusted if needed for clarity/consistency) ---
 
 export interface Tenant {
   id: string;
   name: string;
   email: string;
-  password?: string; // Optional as it might not be fetched or stored directly
-  remember_token?: string; // Optional
+  password?: string;
+  remember_token?: string;
   created_at: string;
   updated_at: string;
-  // Your previous fields not in PDF: phone, address. Keep if custom.
   phone?: string;
   address?: string;
 }
 
 export interface Domain {
   id: string;
-  tenant_id: string; // Foreign key to Tenant
+  tenant_id: string;
   domain: string;
-  is_primary?: boolean; // Not in PDF, but often exists. Keep if custom.
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -142,10 +194,10 @@ export interface Job {
   id: string;
   queue: string;
   payload: string;
-  attempts: number; // Changed to number based on common usage
-  reserved_at?: string; // Optional timestamp
-  available_at?: string; // Optional timestamp
-  created_at: string;
+  attempts: number;
+  reserved_at: number | null;
+  available_at: number;
+  created_at: number;
 }
 
 export interface FailedJob {
@@ -165,113 +217,106 @@ export interface PasswordReset {
 }
 
 export interface User {
-  // Renamed from Employee, as PDF has 'Users' and 'Employees'
   id: string;
   name: string;
   email: string;
-  email_verified_at?: string; // Optional
-  password?: string; // Optional
-  remember_token?: string; // Optional
+  email_verified_at: string | null;
+  password: string;
+  remember_token: string | null;
   created_at: string;
   updated_at: string;
-  // Your previous fields not in PDF: cashAccounts, cardAccounts, etc. Keep if custom.
-  cashAccounts?: string;
-  cardAccounts?: string;
-  onlineAccounts?: string;
-  gpayAccounts?: string;
-  phonepeAccounts?: string;
-  amazonpayAccounts?: string;
-  locations?: string;
+  cashAccounts?: any[];
+  cardAccounts?: any[];
+  onlineAccounts?: any[];
+  gpayAccounts?: any[];
+  phonepeAccounts?: any[];
+  amazonpayAccounts?: any[];
+  locations?: any[];
 }
 
-export interface UserStore {
+export interface Payment {
   id: string;
-  user_id: string; // Foreign key to User
-  store_id: string; // Assuming Store entity exists
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Role {
-  id: string;
-  name: string;
-  guard_name: string; // From PDF
-  created_at: string;
-  updated_at: string;
-  description?: string; // Your previous field, keep if custom
-}
-
-export interface ModelHasRole {
-  // From PDF: model_has_roles
-  role_id: string; // Foreign key to Role
-  model_type: string;
-  model_id: string;
-}
-
-export interface ModelHasPermission {
-  // From PDF: model_has_permissions
-  permission_id: string; // Foreign key to Permission
-  model_type: string;
-  model_id: string;
-}
-
-export interface Permission {
-  id: string;
-  name: string;
-  guard_name: string; // From PDF
-  created_at: string;
-  updated_at: string;
-  description?: string; // Your previous field, keep if custom
-}
-
-export interface RoleHasPermission {
-  // From PDF: role_has_permissions
-  permission_id: string; // Foreign key to Permission
-  role_id: string; // Foreign key to Role
-}
-
-export interface Language {
-  id: string;
-  name: string;
-  code: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface LanguageTranslation {
-  id: string;
-  language_id: string; // Foreign key to Language
-  key: string;
-  value: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ExpenseCategory {
-  // From PDF: expense_categories
-  id: string;
-  name: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Expense {
-  id: string;
-  category_id: string; // Foreign key to ExpenseCategory (from PDF)
+  order_id: string;
+  payment_method_id: string;
   amount: number;
-  description: string;
-  expense_date: string;
+  payment_date: string;
+  transaction_id: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
-  tenant_id?: string; // Your previous field, keep if custom
+}
+
+export interface Stock {
+  id: string;
+  food_id: string; // Changed from product_id to food_id
+  quantity: number;
+  unit_id: string;
+  supplier_id: string;
+  last_restock_date: string;
+  expiration_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StockAdjustment {
+  id: string;
+  stock_id: string;
+  quantity_change: number;
+  reason: string;
+  adjustment_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Tax {
+  id: string;
+  name: string;
+  percentage: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobTitle { // Retained as JobTitle might be used elsewhere for specific job roles, distinct from `Role`
+  id: string;
+  title: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+  description?: string; // Added for consistency
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Unit {
-  // From PDF: units
   id: string;
   name: string;
-  short_name: string;
+  symbol: string;
   created_at: string;
   updated_at: string;
 }
@@ -287,312 +332,7 @@ export interface Supplier {
   updated_at: string;
 }
 
-export interface Purchase {
-  id: string;
-  supplier_id: string; // Foreign key to Supplier
-  total_amount: number;
-  purchase_date: string;
-  status: string;
-  notes: string; // From PDF
-  created_at: string;
-  updated_at: string;
-  tenant_id?: string; // Your previous field, keep if custom
-}
-
-export interface PurchaseItem {
-  id: string;
-  purchase_id: string; // Foreign key to Purchase
-  food_id: string; // Changed from product_id to food_id to match PDF
-  quantity: number;
-  price: number; // From PDF (was unit_price)
-  sub_total: number; // From PDF (was subtotal)
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Stock {
-  // From PDF: stocks
-  id: string;
-  food_id: string; // Foreign key to Food
-  quantity: number;
-  unit_id: string; // Foreign key to Unit
-  purchase_price: number;
-  sale_price: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface StoreTiming {
-  // From PDF: store_timings
-  id: string;
-  store_id: string; // Assuming Store entity exists
-  day_of_week: string;
-  opening_time: string;
-  closing_time: string;
-  is_closed: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TablesSection {
-  // From PDF: tables_sections
-  id: string;
-  name: string;
-  description: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Coupon {
-  // From PDF: coupons
-  id: string;
-  code: string;
-  type: string; // e.g., 'percentage' | 'fixed'
-  value: number;
-  min_order_amount: number;
-  max_discount_amount: number;
-  usage_limit: number; // From PDF
-  expiry_date: string; // From PDF
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TableCoupon {
-  // From PDF: table_coupons
-  id: string;
-  table_id: string; // Foreign key to Table
-  coupon_id: string; // Foreign key to Coupon
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ProductCoupon {
-  // From PDF: product_coupons
-  id: string;
-  food_id: string; // Changed from product_id to food_id to match PDF
-  coupon_id: string; // Foreign key to Coupon
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CustomerCoupon {
-  // From PDF: customer_coupons
-  id: string;
-  customer_id: string; // Foreign key to Customer
-  coupon_id: string; // Foreign key to Coupon
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Review {
-  // From PDF: reviews
-  id: string;
-  customer_id: string; // Foreign key to Customer
-  food_id: string; // Foreign key to Food
-  rating: number;
-  comment: string;
-  review_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface FAQ {
-  // From PDF: faqs
-  id: string;
-  question: string;
-  answer: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Invoice {
-  id: string;
-  order_id: string; // Foreign key to Order
-  invoice_number: string;
-  total_amount: number; // From PDF
-  invoice_date: string;
-  status: string; // From PDF
-  created_at: string;
-  updated_at: string;
-  // Your previous fields not in PDF: tax_amount, discount_amount, customer_id. Keep if custom.
-  tax_amount?: number;
-  discount_amount?: number;
-  customer_id?: string;
-}
-
-export interface InvoiceItem {
-  // From PDF: invoice_items
-  id: string;
-  invoice_id: string; // Foreign key to Invoice
-  food_id: string; // Changed from product_id to food_id to match PDF
-  quantity: number;
-  price: number;
-  sub_total: number; // From PDF (was subtotal)
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Payroll {
-  // From PDF: payrolls
-  id: string;
-  employee_id: string; // Foreign key to Employee
-  month: string;
-  year: number; // Changed to number
-  basic_salary: number;
-  allowances: number;
-  deductions: number;
-  net_salary: number;
-  payment_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Menu {
-  id: string;
-  name: string;
-  description: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Administrator {
-  // From PDF: administrators
-  id: string;
-  user_id: string; // Foreign key to User
-  role: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Announcement {
-  // From PDF: announcements
-  id: string;
-  title: string;
-  content: string;
-  published_at: string;
-  expires_at: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Setting {
-  // From PDF: settings
-  id: string;
-  key: string;
-  value: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Cart {
-  // From PDF: carts
-  id: string;
-  customer_id: string; // Foreign key to Customer
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CartItem {
-  // From PDF: cart_items
-  id: string;
-  cart_id: string; // Foreign key to Cart
-  food_id: string; // Foreign key to Food
-  quantity: number;
-  price: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DeliveryPersonnel {
-  // From PDF: delivery_personnels
-  id: string;
-  name: string;
-  phone: string;
-  vehicle_details: string;
-  is_available: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Wallet {
-  // From PDF: wallets
-  id: string;
-  customer_id: string; // Foreign key to Customer
-  balance: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CouponRedemption {
-  // From PDF: coupon_redemptions
-  id: string;
-  coupon_id: string; // Foreign key to Coupon
-  customer_id: string; // Foreign key to Customer
-  order_id: string; // Foreign key to Order
-  redemption_date: string;
-  discount_amount: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CashFlow {
-  // From PDF: cash_flows
-  id: string;
-  source_type: string;
-  source_id: string;
-  amount: number;
-  type: string;
-  description: string;
-  flow_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Refund {
-  // From PDF: refunds
-  id: string;
-  order_id: string;
-  amount: number;
-  reason: string;
-  refund_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Notification {
-  id: string;
-  user_id: string;
-  title: string; // From PDF
-  message: string;
-  type: string;
-  is_read: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PasswordChange {
-  // From PDF: password_changes
-  id: string;
-  user_id: string; // Foreign key to User
-  changed_at: string;
-}
-
-export interface StockMovement {
-  // From PDF: stocks_movements
-  id: string;
-  stock_id: string; // Foreign key to Stock
-  type: string; // e.g., 'in', 'out'
-  quantity: number;
-  movement_date: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface ContactMessage {
-  // From PDF: contact_messages
   id: string;
   name: string;
   email: string;
@@ -602,58 +342,235 @@ export interface ContactMessage {
   updated_at: string;
 }
 
-// --- Added Entities (not explicitly in PDF, but commonly needed) ---
-
-export interface Store {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  tenant_id: string; // Links to Tenant
-  created_at: string;
-  updated_at: string;
+// New: Report entity for tracking unauthorized access attempts
+export interface Report {
+  id: string; // Unique ID for the report entry
+  user_id: string; // ID of the user who attempted access
+  user_name: string; // Name of the user (for easier reporting)
+  user_role: string; // Role of the user at the time of attempt
+  attempted_path: string; // The URL path they tried to access
+  attempts: number; // Number of times this specific user/role/path combination was attempted
+  last_attempt_at: string; // Timestamp of the last attempt
+  created_at: string; // Timestamp of the first attempt
 }
 
-export interface Employee {
-  // A more specific employee entity, if needed
-  id: string;
-  user_id: string; // Links to User
-  job_title: string;
-  hire_date: string;
-  salary: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PaymentMethod {
+// NEW: InventoryProduct Interface
+export interface InventoryProduct {
   id: string;
   name: string;
   description?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  sku: string; // Stock Keeping Unit - unique identifier for inventory
+  unit_of_measure: string; // e.g., "kg", "grams", "liter", "unit", "bottle"
+  tenant_id: string;
+  unit_cost: number; // Cost to acquire one unit
+  quantity_in_stock: number;
+  reorder_level: number; // Minimum stock level before reordering
+  supplier_id?: string; // Optional: Link to a Supplier entity if you have one
+  inv_category_id?: string;
+  location_in_warehouse?: string; // e.g., "Aisle 3, Shelf 2"
+  last_restocked_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
-
-export interface Brand {
+export interface Unit {
   id: string;
   name: string;
-  description?: string;
-  image?: string;
+  symbol: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface Kitchen {
-  id: string;
-  name: string;
-  location: string;
-  created_at: string;
-  updated_at: string;
-}
+export const entities: { [key: string]: EntityConfig } = {
+  // Core POS Entities
+  inventory_products: {
+    label: "Inventory Products", // Corrected Label
+    endpoint: "/api/inventory_products", // Corrected Endpoint    
+    fields: [
+      "id",
+      "name",
+      "description",
+      "sku",
+      "unit_of_measure",
+      "unit_cost",
+      "quantity_in_stock",
+      "reorder_level",
+      "supplier_id",
+      "inv_category_id",
+      "location_in_warehouse",
+      "last_restock_at",
+      "created_at",
+      "updated_at",
+      "store_id", // Added store_id field
+    ]
+  },
+  orders: {
+    label: "Orders",
+    endpoint: "/api/orders",
+    fields: [
+      "id",
+      "store_id", // Corrected
+      "table_id",
+      "customer_id",
+      "total_amount",
+      "status",
+      "notes",
+      "created_at",
+      "updated_at",
+      "items",
+      "subtotal_amount",
+      "tax_amount",
+      "discount_amount",
+      "employee_id",
+      "order_type",
+      "payment_status",
+      "payment_method",
+    ],
+  },
+  reports: {
+    label: "Reports",
+    endpoint: "/api/order_items",
+    fields: [
+      "id",
+      "user_id",
+      "user_name",
+      "user_role",
+      "attempted_path",
+      "attempts",
+      "last_attempt_at",
+      "created_at"
+    ]
+  },
+  order_items: {
+    label: "Order Items",
+    endpoint: "/api/order_items",
+    fields: [
+      "id",
+      "order_id",
+      "food_id",
+      "quantity",
+      "price",
+      "sub_total",
+      "notes",
+      "created_at",
+      "updated_at",
+      "name",
+      "price_at_sale",
+    ],
+  },
+  foods: { // Renamed from menu_items to foods
+    label: "Foods", // Renamed from Menu Items
+    endpoint: "/api/foods", // Renamed from /api/menu_items
+    fields: [
+      "id",
+      "name",
+      "description",
+      "price",
+      "category_id",
+      "is_available",
+      "image_url",
+      "preparation_time",
+      "allergens",
+      "created_at",
+      "updated_at",
+      "tenant_id",
+      "recipes" // NEW: Added recipes field
+    ],
+  },
+  store_foods: { // Renamed from menu_items to foods
+    label: "Store Foods", // Renamed from Menu Items
+    endpoint: "/api/store_foods", // Renamed from /api/menu_items
+    fields: [
+      "food_id",
+      "store_id",
+      "is_available",
+    ],
+  },
+  recipes: { // NEW: Added recipes entity
+    label: "Recipes",
+    endpoint: "/api/recipes",
+    fields: ["id", "food_id", "inventory_product_id", "quantity_used", "unit_of_measure", "created_at", "updated_at"],
+  },
+  categories: {
+    label: "Categories",
+    endpoint: "/api/categories",
+    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"], // Added store_id field
+  },
+  inv_categories: {
+    label: "Inv. Categories",
+    endpoint: "/api/inv_categories",
+    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"], // Added store_id field
+  },
+  customers: {
+    label: "Customers",
+    endpoint: "/api/customers",
+    fields: [
+      "id",
+      "first_name",
+      "last_name",
+      "email",
+      "phone_number",
+      "loyalty_points",
+      "created_at",
+      "updated_at",
+      "store_id", // Added store_id field
+    ],
+  },
+  tables: {
+    label: "Tables",
+    endpoint: "/api/tables",
+    fields: [
+      "id",
+      "name",
+      "capacity",
+      "location",
+      "status",
+      "current_order_id",
+      "created_at",
+      "updated_at",
+      "store_id", // Added store_id field
+    ],
+  },
+  employees: { // Updated employees config
+    label: "Employees",
+    endpoint: "/api/employees",
+    fields: [
+      "id",
+      "user_id",
+      "job_title_id",
+      "access_role_ids", // Added for access control
+      "main_access_role_id", // Added for determining landing page
+      "hire_date",
+      "salary",
+      "name",
+      "store_id", // Corrected
+      "avatar_url",
+      "created_at",
+      "updated_at",
+    ],
+  },
+  access_roles: { // New entity config for access roles
+    label: "Access Roles",
+    endpoint: "/api/access_roles",
+    fields: ["id", "name", "description", "permissions", "landing_page", "created_at", "updated_at"],
+  },
+  reservations: {
+    label: "Reservations",
+    endpoint: "/api/reservations",
+    fields: [
+      "id",
+      "customer_id",
+      "table_id",
+      "date_time",
+      "number_of_guests",
+      "status",
+      "notes",
+      "created_at",
+      "updated_at",
+      "store_id", // Added store_id field
+    ],
+  },
 
-// --- Configuration for each entity ---
-export const entities: Record<string, EntityConfig> = {
+  // Other Entities
   tenants: {
     label: "Tenants",
     endpoint: "/api/tenants",
@@ -663,49 +580,26 @@ export const entities: Record<string, EntityConfig> = {
       "email",
       "password",
       "remember_token",
-      "created_at",
-      "updated_at",
       "phone",
       "address",
+      "created_at",
+      "updated_at",
     ],
   },
   domains: {
     label: "Domains",
     endpoint: "/api/domains",
-    fields: [
-      "id",
-      "tenant_id",
-      "domain",
-      "is_primary",
-      "created_at",
-      "updated_at",
-    ],
+    fields: ["id", "tenant_id", "domain", "is_primary", "created_at", "updated_at"],
   },
   jobs: {
     label: "Jobs",
     endpoint: "/api/jobs",
-    fields: [
-      "id",
-      "queue",
-      "payload",
-      "attempts",
-      "reserved_at",
-      "available_at",
-      "created_at",
-    ],
+    fields: ["id", "queue", "payload", "attempts", "reserved_at", "available_at", "created_at"],
   },
   failed_jobs: {
     label: "Failed Jobs",
     endpoint: "/api/failed_jobs",
-    fields: [
-      "id",
-      "uuid",
-      "connection",
-      "queue",
-      "payload",
-      "exception",
-      "failed_at",
-    ],
+    fields: ["id", "uuid", "connection", "queue", "payload", "exception", "failed_at"],
   },
   password_resets: {
     label: "Password Resets",
@@ -713,7 +607,6 @@ export const entities: Record<string, EntityConfig> = {
     fields: ["email", "token", "created_at"],
   },
   users: {
-    // Renamed from employees
     label: "Users",
     endpoint: "/api/users",
     fields: [
@@ -734,233 +627,17 @@ export const entities: Record<string, EntityConfig> = {
       "locations",
     ],
   },
-  user_stores: {
-    label: "User Stores",
-    endpoint: "/api/user_stores",
-    fields: ["id", "user_id", "store_id", "created_at", "updated_at"],
-  },
-  roles: {
-    label: "Roles",
-    endpoint: "/api/roles",
-    fields: [
-      "id",
-      "name",
-      "guard_name",
-      "created_at",
-      "updated_at",
-      "description",
-    ],
-  },
-  model_has_roles: {
-    label: "Model Has Roles",
-    endpoint: "/api/model_has_roles",
-    fields: ["role_id", "model_type", "model_id"],
-  },
-  model_has_permissions: {
-    label: "Model Has Permissions",
-    endpoint: "/api/model_has_permissions",
-    fields: ["permission_id", "model_type", "model_id"],
-  },
-  permissions: {
-    label: "Permissions",
-    endpoint: "/api/permissions",
-    fields: [
-      "id",
-      "name",
-      "guard_name",
-      "created_at",
-      "updated_at",
-      "description",
-    ],
-  },
-  role_has_permissions: {
-    label: "Role Has Permissions",
-    endpoint: "/api/role_has_permissions",
-    fields: ["permission_id", "role_id"],
-  },
-  languages: {
-    label: "Languages",
-    endpoint: "/api/languages",
-    fields: ["id", "name", "code", "created_at", "updated_at"],
-  },
-  language_translations: {
-    label: "Language Translations",
-    endpoint: "/api/language_translations",
-    fields: ["id", "language_id", "key", "value", "created_at", "updated_at"],
-  },
-  customers: {
-    label: "Customers",
-    endpoint: "/api/customers",
-    fields: [
-      "id",
-      "name",
-      "address",
-      "area",
-      "tax_number",
-      "district",
-      "phone",
-      "points",
-      "no_points",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  foods: {
-    // Renamed from MenuItem
-    label: "Foods",
-    endpoint: "/api/foods",
-    fields: [
-      "id",
-      "name",
-      "category_id",
-      "brand_id",
-      "unit_id",
-      "purchase_price",
-      "sale_price",
-      "description",
-      "image",
-      "is_active",
-      "is_featured",
-      "created_at",
-      "updated_at",
-      "code",
-      "hsn",
-      "cost",
-      "price",
-      "price_include_gst",
-      "cost_include_gst",
-      "gst_percentage",
-      "kitchen_id",
-    ],
-  },
-  tables: {
-    label: "Tables",
-    endpoint: "/api/tables",
-    fields: [
-      "id",
-      "name",
-      "code",
-      "created_at",
-      "updated_at",
-      "status",
-      "current_order_id",
-    ],
-  },
-  orders: {
-    label: "Orders",
-    endpoint: "/api/orders",
-    fields: [
-      "id",
-      "tenant_id",
-      "table_id",
-      "customer_id",
-      "total_amount",
-      "status",
-      "notes",
-      "created_at",
-      "updated_at",
-      "employee_id",
-      "order_type",
-      "subtotal_amount",
-      "tax_amount",
-      "discount_amount",
-    ],
-  },
-  order_items: {
-    label: "Order Items",
-    endpoint: "/api/order_items",
-    fields: [
-      "id",
-      "order_id",
-      "food_id",
-      "quantity",
-      "price",
-      "sub_total",
-      "notes",
-      "created_at",
-      "updated_at",
-      "name",
-      "price_at_sale",
-    ],
-  },
   payments: {
     label: "Payments",
     endpoint: "/api/payments",
     fields: [
       "id",
       "order_id",
-      "payment_method",
+      "payment_method_id",
       "amount",
-      "transaction_id",
-      "created_at",
-      "updated_at",
       "payment_date",
+      "transaction_id",
       "status",
-    ],
-  },
-  expense_categories: {
-    label: "Expense Categories",
-    endpoint: "/api/expense_categories",
-    fields: ["id", "name", "description", "created_at", "updated_at"],
-  },
-  expenses: {
-    label: "Expenses",
-    endpoint: "/api/expenses",
-    fields: [
-      "id",
-      "category_id",
-      "amount",
-      "description",
-      "expense_date",
-      "created_at",
-      "updated_at",
-      "tenant_id",
-    ],
-  },
-  units: {
-    label: "Units",
-    endpoint: "/api/units",
-    fields: ["id", "name", "short_name", "created_at", "updated_at"],
-  },
-  suppliers: {
-    label: "Suppliers",
-    endpoint: "/api/suppliers",
-    fields: [
-      "id",
-      "name",
-      "contact_person",
-      "phone",
-      "email",
-      "address",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  purchases: {
-    label: "Purchases",
-    endpoint: "/api/purchases",
-    fields: [
-      "id",
-      "supplier_id",
-      "total_amount",
-      "purchase_date",
-      "status",
-      "notes",
-      "created_at",
-      "updated_at",
-      "tenant_id",
-    ],
-  },
-  purchase_items: {
-    label: "Purchase Items",
-    endpoint: "/api/purchase_items",
-    fields: [
-      "id",
-      "purchase_id",
-      "food_id",
-      "quantity",
-      "price",
-      "sub_total",
       "created_at",
       "updated_at",
     ],
@@ -973,303 +650,44 @@ export const entities: Record<string, EntityConfig> = {
       "food_id",
       "quantity",
       "unit_id",
-      "purchase_price",
-      "sale_price",
+      "supplier_id",
+      "last_restock_date",
+      "expiration_date",
       "created_at",
       "updated_at",
     ],
   },
-  store_timings: {
-    label: "Store Timings",
-    endpoint: "/api/store_timings",
+  recipe_items: {
+    label: "Recipe Items",
+    endpoint: "/api/recipe_items",
     fields: [
       "id",
-      "store_id",
-      "day_of_week",
-      "opening_time",
-      "closing_time",
-      "is_closed",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  tables_sections: {
-    label: "Tables Sections",
-    endpoint: "/api/tables_sections",
-    fields: ["id", "name", "description", "created_at", "updated_at"],
-  },
-  coupons: {
-    label: "Coupons",
-    endpoint: "/api/coupons",
-    fields: [
-      "id",
-      "code",
-      "type",
-      "value",
-      "min_order_amount",
-      "max_discount_amount",
-      "usage_limit",
-      "expiry_date",
-      "is_active",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  table_coupons: {
-    label: "Table Coupons",
-    endpoint: "/api/table_coupons",
-    fields: ["id", "table_id", "coupon_id", "created_at", "updated_at"],
-  },
-  product_coupons: {
-    label: "Product Coupons",
-    endpoint: "/api/product_coupons",
-    fields: ["id", "food_id", "coupon_id", "created_at", "updated_at"],
-  },
-  customer_coupons: {
-    label: "Customer Coupons",
-    endpoint: "/api/customer_coupons",
-    fields: ["id", "customer_id", "coupon_id", "created_at", "updated_at"],
-  },
-  reviews: {
-    label: "Reviews",
-    endpoint: "/api/reviews",
-    fields: [
-      "id",
-      "customer_id",
       "food_id",
-      "rating",
-      "comment",
-      "review_date",
+      "inventory_product_id",
+      "quantity_used",
+      "unit_of_measure",
       "created_at",
-      "updated_at",
-    ],
+      "updated_at"
+    ]
   },
-  faqs: {
-    label: "FAQs",
-    endpoint: "/api/faqs",
-    fields: ["id", "question", "answer", "created_at", "updated_at"],
-  },
-  invoices: {
-    label: "Invoices",
-    endpoint: "/api/invoices",
-    fields: [
-      "id",
-      "order_id",
-      "invoice_number",
-      "total_amount",
-      "invoice_date",
-      "status",
-      "created_at",
-      "updated_at",
-      "tax_amount",
-      "discount_amount",
-      "customer_id",
-    ],
-  },
-  invoice_items: {
-    label: "Invoice Items",
-    endpoint: "/api/invoice_items",
-    fields: [
-      "id",
-      "invoice_id",
-      "food_id",
-      "quantity",
-      "price",
-      "sub_total",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  payrolls: {
-    label: "Payrolls",
-    endpoint: "/api/payrolls",
-    fields: [
-      "id",
-      "employee_id",
-      "month",
-      "year",
-      "basic_salary",
-      "allowances",
-      "deductions",
-      "net_salary",
-      "payment_date",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  menus: {
-    label: "Menus",
-    endpoint: "/api/menus",
-    fields: [
-      "id",
-      "name",
-      "description",
-      "is_active",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  menu_items: {
-    // This is the linking table between Menu and Food
-    label: "Menu Items",
-    endpoint: "/api/menu_items",
-    fields: [
-      "id",
-      "menu_id",
-      "food_id",
-      "position",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  administrators: {
-    label: "Administrators",
-    endpoint: "/api/administrators",
-    fields: ["id", "user_id", "role", "created_at", "updated_at"],
-  },
-  announcements: {
-    label: "Announcements",
-    endpoint: "/api/announcements",
-    fields: [
-      "id",
-      "title",
-      "content",
-      "published_at",
-      "expires_at",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  settings: {
-    label: "Settings",
-    endpoint: "/api/settings",
-    fields: ["id", "key", "value", "created_at", "updated_at"],
-  },
-  carts: {
-    label: "Carts",
-    endpoint: "/api/carts",
-    fields: ["id", "customer_id", "created_at", "updated_at"],
-  },
-  cart_items: {
-    label: "Cart Items",
-    endpoint: "/api/cart_items",
-    fields: [
-      "id",
-      "cart_id",
-      "food_id",
-      "quantity",
-      "price",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  delivery_personnels: {
-    label: "Delivery Personnel",
-    endpoint: "/api/delivery_personnels",
-    fields: [
-      "id",
-      "name",
-      "phone",
-      "vehicle_details",
-      "is_available",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  wallets: {
-    label: "Wallets",
-    endpoint: "/api/wallets",
-    fields: ["id", "customer_id", "balance", "created_at", "updated_at"],
-  },
-  coupon_redemptions: {
-    label: "Coupon Redemptions",
-    endpoint: "/api/coupon_redemptions",
-    fields: [
-      "id",
-      "coupon_id",
-      "customer_id",
-      "order_id",
-      "redemption_date",
-      "discount_amount",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  cash_flows: {
-    label: "Cash Flows",
-    endpoint: "/api/cash_flows",
-    fields: [
-      "id",
-      "source_type",
-      "source_id",
-      "amount",
-      "type",
-      "description",
-      "flow_date",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  refunds: {
-    label: "Refunds",
-    endpoint: "/api/refunds",
-    fields: [
-      "id",
-      "order_id",
-      "amount",
-      "reason",
-      "refund_date",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  notifications: {
-    label: "Notifications",
-    endpoint: "/api/notifications",
-    fields: [
-      "id",
-      "user_id",
-      "title",
-      "message",
-      "type",
-      "is_read",
-      "created_at",
-      "updated_at",
-    ],
-  },
-  password_changes: {
-    label: "Password Changes",
-    endpoint: "/api/password_changes",
-    fields: ["id", "user_id", "changed_at"],
-  },
-  stocks_movements: {
-    label: "Stocks Movements",
-    endpoint: "/api/stocks_movements",
+  stock_adjustments: {
+    label: "Stock Adjustments",
+    endpoint: "/api/stock_adjustments",
     fields: [
       "id",
       "stock_id",
-      "type",
-      "quantity",
-      "movement_date",
-      "notes",
+      "quantity_change",
+      "reason",
+      "adjustment_date",
       "created_at",
       "updated_at",
     ],
   },
-  contact_messages: {
-    label: "Contact Messages",
-    endpoint: "/api/contact_messages",
-    fields: [
-      "id",
-      "name",
-      "email",
-      "subject",
-      "message",
-      "created_at",
-      "updated_at",
-    ],
+  taxes: {
+    label: "Taxes",
+    endpoint: "/api/taxes",
+    fields: ["id", "name", "percentage", "is_active", "created_at", "updated_at"],
   },
-  // Added entities
   stores: {
     label: "Stores",
     endpoint: "/api/stores",
@@ -1284,18 +702,10 @@ export const entities: Record<string, EntityConfig> = {
       "updated_at",
     ],
   },
-  employees: {
-    label: "Employees",
-    endpoint: "/api/employees",
-    fields: [
-      "id",
-      "user_id",
-      "job_title",
-      "hire_date",
-      "salary",
-      "created_at",
-      "updated_at",
-    ],
+  job_titles: { // Kept JobTitle for compatibility, even if Role is now primary for employees
+    label: "Job Titles",
+    endpoint: "/api/job_titles",
+    fields: ["id", "title", "description", "created_at", "updated_at"],
   },
   payment_methods: {
     label: "Payment Methods",
@@ -1312,11 +722,71 @@ export const entities: Record<string, EntityConfig> = {
   brands: {
     label: "Brands",
     endpoint: "/api/brands",
-    fields: ["id", "name", "description", "image", "created_at", "updated_at"],
+    fields: ["id", "name", "description", "created_at", "updated_at"],
   },
-  kitchens: {
-    label: "Kitchens",
-    endpoint: "/api/kitchens",
-    fields: ["id", "name", "location", "created_at", "updated_at"],
+  suppliers: {
+    label: "Suppliers",
+    endpoint: "/api/suppliers",
+    fields: [
+      "id",
+      "name",
+      "contact_person",
+      "phone",
+      "email",
+      "address",
+      "created_at",
+      "updated_at",
+    ],
   },
+  contact_messages: {
+    label: "Contact Messages",
+    endpoint: "/api/contact_messages",
+    fields: [
+      "id",
+      "name",
+      "email",
+      "subject",
+      "message",
+      "created_at",
+      "updated_at",
+    ],
+
+
+  },
+  units: {
+    label: "Units",
+    endpoint: "/api/units",
+    fields: ["id", "name", "symbol", "created_at", "updated_at"],
+    subMenus: [
+      {
+        label: "Common Units",
+        items: [
+          // Volume
+          { id: "milliliter", name: "Milliliter", symbol: "ml" },
+          { id: "liter", name: "Liter", symbol: "L" },
+          { id: "ounce_fl", name: "Fluid Ounce", symbol: "fl oz" },
+          { id: "cup", name: "Cup", symbol: "cup" },
+          { id: "pint", name: "Pint", symbol: "pt" },
+          { id: "quart", name: "Quart", symbol: "qt" },
+          { id: "gallon", name: "Gallon", symbol: "gal" },
+          { id: "teaspoon", name: "Teaspoon", symbol: "tsp" },
+          { id: "tablespoon", name: "Tablespoon", symbol: "tbsp" },
+          // Weight/Mass
+          { id: "gram", name: "Gram", symbol: "g" },
+          { id: "kilogram", name: "Kilogram", symbol: "kg" },
+          { id: "milligram", name: "Milligram", symbol: "mg" },
+          { id: "ounce_wt", name: "Ounce", symbol: "oz" },
+          { id: "pound", name: "Pound", symbol: "lb" },
+          // Count/Other
+          { id: "unit", name: "Unit", symbol: "unit" },
+          { id: "each", name: "Each", symbol: "ea" },
+          { id: "can", name: "Can", symbol: "can" },
+          { id: "bottle", name: "Bottle", symbol: "bottle" },
+          { id: "box", name: "Box", symbol: "box" },
+          { id: "bag", name: "Bag", symbol: "bag" },
+          { id: "case", name: "Case", symbol: "case" },
+        ],
+      },
+    ],
+  }
 };

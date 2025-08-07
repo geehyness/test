@@ -4,12 +4,18 @@ import { useToast } from "@chakra-ui/react";
 // Corrected imports based on updated entities.ts
 import {
   Order,
-  Food,
+  Food, // Ensure Food has recipe_items if used for inventory deduction
   Category,
   Customer,
   Table,
   OrderItem,
-  MenuItem,
+  InventoryProduct, // Import InventoryProduct
+  JobTitle, // <--- ADDED: Import JobTitle
+  Employee, // <--- ADDED: Import Employee for login function
+  AccessRole, // <--- ADDED: Import AccessRole for login function
+  User, // <--- ADDED: Import User for login function
+  Store, // <-- ADDED: Import Store to get tenant_id
+  RecipeItem,
 } from "../config/entities";
 import { sampleData } from "../data/sample"; // Directly import sampleData for easier access
 
@@ -22,12 +28,12 @@ const fetcher = (url: string) =>
     return res.json();
   });
 
-// Simulate API interactions for demonstration purposes
 export async function fetchData(
-  resource: string, // This 'resource' will now be the endpoint path like '/api/tenants'
-  id?: string, // Make id optional for POST/GET all
+  resource: string,
+  id?: string,
   data?: Record<string, any>,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  storeId?: string, // Corrected: Add storeId parameter
 ): Promise<any | null> {
   console.log(
     `API call: ${method} ${resource}${id ? "/" + id : ""}`,
@@ -37,242 +43,197 @@ export async function fetchData(
   // Simulate network delay
   await new Promise((resolve) => setTimeout(resolve, 300));
 
-  // Extract the actual resource name from the endpoint path
-  const actualResourceName = resource.split("/").pop() || "";
+  // Normalize resource, e.g. "api/users" -> "users"
+  const normalizedResource = resource.replace(/^\/?api\/?/, "");
 
-  // Use the actualResourceName to access sampleData
-  // We'll work with a mutable copy for POST/PUT/DELETE operations
-  const currentResourceData = sampleData[actualResourceName] || []; // Changed let to const
+  // Read entire mock data object from localStorage
+  let mockData: Record<string, any[]> = {};
+  try {
+    const stored = localStorage.getItem("mockData");
+    if (stored) {
+      mockData = JSON.parse(stored);
+      console.log(`fetchData: Found mockData in localStorage.`);
+    } else {
+      // Initialize localStorage with full sampleData copy
+      mockData = JSON.parse(JSON.stringify(sampleData));
+      localStorage.setItem("mockData", JSON.stringify(mockData));
+      console.log(`fetchData: Initialized mockData in localStorage.`);
+    }
+  } catch (e) {
+    console.error(`Error reading/parsing localStorage mockData:`, e);
+    mockData = JSON.parse(JSON.stringify(sampleData));
+  }
+
+  let currentData: any[] = mockData[normalizedResource] || [];
+
+  // Corrected: Filter data by store_id if applicable
+  const resourcesToFilterByStore = ["orders", "foods", "categories", "customers", "tables", "reservations", "inventory_products"];
+  if (storeId && resourcesToFilterByStore.includes(normalizedResource)) {
+    currentData = currentData.filter(item => item.store_id === storeId);
+  }
+
+  let responseData: any = null;
 
   switch (method) {
     case "GET":
-      if (actualResourceName === "orders") {
-        const orders: Order[] = currentResourceData as Order[];
-        const allOrderItems: OrderItem[] = sampleData[
-          "order_items"
-        ] as OrderItem[];
-        const allFoods: Food[] = sampleData["foods"] as Food[]; // Fetch all food items
-
-        // Helper to enrich an OrderItem with Food details
-        const enrichOrderItem = (orderItem: OrderItem): OrderItem => {
-          const food = allFoods.find(
-            (f) => String(f.id) === String(orderItem.food_id)
-          );
-
-          // Use sale_price first, then price, then orderItem.price as fallback
-          const itemPrice = food?.sale_price || orderItem.price;
-
-          return {
-            ...orderItem,
-            name: food?.name || "Unknown Item", // Add name from food
-            price_at_sale: itemPrice, // Use the determined item price
-            sub_total: orderItem.quantity * (itemPrice || 0), // Recalculate sub_total
-          };
-        };
-
-        if (id) {
-          const order = orders.find(
-            (item: any) => String(item.id) === String(id)
-          );
-          if (order) {
-            order.items = allOrderItems
-              .filter((item) => String(item.order_id) === String(order.id))
-              .map(enrichOrderItem);
-            return order;
-          }
-          return null;
-        } else {
-          return orders.map((order) => ({
-            ...order,
-            items: allOrderItems
-              .filter((item) => String(item.order_id) === String(order.id))
-              .map(enrichOrderItem),
-          }));
-        }
+      if (normalizedResource === "foods") {
+        const recipes = mockData["recipes"] || [];
+        const foodsWithRecipes = (currentData as Food[]).map(food => ({
+          ...food,
+          recipes: recipes.filter(recipe => recipe.food_id === food.id),
+        }));
+        responseData = id
+          ? foodsWithRecipes.find((item) => item.id === id)
+          : foodsWithRecipes;
+      } else {
+        responseData = id
+          ? currentData.find((item) => item.id === id)
+          : currentData;
       }
-      if (id) {
-        return (
-          currentResourceData.find(
-            (item: any) => String(item.id) === String(id)
-          ) || null
-        );
-      }
-      return currentResourceData; // Return all data for the resource
+      break;
+
     case "POST":
-      // Simulate ID generation consistent with new string IDs
-      const newId = `${actualResourceName}-${Date.now()}`;
-      let newItem: any = {
-        id: newId,
-        ...data,
+      const newItem = {
+        id: `new-${normalizedResource}-${Date.now()}`,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        ...data,
       };
+      currentData.push(newItem);
+      responseData = newItem;
+      break;
 
-      // Directly modify the sampleData array for the resource
-      (sampleData[actualResourceName] as any[]).push(newItem);
-
-      // Special handling for 'orders' to also save 'order_items'
-      if (
-        actualResourceName === "orders" &&
-        data?.items &&
-        Array.isArray(data.items)
-      ) {
-        const orderItemsToSave = data.items.map((item: any) => ({
-          ...item,
-          order_id: newItem.id, // Link items to the newly created order
-          id: `orderitem-${Date.now()}-${Math.random()
-            .toString(36)
-            .substring(7)}`, // Generate new ID for each item
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
-        (sampleData["order_items"] as any[]).push(...orderItemsToSave);
-        // Attach the items to the returned order object for immediate use
-        newItem = { ...newItem, items: orderItemsToSave } as Order; // Cast to Order
-      }
-      return newItem;
     case "PUT":
-      if (id) {
-        const index = currentResourceData.findIndex(
-          (item: any) => String(item.id) === String(id)
-        );
-        if (index !== -1) {
-          let updatedItem: any = {
-            ...currentResourceData[index],
-            ...data,
-            id: id,
-            updated_at: new Date().toISOString(),
-          };
-          // Directly modify the sampleData array for the resource
-          sampleData[actualResourceName][index] = updatedItem;
+      if (!id) throw new Error(`ID required for PUT on ${resource}`);
+      const idx = currentData.findIndex((item) => item.id === id);
+      if (idx === -1) throw new Error(`${normalizedResource} with ID ${id} not found`);
+      const updatedItem = {
+        ...currentData[idx],
+        ...data,
+        updated_at: new Date().toISOString(),
+      };
+      currentData[idx] = updatedItem;
+      responseData = updatedItem;
+      break;
 
-          // Special handling for 'orders' to update 'order_items'
-          if (
-            actualResourceName === "orders" &&
-            data?.items &&
-            Array.isArray(data.items)
-          ) {
-            // Remove existing items for this order
-            sampleData["order_items"] = (
-              sampleData["order_items"] as OrderItem[]
-            ).filter((oi) => String(oi.order_id) !== String(id));
-
-            // Add the new/updated items
-            const newOrderItems = data.items.map((item: any) => ({
-              ...item,
-              order_id: id,
-              id:
-                item.id ||
-                `orderitem-${Date.now()}-${Math.random()
-                  .toString(36)
-                  .substring(7)}`, // Use existing ID or generate new
-              created_at: item.created_at || new Date().toISOString(), // Keep original or set new
-              updated_at: new Date().toISOString(),
-            }));
-            (sampleData["order_items"] as any[]).push(...newOrderItems);
-            // Attach the updated items to the returned order object
-            updatedItem = { ...updatedItem, items: newOrderItems } as Order; // Cast to Order
-          }
-          return updatedItem;
-        }
-      }
-      return null;
     case "DELETE":
-      if (id) {
-        const initialLength = currentResourceData.length;
-        // Directly modify the sampleData array for the resource
-        sampleData[actualResourceName] = currentResourceData.filter(
-          (item: any) => String(item.id) !== String(id)
-        );
-
-        // If deleting an order, also delete its associated order_items
-        if (actualResourceName === "orders" && id) {
-          sampleData["order_items"] = (
-            sampleData["order_items"] as OrderItem[]
-          ).filter((oi) => String(oi.order_id) !== String(id));
-        }
-
-        if (initialLength > sampleData[actualResourceName].length) {
-          return { success: true, id };
-        }
+      if (!id) throw new Error(`ID required for DELETE on ${resource}`);
+      const lengthBefore = currentData.length;
+      currentData = currentData.filter((item) => item.id !== id);
+      if (currentData.length === lengthBefore) {
+        throw new Error(`${normalizedResource} with ID ${id} not found`);
       }
-      return { success: false };
+      responseData = { message: `${normalizedResource} deleted successfully.` };
+      break;
+
     default:
-      return null;
+      throw new Error(`Unsupported HTTP method: ${method}`);
   }
+
+  // Update mockData and persist whole object back to localStorage
+  mockData[normalizedResource] = currentData;
+  localStorage.setItem("mockData", JSON.stringify(mockData));
+
+  return responseData;
 }
 
-// Helper function to create an item
-export async function createItem(
-  resource: string,
-  itemData: Record<string, any>
-): Promise<any | null> {
-  try {
-    const newItem = await fetchData(resource, undefined, itemData, "POST");
-    return newItem;
-  } catch (error: any) {
-    console.error(`Error creating ${resource}:`, error);
-    throw error; // Re-throw to be handled by the component
-  }
-}
+/**
+ * Simulates employee login.
+ * In a real application, this would involve calling a backend authentication endpoint.
+ * @param email The employee's email.
+ * @param password The employee's password.
+ * @returns The Employee object with store_id if login is successful.
+ * @throws An error if login fails (e.g., invalid credentials).
+ */
+export async function loginEmployee(email: string, password: string): Promise<Employee & { store_id: string }> {
+  console.log('loginEmployee: Starting login process for email:', email);
+  // Simulate API call delay
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
-// Helper function to update an item
-export async function updateItem(
-  resource: string,
-  id: string,
-  itemData: Record<string, any>
-): Promise<any | null> {
-  try {
-    const updatedItem = await fetchData(resource, id, itemData, "PUT");
-    return updatedItem;
-  } catch (error: any) {
-    console.error(`Error updating ${resource} with ID ${id}:`, error);
-    throw error; // Re-throw to be handled by the component
-  }
-}
+  // 1. Fetch users from the mock API (which now loads from localStorage or sampleData)
+  console.log('loginEmployee: Fetching all users...');
+  const users: User[] = await fetchData('api/users') as User[];
+  console.log('loginEmployee: Users fetched (count):', users.length);
 
-// Helper function to delete an item
-export async function deleteItem(
-  resource: string,
-  id: string
-): Promise<boolean> {
-  try {
-    const success = await fetchData(resource, id, undefined, "DELETE");
-    return success;
-  } catch (error: any) {
-    console.error(`Error deleting ${resource} with ID ${id}:`, error);
-    throw error; // Re-throw to be handled by the component
-  }
-}
-
-// Custom hooks (if you want to keep SWR for specific fetches)
-export const useOrders = () => {
-  const { data, error, isLoading, mutate } = useSWR<Order[]>(
-    "/api/orders",
-    fetcher
+  // 2. Find user by email
+  console.log('loginEmployee: Searching for user with email:', email);
+  const foundUser = users.find(
+    (user) => user.email === email
   );
-  return {
-    orders: data,
-    isLoading,
-    isError: error,
-    refreshOrders: mutate,
-  };
-};
 
-// Renamed useMenuItems to useFoods to reflect fetching actual food items
+  if (!foundUser) {
+    console.log('loginEmployee: User not found for email:', email);
+    throw new Error('Invalid email or password.');
+  }
+  console.log('loginEmployee: User found:', foundUser.id, " ", foundUser.email, " - ", foundUser.password);
+
+  // 3. Simulate password check using the password from sample data
+  // IMPORTANT: In a real app, NEVER do this client-side with plain text.
+  // This is purely for demonstration with mock data.
+  console.log('loginEmployee: Simulating password check with sample data password...');
+  const isPasswordCorrect = password === foundUser.password; // Use password from foundUser
+
+  if (!isPasswordCorrect) {
+    console.log('loginEmployee: Incorrect password for user:', foundUser.id);
+    throw new Error('Invalid email or password.');
+  }
+  console.log('loginEmployee: Password correct for user:', foundUser.id);
+
+  // 4. If user is authenticated, fetch employees
+  console.log('loginEmployee: User authenticated. Fetching all employees...');
+  const employees: Employee[] = await fetchData('api/employees') as Employee[];
+  console.log('loginEmployee: Employees fetched (count):', employees.length);
+
+  // 5. Find the employee linked to this user
+  console.log('loginEmployee: Searching for employee linked to user_id:', foundUser.id);
+  const foundEmployee = employees.find(
+    (employee) => employee.user_id === foundUser.id
+  );
+
+  if (!foundEmployee) {
+    console.log('loginEmployee: No employee found for user_id:', foundUser.id);
+    throw new Error('No employee found for this user account.');
+  }
+  console.log('loginEmployee: Employee found:', foundEmployee.id, foundEmployee.first_name);
+
+  // Corrected: Return the employee with the store_id
+  const authenticatedEmployee = { ...foundEmployee, store_id: foundEmployee.store_id };
+
+  return authenticatedEmployee;
+}
+
+/**
+ * Deletes an item from a specified resource.
+ * @param resource The name of the resource (e.g., 'employees', 'foods').
+ * @param id The ID of the item to delete.
+ * @returns A success message or throws an error.
+ */
+export async function deleteItem(resource: string, id: string): Promise<{ message: string }> {
+  try {
+    const result = await fetchData(resource, id, undefined, "DELETE");
+    return result;
+  } catch (error: any) {
+    console.error(`Error deleting item from ${resource} with ID ${id}:`, error);
+    throw error;
+  }
+}
+
+
+// Custom hook for fetching all menu items (Food)
 export const useFoods = () => {
   const { data, error, isLoading, mutate } = useSWR<Food[]>(
     "/api/foods",
     fetcher
   );
   return {
-    foods: data, // Changed from menuItems to foods
+    menuItems: data, // Renamed from 'foods' to 'menuItems' for clarity in POS context
     isLoading,
     isError: error,
-    refreshFoods: mutate, // Changed from refreshMenuItems to refreshFoods
+    refreshMenuItems: mutate,
   };
 };
 
+// Custom hook for fetching all categories
 export const useCategories = () => {
   const { data, error, isLoading, mutate } = useSWR<Category[]>(
     "/api/categories",
@@ -286,19 +247,7 @@ export const useCategories = () => {
   };
 };
 
-export const useCustomers = () => {
-  const { data, error, isLoading, mutate } = useSWR<Customer[]>(
-    "/api/customers",
-    fetcher
-  );
-  return {
-    customers: data,
-    isLoading,
-    isError: error,
-    refreshCustomers: mutate,
-  };
-};
-
+// Custom hook for fetching all tables
 export const useTables = () => {
   const { data, error, isLoading, mutate } = useSWR<Table[]>(
     "/api/tables",
@@ -312,13 +261,10 @@ export const useTables = () => {
   };
 };
 
-/**
- * Custom hook for fetching a customer by ID.
- * @param customerId The ID of the customer to fetch.
- */
+// Custom hook for fetching a customer by ID.
 export const useCustomerById = (customerId?: string) => {
   const { data, error, isLoading, mutate } = useSWR<Customer>(
-    customerId ? `/api/customer/${customerId}` : null, // Only fetch if customerId exists
+    customerId ? `/api/customers/${customerId}` : null, // Corrected endpoint to /api/customers
     fetcher
   );
   return {
@@ -329,9 +275,7 @@ export const useCustomerById = (customerId?: string) => {
   };
 };
 
-/**
- * Custom hook for handling order creation.
- */
+// Custom hook for handling order creation.
 export const useCreateOrder = () => {
   const toast = useToast(); // useToast is correctly inside a custom hook
 
@@ -356,8 +300,109 @@ export const useCreateOrder = () => {
         duration: 5000,
         isClosable: true,
       });
-      throw error;
+      throw error; // Re-throw to allow component to handle
     }
   };
   return { createOrder };
 };
+
+// Custom hook for fetching all orders
+export const useOrders = () => {
+  const { data, error, isLoading, mutate } = useSWR<Order[]>(
+    "/api/orders",
+    fetcher
+  );
+  return {
+    orders: data,
+    isLoading,
+    isError: error,
+    refreshOrders: mutate,
+  };
+};
+
+// Custom hook for updating an order (including status changes)
+export const useUpdateOrder = () => {
+  const toast = useToast();
+
+  const updateOrder = async (orderId: string, updatedOrder: Partial<Order>) => {
+    try {
+      // Simulate API call for updating an order
+      const result = await fetchData("orders", orderId, updatedOrder, "PUT");
+
+      // Check for stock warnings returned from fetchData (if any)
+      if (result && result.stockWarnings && result.stockWarnings.length > 0) {
+        result.stockWarnings.forEach((warning: string) => {
+          toast({
+            title: "Inventory Warning",
+            description: warning,
+            status: "warning",
+            duration: 5000,
+            isClosable: true,
+          });
+        });
+      }
+
+      toast({
+        title: "Order Updated.",
+        description: "Order status has been successfully updated.",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+      return result;
+    } catch (error: any) {
+      toast({
+        title: "Order Update Failed.",
+        description: error.message || "There was an error updating the order.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      throw error;
+    }
+  };
+  return { updateOrder };
+};
+
+// Custom hook for fetching all inventory products
+export const useInventoryProducts = () => {
+  const { data, error, isLoading, mutate } = useSWR<InventoryProduct[]>(
+    "/api/inventory_products",
+    fetcher
+  );
+  return {
+    inventoryProducts: data,
+    isLoading,
+    isError: error,
+    refreshInventoryProducts: mutate,
+  };
+};
+
+/**
+ * Custom hook for fetching orders by status (e.g., 'new', 'preparing', 'ready', 'served').
+ * @param status The status to filter orders by.
+ */
+export const useOrdersByStatus = (status?: string) => {
+  const { data, error, isLoading, mutate } = useSWR<Order[]>(
+    status ? `/api/orders?status=${status}` : "/api/orders",
+    fetcher
+  );
+
+  // Filter client-side for demonstration purposes, as mock API doesn't handle query params
+  const filteredData = data?.filter((order) =>
+    status ? order.status === status : true
+  );
+
+  return {
+    orders: filteredData,
+    isLoading,
+    isError: error,
+    refreshOrders: mutate,
+  };
+};
+
+// Function to fetch a single JobTitle by ID
+export async function fetchJobTitleById(id: string): Promise<JobTitle | null> {
+  const jobTitle = await fetchData("job_titles", id);
+  return jobTitle as JobTitle | null;
+}

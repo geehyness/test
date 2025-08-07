@@ -69,6 +69,7 @@ import { Table, Food, Category } from "../config/entities"; // Import Table, Foo
 interface DisplayFoodItem extends Food {
   categoryName: string; // The human-readable category name
   displayPrice: number; // The price to display (e.g., sale_price)
+  image?: string; // Re-added to match provided code's usage
 }
 
 // REMOVED THE FOLLOWING LINE: interface FoodCategoryData extends Category {}
@@ -198,14 +199,6 @@ const CustomerMenuPage: React.FC = () => {
     "var(--background-color-light)"
   );
 
-  // IMPORTANT: If you have any `useContext`, `useRef`, or `useId` calls in your
-  // full file, they also need to be declared here at the top, unconditionally.
-  // Example (uncomment and replace with your actual context/ref/id if applicable):
-  // import { MyContext } from './MyContext'; // Make sure to import your context
-  // const myContextValue = useContext(MyContext);
-  // const myRef = useRef(null);
-  // const myId = useId();
-
   // Helper function to map category names to icons
   const getCategoryIcon = (categoryName: string): React.ElementType => {
     switch (categoryName.toLowerCase()) {
@@ -248,7 +241,8 @@ const CustomerMenuPage: React.FC = () => {
         // Use imported Food interface
         ...food,
         categoryName: categoryMap.get(food.category_id) || "Uncategorized", // Map category_id to name
-        displayPrice: food.sale_price, // Use sale_price for display
+        displayPrice: food.price, // Use food.price as displayPrice
+        image: food.image_url, // Map image_url to image to match the provided code
         description: food.description || "No description available.",
       }));
 
@@ -408,8 +402,7 @@ const CustomerMenuPage: React.FC = () => {
       // Use a custom message box instead of alert()
       // You would replace this with a Chakra UI Modal or Toast
       console.log(
-        `Order placed for Table ${
-          randomlySelectedTable?.name || "N/A"
+        `Order placed for Table ${randomlySelectedTable?.name || "N/A"
         }! Total: R ${totalCartPrice.toFixed(2)}`
       );
       onCartClose();
@@ -1079,8 +1072,8 @@ const CustomerMenuPage: React.FC = () => {
                                 meal.status === "Preparing"
                                   ? "orange"
                                   : meal.status === "Ready"
-                                  ? "blue"
-                                  : "green"
+                                    ? "blue"
+                                    : "green"
                               }
                               fontFamily="var(--font-lexend-deca)}"
                             >

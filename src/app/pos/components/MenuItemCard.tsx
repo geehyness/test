@@ -1,4 +1,5 @@
 // src/app/pos/components/MenuItemCard.tsx
+// src/app/pos/components/MenuItemCard.tsx
 "use client";
 
 import React from "react";
@@ -19,7 +20,7 @@ import {
   Box,
 } from "@chakra-ui/react";
 import { AddIcon, MinusIcon } from "@chakra-ui/icons";
-import { Food as MenuItemType } from "@/app/config/entities"; // Changed import from MenuItem to Food
+import { Food as MenuItemType } from "@/app/config/entities"; // Changed alias to Food
 
 interface MenuItemCardProps {
   item: MenuItemType; // Now correctly typed as Food
@@ -55,7 +56,7 @@ export default function MenuItemCard({
     >
       <Image
         src={
-          item.image ||
+          item.image_url || // Changed from item.image to item.image_url
           "https://placehold.co/400x200/E0E0E0/000000?text=No+Image"
         }
         alt={item.name}
@@ -73,8 +74,8 @@ export default function MenuItemCard({
           </Heading>
           <Text color="var(--medium-gray-text)">{item.description}</Text>
           <Text color="var(--primary-green)" fontSize="2xl" fontWeight="bold">
-            R {item.sale_price ? item.sale_price.toFixed(2) : "0.00"}{" "}
-            {/* Use sale_price from Food */}
+            R {item.price ? item.price.toFixed(2) : "0.00"}{" "}
+            {/* Changed from item.sale_price to item.price */}
           </Text>
         </Stack>
       </CardBody>
