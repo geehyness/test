@@ -53,10 +53,12 @@ export default function POSLayout({
 
     const rolePaths: Record<string, string[]> = {
       'admin': ['/pos/management', '/pos/dashboard', '/pos/kitchen', '/pos/server', '/pos/admin', '/pos/admin/reports', '/pos/management/employees', '/pos/management/users', '/pos/management/access_roles', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/reports'],
-      'manager': ['/pos/management', '/pos/dashboard', '/pos/kitchen', '/pos/server'],
+      'manager': ['/pos/management', '/pos/dashboard', '/pos/kitchen', '/pos/server', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/employees'],
       'server': ['/pos/server', '/pos/dashboard'],
       'kitchen': ['/pos/kitchen', '/pos/dashboard'],
       'cashier': ['/pos/dashboard'],
+      'supply-chain': ['/pos/dashboard', '/pos/management', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods'],
+      'hr': ['/pos/dashboard', '/pos/management', '/pos/management/employees', '/pos/management/access_roles']
     };
 
 
@@ -118,22 +120,76 @@ export default function POSLayout({
       '/pos/admin/reports': 'Access Reports',
       '/pos/login': 'Login',
       '/pos/management/employees': 'Employee Management',
+      '/pos/management/access_roles': 'Access Roles',
+      '/pos/management/inventory_products': 'Inventory Products',
+      '/pos/management/suppliers': 'Suppliers',
+      '/pos/management/foods': 'Foods',
+      '/pos/management/categories': 'Food Categories',
+      '/pos/management/tables': 'Tables',
     };
 
+    // A more complete map of roles to allowed navigation paths
     const navPaths: Record<string, string[]> = {
-      'admin': ['/pos/admin', '/pos/dashboard', '/pos/management', '/pos/management/employees'], // Added employee management for admin nav
-      'manager': ['/pos/management', '/pos/dashboard', '/pos/server', '/pos/kitchen'],
+      'admin': [
+        '/pos/admin',
+        '/pos/admin/reports',
+        '/pos/dashboard',
+        '/pos/management',
+        '/pos/management/employees',
+        '/pos/management/access_roles',
+        '/pos/management/inventory_products',
+        '/pos/management/suppliers',
+        '/pos/management/foods',
+        '/pos/management/categories',
+        '/pos/management/tables',
+        '/pos/server',
+        '/pos/kitchen',
+      ],
+      'manager': [
+        '/pos/dashboard',
+        '/pos/management',
+        '/pos/management/employees',
+        '/pos/management/foods',
+        '/pos/management/categories',
+        '/pos/management/tables',
+        '/pos/server',
+        '/pos/kitchen',
+      ],
       'server': ['/pos/dashboard', '/pos/server'],
       'kitchen': ['/pos/dashboard', '/pos/kitchen'],
       'cashier': ['/pos/dashboard'],
+      'supply-chain': [
+        '/pos/dashboard',
+        '/pos/management',
+        '/pos/management/inventory_products',
+        '/pos/management/suppliers',
+        '/pos/management/foods',
+      ],
+      'hr': [
+        '/pos/dashboard',
+        '/pos/management',
+        '/pos/management/employees',
+        '/pos/management/access_roles',
+      ]
     };
+
     const roleName = currentStaff.mainAccessRole?.name.toLowerCase();
     if (roleName && navPaths[roleName]) {
       // Define categories and their paths
+      // The order of paths within the array determines the display order in the navigation.
       const categories: { [key: string]: string[] } = {
-        'Admin Tools': ['/pos/admin', '/pos/admin/reports', '/pos/management/employees', '/pos/management'],
+        'Admin Tools': ['/pos/admin', '/pos/admin/reports'],
         'Operations': ['/pos/dashboard', '/pos/server', '/pos/kitchen'],
-        // Add more categories as needed
+        'Management': [
+          '/pos/management',
+          '/pos/management/employees',
+          '/pos/management/access_roles',
+          '/pos/management/inventory_products',
+          '/pos/management/suppliers',
+          '/pos/management/foods',
+          '/pos/management/categories',
+          '/pos/management/tables',
+        ],
       };
 
       const pagesByCategory: { [key: string]: { path: string; name: string }[] } = {};
@@ -148,12 +204,10 @@ export default function POSLayout({
             });
           }
         }
-        // Sort pages within each category alphabetically by name
-        pagesByCategory[category].sort((a, b) => a.name.localeCompare(b.name));
       }
 
       // Flatten the categorized pages into a single array for rendering,
-      // maintaining category order and alphabetical order within categories.
+      // maintaining category order and the explicit order defined above.
       const categorizedAndSortedPages: { category: string; pages: { path: string; name: string }[] }[] = [];
       for (const category in pagesByCategory) {
         if (pagesByCategory[category].length > 0) {
