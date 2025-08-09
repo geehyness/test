@@ -357,6 +357,30 @@ export default function DynamicEntityManagementPage() {
 
     const excludedFields = useMemo(() => ['created_at', 'updated_at', 'store_id'], []);
 
+    const actionColumn = useMemo(() => ({
+        accessorKey: 'actions',
+        header: 'Actions',
+        isSortable: false,
+        cell: (row: any) => (
+            <HStack>
+                <IconButton
+                    aria-label="Edit"
+                    icon={<FaEdit />}
+                    onClick={() => handleEdit(row)}
+                    size="sm"
+                    colorScheme="blue" // Edit button color changed to blue
+                />
+                <IconButton
+                    aria-label="Delete"
+                    icon={<FaTrash />}
+                    onClick={() => handleDelete(row.id)}
+                    size="sm"
+                    colorScheme="red"
+                />
+            </HStack>
+        ),
+    }), [handleDelete, handleEdit]);
+
     const columns: Column[] = useMemo(() => {
         if (!entityConfig) {
             return [];
@@ -408,31 +432,9 @@ export default function DynamicEntityManagementPage() {
                 }));
         }
 
-        const actionColumn = {
-            accessorKey: 'actions',
-            header: 'Actions',
-            isSortable: false,
-            cell: (row: any) => (
-                <HStack>
-                    <IconButton
-                        aria-label="Edit"
-                        icon={<FaEdit />}
-                        onClick={() => handleEdit(row)}
-                        size="sm"
-                    />
-                    <IconButton
-                        aria-label="Delete"
-                        icon={<FaTrash />}
-                        onClick={() => handleDelete(row.id)}
-                        size="sm"
-                        colorScheme="red"
-                    />
-                </HStack>
-            ),
-        };
+        return [actionColumn, ...entityColumns]; // Move action buttons to the beginning
+    }, [entityConfig, entityName, excludedFields, actionColumn, inventoryProducts, units]);
 
-        return [...entityColumns, actionColumn];
-    }, [entityConfig, entityName, handleDelete, handleEdit, inventoryProducts, units, excludedFields]);
 
     if (!entityConfig) {
         return null;

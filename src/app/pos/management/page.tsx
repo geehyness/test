@@ -58,7 +58,6 @@ export default function ManagementPage() {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
     const managementSections = [
         {
             name: "HR Management",
@@ -82,8 +81,8 @@ export default function ManagementPage() {
             roles: ["ar-admin", "ar-supply-chain"],
             icon: FaBoxOpen,
             entities: [
-                { name: "Inventory", path: "/pos/management/inventory" },
-                { name: "Inventory Categories", path: "/pos/management/inv_categories" },
+                { name: "Inventory Products", path: "/pos/management/inventory_products" },
+                { name: "Inv. Categories", path: "/pos/management/inv_categories" },
                 { name: "Suppliers", path: "/pos/management/suppliers" },
             ],
         },
