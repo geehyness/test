@@ -1,14 +1,13 @@
 // src/app/pos/layout.tsx
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { ChakraProvider, Box, Flex, Spinner, Center, VStack, Heading, Text, Link as ChakraLink, IconButton } from '@chakra-ui/react';
 import { POSHeader } from './components/POSHeader';
 import { usePOSStore } from './lib/usePOSStore';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
-// Removed the Providers import as per your provided file's structure.
 
 export default function POSLayout({
   children,
@@ -20,15 +19,14 @@ export default function POSLayout({
   const pathname = usePathname();
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
-  const [isNavHovered, setIsNavHovered] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [isDesktopNavLockedOpen, setIsDesktopNavLockedOpen] = useState(false);
-
-  const desktopSidebarTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const desktopSidebarRef = useRef<HTMLDivElement>(null);
-  const desktopToggleButtonRef = useRef<HTMLButtonElement>(null);
 
   console.log('POSLayout: Rendered. Current pathname:', pathname, 'currentStaff:', currentStaff ? currentStaff.id : 'None', '_hasHydrated:', _hasHydrated);
+
+  // Pages where sidebar should be hidden but header should be shown
+  const pagesWithoutSidebar = ['/pos', '/pos/server', '/pos/kitchen'];
+  const shouldShowSidebar = _hasHydrated && currentStaff && pathname !== '/pos/login' && !pagesWithoutSidebar.includes(pathname);
+  const shouldShowHeader = _hasHydrated && currentStaff && pathname !== '/pos/login';
 
   // Change defaultRolePages to use Record<string, string> type
   const defaultRolePages: Record<string, string> = useMemo(() => ({
@@ -36,11 +34,9 @@ export default function POSLayout({
     'manager': '/pos/management',
     'server': '/pos/server',
     'kitchen': '/pos/kitchen',
-    'cashier': '/pos/dashboard',
-    'default': '/pos/dashboard',
+    'cashier': '/pos',
+    'default': '/pos',
   }), []);
-
-
 
   useEffect(() => {
     if (!_hasHydrated) {
@@ -52,16 +48,20 @@ export default function POSLayout({
     }
 
     const rolePaths: Record<string, string[]> = {
-      'admin': ['/pos/management', '/pos/dashboard', '/pos/kitchen', '/pos/server', '/pos/admin', '/pos/admin/reports', '/pos/management/employees', '/pos/management/users', '/pos/management/access_roles', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/reports'],
-      'manager': ['/pos/management', '/pos/dashboard', '/pos/kitchen', '/pos/server', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/employees'],
-      'server': ['/pos/server', '/pos/dashboard'],
-      'kitchen': ['/pos/kitchen', '/pos/dashboard'],
-      'cashier': ['/pos/dashboard'],
-      'supply-chain': ['/pos/dashboard', '/pos/management', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods'],
-      'hr': ['/pos/dashboard', '/pos/management', '/pos/management/employees', '/pos/management/access_roles']
+      'admin': ['/pos', '/pos/management', '/pos/kitchen', '/pos/server', '/pos/admin', '/pos/admin/reports', '/pos/management/employees', '/pos/management/users', '/pos/management/access_roles', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/reports', '/pos/management/shifts'],
+
+      'manager': ['/pos/management', '/pos/kitchen', '/pos/server', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/employees'],
+
+      'server': ['/pos/server'],
+
+      'kitchen': ['/pos/kitchen'],
+
+      'cashier': ['/pos'],
+
+      'supply-chain': ['/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods'],
+
+      'hr': ['/pos/management', '/pos/management/employees', '/pos/management/access_roles']
     };
-
-
 
     if (!currentStaff && pathname !== '/pos/login') {
       console.log('POSLayout useEffect: No staff logged in, redirecting to /pos/login.');
@@ -113,6 +113,7 @@ export default function POSLayout({
 
     const pageNames: Record<string, string> = {
       '/pos/management': 'Management Dashboard',
+      '/pos': 'POS',
       '/pos/dashboard': 'POS Dashboard',
       '/pos/kitchen': 'Kitchen Display',
       '/pos/server': 'Server View',
@@ -131,9 +132,9 @@ export default function POSLayout({
     // A more complete map of roles to allowed navigation paths
     const navPaths: Record<string, string[]> = {
       'admin': [
+        '/pos',
         '/pos/admin',
         '/pos/admin/reports',
-        '/pos/dashboard',
         '/pos/management',
         '/pos/management/employees',
         '/pos/management/access_roles',
@@ -146,7 +147,6 @@ export default function POSLayout({
         '/pos/kitchen',
       ],
       'manager': [
-        '/pos/dashboard',
         '/pos/management',
         '/pos/management/employees',
         '/pos/management/foods',
@@ -155,18 +155,15 @@ export default function POSLayout({
         '/pos/server',
         '/pos/kitchen',
       ],
-      'server': ['/pos/dashboard', '/pos/server'],
-      'kitchen': ['/pos/dashboard', '/pos/kitchen'],
-      'cashier': ['/pos/dashboard'],
+      'server': ['/pos/server'],
+      'kitchen': ['/pos/kitchen'],
+      'cashier': ['/pos'],
       'supply-chain': [
-        '/pos/dashboard',
-        '/pos/management',
         '/pos/management/inventory_products',
         '/pos/management/suppliers',
         '/pos/management/foods',
       ],
       'hr': [
-        '/pos/dashboard',
         '/pos/management',
         '/pos/management/employees',
         '/pos/management/access_roles',
@@ -179,7 +176,7 @@ export default function POSLayout({
       // The order of paths within the array determines the display order in the navigation.
       const categories: { [key: string]: string[] } = {
         'Admin Tools': ['/pos/admin', '/pos/admin/reports'],
-        'Operations': ['/pos/dashboard', '/pos/server', '/pos/kitchen'],
+        'Operations': ['/pos', '/pos/server', '/pos/kitchen'],
         'Management': [
           '/pos/management',
           '/pos/management/employees',
@@ -223,110 +220,22 @@ export default function POSLayout({
     return [];
   }, [currentStaff]);
 
-  useEffect(() => {
-    return () => {
-      if (desktopSidebarTimeoutRef.current) {
-        clearTimeout(desktopSidebarTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (window.innerWidth >= 768 && (isNavHovered || isDesktopNavLockedOpen)) {
-        if (
-          desktopSidebarRef.current &&
-          !desktopSidebarRef.current.contains(event.target as Node) &&
-          desktopToggleButtonRef.current &&
-          !desktopToggleButtonRef.current.contains(event.target as Node)
-        ) {
-          console.log('Click outside desktop sidebar detected, closing.');
-          setIsNavHovered(false);
-          setIsDesktopNavLockedOpen(false);
-          if (desktopSidebarTimeoutRef.current) {
-            clearTimeout(desktopSidebarTimeoutRef.current);
-            desktopSidebarTimeoutRef.current = null;
-          }
-        }
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isNavHovered, isDesktopNavLockedOpen]);
-
-  const showHeaderAndSidePanel = _hasHydrated && currentStaff && pathname !== '/pos/login';
   const showMainContent = _hasHydrated && (currentStaff || pathname === '/pos/login');
 
   const headerHeight = "80px";
-  const mainContentPaddingTop = showHeaderAndSidePanel ? headerHeight : "0";
+  const mainContentPaddingTop = shouldShowHeader ? headerHeight : "0";
   const sidebarWidth = "250px";
-  const sidebarVisibleCollapsedWidth = "10px";
-  const mobileSidebarVisibleWidth = "10px";
-  const sidebarLeftGap = "20px";
-  const sidebarTopGap = "10px";
-  const sidebarBottomGap = "20px";
-  const desktopButtonOffset = "10px";
+  const sidebarTop = headerHeight;
+  const sidebarHeight = `calc(100vh - ${headerHeight})`;
 
-  const sidebarExpandedLeft = sidebarLeftGap;
-  const sidebarCollapsedLeft = `calc(${sidebarLeftGap} - ${sidebarWidth} + ${sidebarVisibleCollapsedWidth})`;
-  const sidebarTop = `calc(${headerHeight} + ${sidebarTopGap})`;
-  const sidebarHeight = `calc(100vh - ${sidebarTop} - ${sidebarBottomGap})`;
-
-  const mobileNavOpenLeft = sidebarLeftGap;
-  const mobileNavClosedLeft = `calc(${sidebarLeftGap} - ${sidebarWidth} + ${mobileSidebarVisibleWidth})`;
-
-  const desktopToggleButtonLeft = isNavHovered
-    ? `calc(${sidebarExpandedLeft} + ${sidebarWidth} + ${desktopButtonOffset})`
-    : `calc(${sidebarLeftGap} + ${sidebarVisibleCollapsedWidth} + ${desktopButtonOffset})`;
-
-  const mobileToggleButtonLeft = isMobileNavOpen
-    ? `calc(${mobileNavOpenLeft} + ${sidebarWidth} + ${desktopButtonOffset})`
-    : `calc(${mobileNavClosedLeft} + ${sidebarWidth} - ${mobileSidebarVisibleWidth} + ${desktopButtonOffset})`;
-
-  const contentLeftPadding = `calc(${sidebarVisibleCollapsedWidth} + ${sidebarLeftGap} + 20px)`;
-  const contentRightPadding = "20px";
-
-  const handleMouseEnterDesktopNav = () => {
-    if (desktopSidebarTimeoutRef.current) {
-      clearTimeout(desktopSidebarTimeoutRef.current);
-      desktopSidebarTimeoutRef.current = null;
-    }
-    if (!isDesktopNavLockedOpen) {
-      setIsNavHovered(true);
-    }
-  };
-
-  const handleMouseLeaveDesktopNav = () => {
-    if (!isDesktopNavLockedOpen) {
-      desktopSidebarTimeoutRef.current = setTimeout(() => {
-        setIsNavHovered(false);
-      }, 200);
-    }
-  };
-
-  const handleDesktopToggleButtonClick = () => {
-    if (isDesktopNavLockedOpen) {
-      setIsNavHovered(false);
-      setIsDesktopNavLockedOpen(false);
-      if (desktopSidebarTimeoutRef.current) {
-        clearTimeout(desktopSidebarTimeoutRef.current);
-        desktopSidebarTimeoutRef.current = null;
-      }
-    } else {
-      setIsNavHovered(true);
-      setIsDesktopNavLockedOpen(true);
-    }
-  };
+  const mobileNavOpenLeft = "0";
+  const mobileNavClosedLeft = `-${sidebarWidth}`;
 
   return (
-    <ChakraProvider> {/* Using ChakraProvider directly as per your provided file */}
+    <ChakraProvider>
       {showMainContent ? (
         <Flex direction="column" minH="100vh" bg="var(--light-gray-bg)">
-          {showHeaderAndSidePanel && (
+          {shouldShowHeader && (
             <Box
               position="fixed"
               top="0"
@@ -340,7 +249,7 @@ export default function POSLayout({
           )}
 
           {/* Mobile Nav Overlay */}
-          {showHeaderAndSidePanel && isMobileNavOpen && (
+          {shouldShowSidebar && isMobileNavOpen && (
             <Box
               position="fixed"
               top="0"
@@ -357,7 +266,7 @@ export default function POSLayout({
           )}
 
           {/* Mobile Sidebar Toggle Button (Hamburger/Close) */}
-          {showHeaderAndSidePanel && (
+          {shouldShowSidebar && (
             <IconButton
               aria-label={isMobileNavOpen ? "Close mobile navigation" : "Open mobile navigation"}
               icon={isMobileNavOpen ? <CloseIcon /> : <HamburgerIcon />}
@@ -368,44 +277,19 @@ export default function POSLayout({
               shadow="md"
               borderRadius="md"
               position="fixed"
-              top={sidebarTop}
-              left={mobileToggleButtonLeft}
+              top={`calc(${headerHeight} + 20px)`}
+              left={isMobileNavOpen ? `calc(${sidebarWidth} - 40px)` : "20px"}
               transform="translateY(-50%)"
               p={2}
               zIndex={101}
               display={{ base: 'flex', md: 'none' }}
-              transition="left 0.3s ease-in-out, transform 0.3s ease-in-out"
-            />
-          )}
-
-          {/* Desktop Sidebar Toggle Button (Hamburger/Close) */}
-          {showHeaderAndSidePanel && (
-            <IconButton
-              ref={desktopToggleButtonRef}
-              aria-label={isNavHovered ? "Close desktop navigation" : "Open desktop navigation"}
-              icon={isNavHovered ? <CloseIcon /> : <HamburgerIcon />}
-              onClick={handleDesktopToggleButtonClick}
-              size="md"
-              bg="var(--background-color-light)"
-              color="var(--primary-green)"
-              shadow="md"
-              borderRadius="md"
-              position="fixed"
-              top={sidebarTop}
-              left={desktopToggleButtonLeft}
-              transform="translateY(-50%)"
-              p={2}
-              zIndex={101}
-              display={{ base: 'none', md: 'flex' }}
-              transition="left 0.3s ease-in-out, transform 0.3s ease-in-out, background-color 0.2s ease-in-out"
-              _hover={{ bg: "var(--light-gray-bg-hover)" }}
+              transition="left 0.3s ease-in-out"
             />
           )}
 
           <Flex flex="1">
-            {showHeaderAndSidePanel && (
+            {shouldShowSidebar && (
               <Box
-                ref={desktopSidebarRef}
                 width={sidebarWidth}
                 bg="var(--background-color-light)"
                 p={4}
@@ -413,17 +297,15 @@ export default function POSLayout({
                 position="fixed"
                 height={sidebarHeight}
                 top={sidebarTop}
-                shadow="lg"
-                borderRadius="lg"
+                left="0"
                 flexShrink={0}
                 zIndex={10}
                 display={{ base: 'none', md: 'block' }}
-                left={isNavHovered ? sidebarExpandedLeft : sidebarCollapsedLeft}
-                transition="left 0.3s ease-in-out"
-                onMouseEnter={handleMouseEnterDesktopNav}
-                onMouseLeave={handleMouseLeaveDesktopNav}
+                borderRadius="0"
+                borderRight="1px solid"
+                borderColor="gray.200"
               >
-                {accessiblePages.length > 0 && ( // Conditional rendering for desktop heading
+                {accessiblePages.length > 0 && (
                   <Heading as="h2" size="md" mb={4} color="var(--dark-gray-text)" mt="20px">
                     Navigation
                   </Heading>
@@ -435,7 +317,7 @@ export default function POSLayout({
                         fontSize="sm"
                         fontWeight="bold"
                         color="var(--primary-green)"
-                        mt={categoryGroup.pages.length > 0 ? 4 : 0} // Add margin top for separation
+                        mt={categoryGroup.pages.length > 0 ? 4 : 0}
                         mb={2}
                       >
                         {categoryGroup.category}
@@ -460,24 +342,26 @@ export default function POSLayout({
               </Box>
             )}
 
-            {showHeaderAndSidePanel && (
+            {shouldShowSidebar && (
               <Box
                 width={sidebarWidth}
                 bg="var(--background-color-light)"
                 p={4}
                 pt="0"
                 position="fixed"
-                height={sidebarHeight}
-                top={sidebarTop}
-                shadow="lg"
-                borderRadius="lg"
+                height="100vh"
+                top="0"
+                left={isMobileNavOpen ? mobileNavOpenLeft : mobileNavClosedLeft}
                 flexShrink={0}
                 zIndex={100}
                 display={{ base: 'block', md: 'none' }}
-                left={isMobileNavOpen ? mobileNavOpenLeft : mobileNavClosedLeft}
                 transition="left 0.3s ease-in-out"
+                borderRadius="0"
+                borderRight="1px solid"
+                borderColor="gray.200"
+                pt={headerHeight}
               >
-                {accessiblePages.length > 0 && ( // Conditional rendering for mobile heading
+                {accessiblePages.length > 0 && (
                   <Heading as="h2" size="md" mb={4} color="var(--dark-gray-text)" mt="20px">
                     Navigation
                   </Heading>
@@ -489,7 +373,7 @@ export default function POSLayout({
                         fontSize="sm"
                         fontWeight="bold"
                         color="var(--primary-green)"
-                        mt={categoryGroup.pages.length > 0 ? 4 : 0} // Add margin top for separation
+                        mt={categoryGroup.pages.length > 0 ? 4 : 0}
                         mb={2}
                       >
                         {categoryGroup.category}
@@ -516,10 +400,10 @@ export default function POSLayout({
             <Box
               as="main"
               flex="1"
-              p={4}
+              p={1}
               pt={mainContentPaddingTop}
-              pl={{ base: 4, md: contentLeftPadding }}
-              pr={{ base: 4, md: contentRightPadding }}
+              pl={{ base: 4, md: shouldShowSidebar ? `calc(${sidebarWidth} + 5px)` : "5px" }}
+              pr={{ base: 1, md: "5px" }}
             >
               {children}
             </Box>

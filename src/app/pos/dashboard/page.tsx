@@ -36,9 +36,8 @@ import {
   Tab,
   TabPanel,
 } from "@chakra-ui/react";
-import dynamic from "next/dynamic"; // Import dynamic from next/dynamic
+import dynamic from "next/dynamic";
 
-// Dynamically import Chakra UI icons to ensure they are only loaded client-side
 const DynamicSearchIcon = dynamic(
   () => import("@chakra-ui/icons").then((mod) => mod.SearchIcon),
   { ssr: false }
@@ -68,7 +67,7 @@ import {
   FaUtensils,
   FaBell,
   FaChair,
-  FaPlus, // Added for "Add Order" button
+  FaPlus,
 } from "react-icons/fa";
 import MenuCategoryFilter from "../components/MenuCategoryFilter";
 import MenuItemList from "../components/MenuItemList";
@@ -78,12 +77,11 @@ import { usePOSStore } from "../lib/usePOSStore";
 import { Food, Category, Table, Order, OrderItem } from "@/app/config/entities";
 import { fetchData } from "@/app/lib/api";
 
-// New components for different views
 import OrderManagementView from "../components/OrderManagementView";
 import KitchenDisplayView from "../components/KitchenDisplayView";
 import ServerView from "../components/ServerView";
 import CurrentOrderDetailsModal from "../components/CurrentOrderDetailsModal";
-import NewOrderMenuModal from "../components/NewOrderMenuModal"; // New import
+import NewOrderMenuModal from "../components/NewOrderMenuModal";
 
 export default function POSDashboardPage() {
   const toast = useToast();
@@ -104,7 +102,7 @@ export default function POSDashboardPage() {
     updateOrderItemQuantity,
     clearCurrentOrder,
     addOrder,
-    updateOrder: updateOrderInStore,
+    updateOrder: updateOrderInStore, // Renamed to avoid collision with local function
     setActiveOrders,
     setCurrentOrderTable,
     setOrderNotes,
@@ -118,7 +116,6 @@ export default function POSDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
   // === New Order Creation Flow State ===
   const {
@@ -139,7 +136,7 @@ export default function POSDashboardPage() {
 
   // Disclosure hooks for modals
   const {
-    isOpen: isTableModalOpen, // Existing table modal, might be repurposed or kept for existing order edits
+    isOpen: isTableModalOpen,
     onOpen: onTableModalOpen,
     onClose: onTableModalClose,
   } = useDisclosure();
@@ -178,7 +175,6 @@ export default function POSDashboardPage() {
     const loadData = async () => {
       try {
         setLoading(true);
-        // Fetch all necessary data concurrently using fetchData from api.ts
         const [fetchedFoods, fetchedCategories, fetchedTables, fetchedOrders] =
           await Promise.all([
             fetchData("foods"),
@@ -187,7 +183,6 @@ export default function POSDashboardPage() {
             fetchData("orders"),
           ]);
 
-        // LOGS: Displaying the fetched data
         console.log("--- Data Fetched from API (sample.ts) ---");
         console.log("Fetched Foods (Menu Items):", fetchedFoods);
         console.log("Fetched Categories:", fetchedCategories);
@@ -195,63 +190,40 @@ export default function POSDashboardPage() {
         console.log("Fetched Orders:", fetchedOrders);
         console.log("------------------------------------------");
 
-        // Update the POS store with the fetched data
         setMenuItems(fetchedFoods || []);
         setCategories(fetchedCategories || []);
         setTables(fetchedTables || []);
 
-        // Filter active orders (not paid or cancelled) and update state
         const active = (fetchedOrders || []).filter(
           (order: Order) =>
             order.status !== "paid" &&
             order.status !== "cancelled" &&
             order.status !== "served"
         );
-        setActiveOrders(active); // Update the active orders in the store
-        setActiveOrdersCount(active.length); // Update the local count
+        setActiveOrders(active);
       } catch (err: any) {
-        // Handle errors during data loading
         setError(err.message || "Failed to load initial data.");
         console.error("Error loading POS data:", err);
       } finally {
-        setLoading(false); // Set loading to false regardless of success or failure
+        setLoading(false);
       }
     };
 
-    loadData(); // Call the data loading function
-  }, [setMenuItems, setCategories, setTables, setActiveOrders]); // Dependencies for useEffect
+    loadData();
+  }, [setMenuItems, setCategories, setTables, setActiveOrders]);
 
-  // Function to update an order, both in the mock API and the local store
+  // Modified updateOrder function to only use the store's action
   const updateOrder = async (orderId: string, updatedOrder: Partial<Order>) => {
     try {
-      // Call the mock API to update the order
       await fetchData("orders", orderId, updatedOrder, "PUT");
       console.log(
         `LOG: API call to update order #${orderId} with data:`,
         updatedOrder
       );
 
-      // Update the order in the Zustand store
+      // Now, only use the store's action to update state
       updateOrderInStore(orderId, updatedOrder);
       console.log(`LOG: Order #${orderId} updated in store.`);
-
-      // Re-filter active orders after an update
-      const updatedActiveOrders = activeOrders
-        .map((order) =>
-          order.id === orderId ? { ...order, ...updatedOrder } : order
-        )
-        .filter(
-          (order) =>
-            order.status !== "paid" &&
-            order.status !== "cancelled" &&
-            order.status !== "served"
-        );
-      setActiveOrders(updatedActiveOrders);
-      setActiveOrdersCount(updatedActiveOrders.length);
-      console.log(
-        "LOG: Active orders re-filtered. New active orders count:",
-        updatedActiveOrders.length
-      );
 
       toast({
         title: "Order Updated",
@@ -275,7 +247,6 @@ export default function POSDashboardPage() {
     }
   };
 
-  // Memoized filtering of menu items based on search term and selected category
   const filteredMenuItems = React.useMemo(() => {
     let items = menuItems;
     if (selectedCategory) {
@@ -291,7 +262,6 @@ export default function POSDashboardPage() {
     return items;
   }, [menuItems, selectedCategory, searchTerm]);
 
-  // Handler for adding notes to the current order
   const handleAddNotes = () => {
     setOrderNotes(currentNotes);
     onNotesModalClose();
@@ -305,7 +275,6 @@ export default function POSDashboardPage() {
     console.log("LOG: Notes added to current order:", currentNotes);
   };
 
-  // Handler for applying discount to the current order
   const handleApplyDiscount = async () => {
     if (discountCode === "SAVE10") {
       applyDiscountToOrder(0.1, "percentage");
@@ -319,7 +288,6 @@ export default function POSDashboardPage() {
       onDiscountModalClose();
       console.log('LOG: Discount "SAVE10" applied.');
     } else if (discountCode === "FREEDELIVERY") {
-      // Changed "fixed" to "amount"
       applyDiscountToOrder(5.0, "amount");
       toast({
         title: "Discount Applied",
@@ -342,10 +310,8 @@ export default function POSDashboardPage() {
     }
   };
 
-  // Handler for processing checkout and payment
   const handleCheckout = async (paymentMethod: "cash" | "card" | "split") => {
     try {
-      // Safely access currentOrder.items
       if ((currentOrder.items ?? []).length === 0) {
         toast({
           title: "Order Empty",
@@ -358,54 +324,48 @@ export default function POSDashboardPage() {
         return;
       }
 
-      // Construct the order object for submission
       const orderToSubmit: Order = {
         ...currentOrder,
-        id: currentOrder.id || `order-${Date.now()}`, // Ensure ID exists for new orders
-        status: "paid", // Mark as paid upon checkout
-        employee_id: currentOrder.employee_id || "emp-101", // Ensure employee_id is set
+        id: currentOrder.id || `order-${Date.now()}`,
+        status: "paid",
+        employee_id: currentOrder.employee_id || "emp-101",
         created_at: currentOrder.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
         order_type: currentOrder.table_id ? "dine-in" : "takeaway",
         items: (currentOrder.items ?? []).map((item) => ({
-          // Safely map items
-          ...item, // Keep existing properties
+          ...item,
           food_id: item.food_id,
           name: item.name,
-          price: item.price, // Ensure price is included
+          price: item.price,
           sub_total: item.sub_total,
           notes: item.notes,
-          price_at_sale: item.price_at_sale || item.price, // Ensure price_at_sale is set
+          price_at_sale: item.price_at_sale || item.price,
         })),
       } as Order;
 
-      // Process payment (simulated)
       await processOrderPayment(orderToSubmit, paymentMethod);
       console.log(
         `LOG: Payment processed for order #${orderToSubmit.id} via ${paymentMethod}.`
       );
 
-      // Add or update the order in the mock API
       if (!currentOrder.id) {
-        // If it's a new order, add it
         const newOrder = await fetchData(
           "orders",
           undefined,
           orderToSubmit,
           "POST"
         );
-        addOrder(newOrder); // Add to store
+        addOrder(newOrder);
         console.log("LOG: New order added via API:", newOrder);
       } else {
-        // If it's an existing order being modified and paid
         await fetchData("orders", currentOrder.id, orderToSubmit, "PUT");
-        updateOrderInStore(currentOrder.id, orderToSubmit); // Update in store
+        updateOrderInStore(currentOrder.id, orderToSubmit);
         console.log("LOG: Existing order updated via API:", orderToSubmit);
       }
 
-      clearCurrentOrder(); // Clear the current order after successful checkout
-      onPaymentModalClose(); // Close the payment modal
-      onCurrentOrderDetailsModalClose(); // Close the current order details modal
+      clearCurrentOrder();
+      onPaymentModalClose();
+      onCurrentOrderDetailsModalClose();
 
       toast({
         title: "Order Placed & Paid",
@@ -415,7 +375,6 @@ export default function POSDashboardPage() {
         isClosable: true,
       });
 
-      // Dispatch a custom event for new order notification (e.g., for kitchen display)
       window.dispatchEvent(
         new CustomEvent("newOrderNotification", {
           detail: {
@@ -438,10 +397,8 @@ export default function POSDashboardPage() {
     }
   };
 
-  // Handler for sending the current order to the kitchen
   const handleSendToKitchen = async () => {
     try {
-      // Safely access currentOrder.items
       if ((currentOrder.items ?? []).length === 0) {
         toast({
           title: "Order Empty",
@@ -470,28 +427,25 @@ export default function POSDashboardPage() {
         return;
       }
 
-      // Construct the order object for submission
       const orderToSubmit: Order = {
         ...currentOrder,
-        id: currentOrder.id || `order-${Date.now()}`, // Generate ID if new order
-        status: "preparing", // Set status to 'preparing' for kitchen
-        employee_id: currentOrder.employee_id || "emp-101", // Ensure employee_id is set
+        id: currentOrder.id || `order-${Date.now()}`,
+        status: "preparing",
+        employee_id: currentOrder.employee_id || "emp-101",
         created_at: currentOrder.created_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
         order_type: currentOrder.table_id ? "dine-in" : "takeaway",
         items: (currentOrder.items ?? []).map((item) => ({
-          // Safely map items
-          ...item, // Keep existing properties
+          ...item,
           food_id: item.food_id,
           name: item.name,
-          price: item.price, // Ensure price is included
+          price: item.price,
           sub_total: item.sub_total,
           notes: item.notes,
-          price_at_sale: item.price_at_sale || item.price, // Ensure price_at_sale is set
+          price_at_sale: item.price_at_sale || item.price,
         })),
       } as Order;
 
-      // Add or update the order in the mock API
       if (!currentOrder.id) {
         const newOrder = await fetchData(
           "orders",
@@ -499,19 +453,19 @@ export default function POSDashboardPage() {
           orderToSubmit,
           "POST"
         );
-        addOrder(newOrder); // Add to store
+        addOrder(newOrder);
         console.log("LOG: New order sent to kitchen via API:", newOrder);
       } else {
         await fetchData("orders", currentOrder.id, orderToSubmit, "PUT");
-        updateOrderInStore(currentOrder.id, orderToSubmit); // Update in store
+        updateOrderInStore(currentOrder.id, orderToSubmit);
         console.log(
           "LOG: Existing order sent to kitchen via API:",
           orderToSubmit
         );
       }
 
-      clearCurrentOrder(); // Clear the current order after sending to kitchen
-      onCurrentOrderDetailsModalClose(); // Close the current order details modal
+      clearCurrentOrder();
+      onCurrentOrderDetailsModalClose();
       toast({
         title: "Order Sent to Kitchen",
         description: `Order #${orderToSubmit.id} is now being prepared.`,
@@ -520,8 +474,6 @@ export default function POSDashboardPage() {
         isClosable: true,
       });
 
-      // Update active orders count
-      setActiveOrdersCount((prev) => prev + 1);
       console.log("LOG: Order sent to kitchen:", orderToSubmit.id);
     } catch (err: any) {
       console.error("ERROR: Send to kitchen error:", err);
@@ -536,24 +488,22 @@ export default function POSDashboardPage() {
     }
   };
 
-  // Handler for opening the track order modal
   const handleTrackOrderClick = () => {
     onTrackOrderModalOpen();
     console.log("LOG: Track Order modal opened.");
   };
 
-  // === New Order Creation Flow Handlers ===
   const handleStartNewOrder = () => {
-    setTempNewOrderItems([]); // Reset items for a new order
-    setTempNewOrderTableId(null); // Reset table for a new order
-    onNewOrderMenuModalOpen(); // Open the menu selection modal
+    setTempNewOrderItems([]);
+    setTempNewOrderTableId(null);
+    onNewOrderMenuModalOpen();
   };
 
   const handleFinishAddingItems = (items: OrderItem[]) => {
     setTempNewOrderItems(items);
-    onNewOrderMenuModalClose(); // Close menu modal
+    onNewOrderMenuModalClose();
     if (items.length > 0) {
-      onNewOrderTableModalOpen(); // Open table selection modal if items exist
+      onNewOrderTableModalOpen();
     } else {
       toast({
         title: "No Items Added",
@@ -577,7 +527,6 @@ export default function POSDashboardPage() {
     const tax_amount = subtotal_amount * tax_percentage;
     const total_amount = subtotal_amount + tax_amount;
 
-    // Get store ID: current staff's store if available, or table's store if assigned
     let storeId = 'default-store';
     if (currentStaff?.storeId) {
       storeId = currentStaff.storeId;
@@ -588,10 +537,9 @@ export default function POSDashboardPage() {
       }
     }
 
-    // Create the new order object
     const newOrder: Order = {
-      id: "", // Will be generated by fetchData on POST
-      store_id: storeId, // Use determined store ID
+      id: "",
+      store_id: storeId,
       table_id: tableId,
       customer_id: null,
       total_amount: total_amount,
@@ -622,9 +570,6 @@ export default function POSDashboardPage() {
     });
   };
 
-  // =====================================
-
-  // Display loading spinner while data is being fetched
   if (loading) {
     return (
       <Flex justify="center" align="center" minH="calc(100vh - 80px)">
@@ -636,7 +581,6 @@ export default function POSDashboardPage() {
     );
   }
 
-  // Display error message if data fetching fails
   if (error) {
     return (
       <Alert status="error" variant="left-accent" m={4}>
@@ -654,11 +598,8 @@ export default function POSDashboardPage() {
       bg="var(--light-gray-bg)"
       position="relative"
     >
-      {" "}
-      {/* Added position relative for floating buttons */}
       <Tabs
         variant="enclosed"
-        colorScheme="orange"
         flex="1"
         display="flex"
         flexDirection="column"
@@ -671,8 +612,8 @@ export default function POSDashboardPage() {
         >
           <Tab
             _selected={{
-              color: "var(--primary-orange)",
-              borderColor: "var(--primary-orange)",
+              color: "var(--primary-green)",
+              borderColor: "var(--primary-green)",
               borderBottom: "none",
             }}
             fontSize="lg"
@@ -683,8 +624,8 @@ export default function POSDashboardPage() {
           </Tab>
           <Tab
             _selected={{
-              color: "var(--primary-orange)",
-              borderColor: "var(--primary-orange)",
+              color: "var(--primary-green)",
+              borderColor: "var(--primary-green)",
               borderBottom: "none",
             }}
             fontSize="lg"
@@ -695,8 +636,8 @@ export default function POSDashboardPage() {
           </Tab>
           <Tab
             _selected={{
-              color: "var(--primary-orange)",
-              borderColor: "var(--primary-orange)",
+              color: "var(--primary-green)",
+              borderColor: "var(--primary-green)",
               borderBottom: "none",
             }}
             fontSize="lg"
@@ -707,8 +648,8 @@ export default function POSDashboardPage() {
           </Tab>
           <Tab
             _selected={{
-              color: "var(--primary-orange)",
-              borderColor: "var(--primary-orange)",
+              color: "var(--primary-green)",
+              borderColor: "var(--primary-green)",
               borderBottom: "none",
             }}
             fontSize="lg"
@@ -717,9 +658,6 @@ export default function POSDashboardPage() {
           >
             <Icon as={FaBell} mr={2} /> Server View
           </Tab>
-          {/* Reports/Analytics Tab */}
-
-          {/* Add Order Button */}
           <Spacer />
           <Button
             leftIcon={<FaPlus />}
@@ -735,10 +673,8 @@ export default function POSDashboardPage() {
         </TabList>
 
         <TabPanels flex="1" p={4}>
-          {/* POS Tab Panel (now contains sub-tabs) */}
           <TabPanel h="100%" p={0}>
             <Flex h="100%" gap={6}>
-              {/* Left Column: Contains sub-tabs for Menu and Tables */}
               <Box
                 flex="2"
                 bg="var(--background-color-light)"
@@ -746,11 +682,10 @@ export default function POSDashboardPage() {
                 rounded="lg"
                 shadow="md"
                 overflowY="auto"
-                w="full" // Ensure this box takes full width of its flex parent
+                w="full"
               >
                 <VStack spacing={6} align="stretch" h="100%">
-                  {/* Restaurant Tables Section */}
-                  <Box w="full"> {/* Ensure this box takes full width */}
+                  <Box w="full">
                     <Text
                       fontSize="xl"
                       fontWeight="bold"
@@ -762,7 +697,7 @@ export default function POSDashboardPage() {
                     <SimpleGrid
                       columns={{ base: 2, md: 3, lg: 4 }}
                       spacing={6}
-                      w="full" // Ensure the grid takes full width
+                      w="full"
                     >
                       {tables.map((table) => (
                         <Box
@@ -800,8 +735,7 @@ export default function POSDashboardPage() {
                               table.current_order_id
                             ) {
                               const orderToLoad = activeOrders.find(
-                                (order) =>
-                                  order.id === table.current_order_id
+                                (order) => order.id === table.current_order_id
                               );
                               if (orderToLoad) {
                                 usePOSStore.setState({
@@ -817,7 +751,6 @@ export default function POSDashboardPage() {
                                 });
                               }
                             } else {
-                              // Table selection is now primarily handled by the new order flow
                               toast({
                                 title: "Table Selection",
                                 description:
@@ -829,7 +762,6 @@ export default function POSDashboardPage() {
                             }
                           }}
                         >
-                          {/* Table Center */}
                           <Box
                             width="120px"
                             height="120px"
@@ -838,7 +770,7 @@ export default function POSDashboardPage() {
                                 ? "#aaaaaa"
                                 : "var(--primary-green)"
                             }
-                            rounded="full" // Changed from "lg" to "full" to make it a circle
+                            rounded="full"
                             display="flex"
                             flexDirection="column"
                             justifyContent="center"
@@ -854,9 +786,7 @@ export default function POSDashboardPage() {
                             </Text>
                             <Badge
                               colorScheme={
-                                table.status === "occupied"
-                                  ? "red"
-                                  : "green"
+                                table.status === "occupied" ? "red" : "green"
                               }
                               variant="solid"
                               px={2}
@@ -866,12 +796,7 @@ export default function POSDashboardPage() {
                             >
                               {table.status?.toUpperCase()}
                             </Badge>
-                            {/* Display number of seats (capacity) */}
-                            <Text
-                              fontSize="xx-small"
-                              lineHeight="1.2"
-                              mt={1}
-                            >
+                            <Text fontSize="xx-small" lineHeight="1.2" mt={1}>
                               Seats: {table.capacity}
                             </Text>
                             {table.current_order_id && (
@@ -880,41 +805,34 @@ export default function POSDashboardPage() {
                               </Text>
                             )}
                           </Box>
-
-                          {/* Chairs around the table */}
-                          {Array.from({ length: table.capacity }).map(
-                            (_, i) => {
-                              const angle =
-                                (i / table.capacity) * 2 * Math.PI;
-                              const radius = 60;
-                              const translateX = radius * Math.cos(angle);
-                              const translateY = radius * Math.sin(angle);
-                              return (
-                                <Box
-                                  key={i}
-                                  w="20px"
-                                  h="20px"
-                                  bg="gray.500"
-                                  rounded="full"
-                                  position="absolute"
-                                  style={{
-                                    transform: `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px))`,
-                                    top: "50%",
-                                    left: "50%",
-                                  }}
-                                  zIndex="0"
-                                />
-                              );
-                            }
-                          )}
+                          {Array.from({ length: table.capacity }).map((_, i) => {
+                            const angle = (i / table.capacity) * 2 * Math.PI;
+                            const radius = 60;
+                            const translateX = radius * Math.cos(angle);
+                            const translateY = radius * Math.sin(angle);
+                            return (
+                              <Box
+                                key={i}
+                                w="20px"
+                                h="20px"
+                                bg="gray.500"
+                                rounded="full"
+                                position="absolute"
+                                style={{
+                                  transform: `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px))`,
+                                  top: "50%",
+                                  left: "50%",
+                                }}
+                                zIndex="0"
+                              />
+                            );
+                          })}
                         </Box>
                       ))}
                     </SimpleGrid>
                   </Box>
-                  {/* End of Restaurant Tables Section */}
 
-                  {/* Start of Live Orders section */}
-                  <Box mt={6} w="full"> {/* Ensure this box takes full width */}
+                  <Box mt={6} w="full">
                     <Flex justifyContent="space-between" alignItems="center" mb={4}>
                       <Text
                         fontSize="xl"
@@ -929,7 +847,7 @@ export default function POSDashboardPage() {
                         colorScheme="teal"
                         variant="outline"
                       >
-                        View All ({activeOrdersCount})
+                        View All ({activeOrders.length})
                       </Button>
                     </Flex>
                     {activeOrders.length === 0 ? (
@@ -941,10 +859,10 @@ export default function POSDashboardPage() {
                         No active orders at the moment.
                       </Text>
                     ) : (
-                      <SimpleGrid // Changed from VStack to SimpleGrid
-                        columns={{ base: 1, md: 2, lg: 2 }} // Responsive columns for live orders
+                      <SimpleGrid
+                        columns={{ base: 1, md: 2, lg: 2 }}
                         spacing={4}
-                        w="full" // Ensure the grid takes full width
+                        w="full"
                       >
                         {activeOrders.map((order) => (
                           <Box
@@ -1009,9 +927,12 @@ export default function POSDashboardPage() {
                                 .map((item) => `${item.name} (x${item.quantity})`)
                                 .join(", ")}
                             </Text>
-                            {/* Display created_at time */}
                             {order.created_at && (
-                              <Text fontSize="xs" color="var(--medium-gray-text)" mt={1}>
+                              <Text
+                                fontSize="xs"
+                                color="var(--medium-gray-text)"
+                                mt={1}
+                              >
                                 Created: {new Date(order.created_at).toLocaleString()}
                               </Text>
                             )}
@@ -1078,11 +999,9 @@ export default function POSDashboardPage() {
                       </SimpleGrid>
                     )}
                   </Box>
-                  {/* End of Live Orders section */}
                 </VStack>
               </Box>
 
-              {/* Right Column: Live Orders / Active Orders (1/3 width) - this is the old location */}
               <Box
                 flex="1"
                 bg="var(--background-color-light)"
@@ -1090,7 +1009,7 @@ export default function POSDashboardPage() {
                 rounded="lg"
                 shadow="md"
                 overflowY="auto"
-                display="none" // Hide the old Live Orders section
+                display="none"
               >
                 <Flex justifyContent="space-between" alignItems="center" mb={4}>
                   <Text
@@ -1106,7 +1025,7 @@ export default function POSDashboardPage() {
                     colorScheme="teal"
                     variant="outline"
                   >
-                    View All ({activeOrdersCount})
+                    View All ({activeOrders.length})
                   </Button>
                 </Flex>
                 {activeOrders.length === 0 ? (
@@ -1131,9 +1050,8 @@ export default function POSDashboardPage() {
                         _hover={{ transform: "scale(1.02)", shadow: "md" }}
                         transition="all 0.2s ease-in-out"
                         onClick={() => {
-                          // Click handler for the order box itself
-                          usePOSStore.setState({ currentOrder: order }); // Load order into currentOrder
-                          onCurrentOrderDetailsModalOpen(); // Open the current order details modal
+                          usePOSStore.setState({ currentOrder: order });
+                          onCurrentOrderDetailsModalOpen();
                           toast({
                             title: "Order Loaded",
                             description: `Order #${order.id} loaded for modification.`,
@@ -1182,9 +1100,12 @@ export default function POSDashboardPage() {
                             .map((item) => `${item.name} (x${item.quantity})`)
                             .join(", ")}
                         </Text>
-                        {/* Display created_at time */}
                         {order.created_at && (
-                          <Text fontSize="xs" color="var(--medium-gray-text)" mt={1}>
+                          <Text
+                            fontSize="xs"
+                            color="var(--medium-gray-text)"
+                            mt={1}
+                          >
                             Created: {new Date(order.created_at).toLocaleString()}
                           </Text>
                         )}
@@ -1193,7 +1114,7 @@ export default function POSDashboardPage() {
                             size="sm"
                             colorScheme="blue"
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent opening modal twice from parent Box click
+                              e.stopPropagation();
                               const fullOrder = activeOrders.find(
                                 (ao) => ao.id === order.id
                               );
@@ -1201,7 +1122,7 @@ export default function POSDashboardPage() {
                                 usePOSStore.setState({
                                   currentOrder: fullOrder,
                                 });
-                                onCurrentOrderDetailsModalOpen(); // *** MODIFIED HERE ***
+                                onCurrentOrderDetailsModalOpen();
                                 toast({
                                   title: "Order Loaded",
                                   description: `Order #${order.id} loaded for modification.`,
@@ -1222,7 +1143,7 @@ export default function POSDashboardPage() {
                             size="sm"
                             colorScheme="green"
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent opening modal twice
+                              e.stopPropagation();
                               updateOrder(order.id, {
                                 ...order,
                                 status: "served",
@@ -1258,7 +1179,6 @@ export default function POSDashboardPage() {
             </Flex>
           </TabPanel>
 
-          {/* Order Management Tab Panel */}
           <TabPanel h="100%" p={0}>
             <OrderManagementView
               orders={activeOrders}
@@ -1266,7 +1186,7 @@ export default function POSDashboardPage() {
               updateOrder={updateOrder}
               onLoadOrder={(order) => {
                 usePOSStore.setState({ currentOrder: order });
-                onCurrentOrderDetailsModalOpen(); // Ensure this is called here as well if OrderManagementView has its own load order logic
+                onCurrentOrderDetailsModalOpen();
                 toast({
                   title: "Order Loaded",
                   description: `Order #${order.id} loaded for modification.`,
@@ -1278,7 +1198,6 @@ export default function POSDashboardPage() {
             />
           </TabPanel>
 
-          {/* Kitchen Display Tab Panel */}
           <TabPanel h="100%" p={0}>
             <KitchenDisplayView
               orders={activeOrders}
@@ -1287,7 +1206,6 @@ export default function POSDashboardPage() {
             />
           </TabPanel>
 
-          {/* Server View Tab Panel */}
           <TabPanel h="100%" p={0}>
             <ServerView
               orders={activeOrders}
@@ -1298,7 +1216,6 @@ export default function POSDashboardPage() {
         </TabPanels>
       </Tabs>
 
-      {/* Floating Shopping Cart Button - moved to main Flex */}
       <Button
         onClick={onCurrentOrderDetailsModalOpen}
         colorScheme="green"
@@ -1339,8 +1256,7 @@ export default function POSDashboardPage() {
           </Badge>
         )}
       </Button>
-      {/* Floating Track Orders Button (only if there are active orders) - moved to main Flex */}
-      {activeOrdersCount > 0 && (
+      {activeOrders.length > 0 && (
         <Button
           onClick={handleTrackOrderClick}
           colorScheme="blue"
@@ -1373,13 +1289,12 @@ export default function POSDashboardPage() {
             fontSize="xs"
             fontWeight="bold"
           >
-            {activeOrdersCount}
+            {activeOrders.length}
           </Badge>
         </Button>
       )}
-      {/* Modals (remain outside TabPanels as they are global) */}
       <TableSelectionModal
-        isOpen={isTableModalOpen} // This is the old table modal, might be used for existing order edits
+        isOpen={isTableModalOpen}
         onClose={onTableModalClose}
         tables={tables}
         onSelectTable={setCurrentOrderTable}
@@ -1465,7 +1380,6 @@ export default function POSDashboardPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Track Order Modal (Full List) - This modal is now less critical as Order Management View serves a similar purpose */}
       <Modal
         isOpen={isTrackOrderModalOpen}
         onClose={onTrackOrderModalClose}
@@ -1532,7 +1446,6 @@ export default function POSDashboardPage() {
                         .map((item) => `${item.name} (x${item.quantity})`)
                         .join(", ")}
                     </Text>
-                    {/* Display created_at time */}
                     {order.created_at && (
                       <Text fontSize="xs" color="var(--medium-gray-text)" mt={1}>
                         Created: {new Date(order.created_at).toLocaleString()}
@@ -1594,7 +1507,6 @@ export default function POSDashboardPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Current Order Details Modal */}
       <CurrentOrderDetailsModal
         isOpen={isCurrentOrderDetailsModalOpen}
         onClose={onCurrentOrderDetailsModalClose}
@@ -1603,14 +1515,13 @@ export default function POSDashboardPage() {
         onUpdateQuantity={updateOrderItemQuantity}
         onAddNotes={onNotesModalOpen}
         onApplyDiscount={onDiscountModalOpen}
-        onSelectTable={onTableModalOpen} // This is for editing existing order's table
+        onSelectTable={onTableModalOpen}
         onSendToKitchen={handleSendToKitchen}
         onCheckout={handleCheckout}
         onClearOrder={clearCurrentOrder}
         tables={tables}
         updateOrder={updateOrder}
       />
-      {/* New Order Menu Selection Modal */}
       <NewOrderMenuModal
         isOpen={isNewOrderMenuModalOpen}
         onClose={onNewOrderMenuModalClose}
@@ -1618,14 +1529,13 @@ export default function POSDashboardPage() {
         categories={categories}
         onFinishAddingItems={handleFinishAddingItems}
       />
-      {/* New Order Table Selection Modal (reusing existing TableSelectionModal) */}
       <TableSelectionModal
         isOpen={isNewOrderTableModalOpen}
         onClose={onNewOrderTableModalClose}
         tables={tables}
         onSelectTable={handleSelectNewOrderTable}
-        currentSelectedTableId={tempNewOrderTableId} // Pass the temp table ID
-        allowTakeaway={true} // Allow takeaway option
+        currentSelectedTableId={tempNewOrderTableId}
+        allowTakeaway={true}
       />
     </Flex>
   );

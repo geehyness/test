@@ -15,6 +15,7 @@ import {
   Text,
   VStack,
   useColorModeValue,
+  Image as ChakraImage
 } from "@chakra-ui/react";
 import { FiChevronDown, FiMenu } from "react-icons/fi";
 import { usePOSStore } from "../lib/usePOSStore";
@@ -49,23 +50,13 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
       px={{ base: 4, md: 4 }}
       height="20"
       alignItems="center"
-      bg={useColorModeValue("white", "gray.900")}
+      bg="white" // Changed this to a static 'white'
       borderBottomWidth="1px"
       borderBottomColor={useColorModeValue("gray.200", "gray.700")}
-      justifyContent={{ base: "space-between", md: "flex-end" }}
+      justifyContent="space-between" // Set to space-between to push items apart
       {...rest}
     >
-      <Flex
-        alignItems="center"
-        justifyContent="flex-start"
-        flex="1"
-        display={{ base: "none", md: "flex" }}
-      >
-        <Text fontSize="xl" fontWeight="bold" color="var(--primary-green)">
-          {displayStoreName()}
-        </Text>
-      </Flex>
-
+      {/* Container for the menu icon on mobile */}
       <IconButton
         display={{ base: "flex", md: "none" }}
         onClick={onOpen}
@@ -74,7 +65,29 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
         icon={<FiMenu />}
       />
 
-      <HStack spacing={{ base: "0", md: "6" }}>
+      {/* Main content area */}
+      <Flex flex="1" alignItems="center" justifyContent={{ base: "center", md: "flex-start" }}>
+        <ChakraImage
+          src="/c2.png"
+          alt="Carte Logo"
+          width="auto"
+          height="20px"
+          objectFit="contain"
+        // Removed mx="auto" and mt={4} as the parent Flex will handle alignment
+        />
+        <Flex
+          alignItems="center"
+          justifyContent="flex-start"
+          ml={4} // Add margin to the left of the text for spacing
+          display={{ base: "none", md: "flex" }}
+        >
+          <Text fontSize="xl" fontWeight="bold" color="var(--primary-green)">
+            {displayStoreName()}
+          </Text>
+        </Flex>
+      </Flex>
+
+      <HStack spacing={{ base: "0", md: "6" }} display={{ base: "flex", md: "flex" }}>
         <Menu>
           <MenuButton
             py={2}
@@ -94,7 +107,7 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
                 spacing="1px"
                 ml="2"
               >
-                <Text fontSize="sm">
+                <Text fontSize="sm" color="#333">
                   {currentStaff ? currentStaff.first_name : "Loading..."}
                 </Text>
                 <Text fontSize="xs" color="gray.600">
@@ -110,10 +123,10 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
             bg={useColorModeValue("white", "gray.900")}
             borderColor={useColorModeValue("gray.200", "gray.700")}
           >
-            <MenuItem>Profile</MenuItem>
+            {/* <MenuItem>Profile</MenuItem>
             <MenuItem>Settings</MenuItem>
             <MenuItem>Billing</MenuItem>
-            <MenuDivider />
+            <MenuDivider />*/}
             <MenuItem onClick={handleLogout}>Sign out</MenuItem>
           </MenuList>
         </Menu>

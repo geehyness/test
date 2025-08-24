@@ -32,11 +32,25 @@ import {
     Stack,
     HStack,
     IconButton,
+    NumberInput,
+    NumberInputField,
+    NumberInputStepper,
+    NumberIncrementStepper,
+    NumberDecrementStepper,
+    Textarea,
 } from "@chakra-ui/react";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
 import { entities, EntityConfig, RecipeItem, InventoryProduct, Food, Unit } from "@/app/config/entities";
 import { fetchData, deleteItem } from "@/app/lib/api";
 import { v4 as uuidv4 } from 'uuid';
+
+// Import the new shift management components
+import dynamic from 'next/dynamic';
+const ShiftManagement = dynamic(() => import('./ShiftManagement'), {
+    ssr: false,
+    loading: () => <Center minH="400px"><Spinner size="xl" /></Center>
+});
+
 
 interface Column {
     accessorKey: string;
@@ -68,6 +82,64 @@ interface User {
     updated_at: string;
 }
 
+// New interfaces for HR entities
+interface Shift {
+    shift_id: string;
+    employee_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    employee_name?: string;
+}
+
+interface Timesheet {
+    timesheet_id: string;
+    employee_id: string;
+    start_date: string;
+    end_date: string;
+    daily_hours: { [date: string]: string };
+    total_weekly_hours: string;
+    employee_name?: string;
+}
+
+interface Payroll {
+    payroll_id: string;
+    employee_id: string;
+    payment_cycle: string;
+    pay_period_start: string;
+    pay_period_end: string;
+    total_wages_due: string;
+    tax_deductions: string;
+    net_pay: string;
+    status: string;
+    employee_name?: string;
+}
+
+interface Company {
+    company_id: string;
+    name: string;
+    country: string;
+    tax_details: {
+        tax_year: string;
+        efiling_admin: string;
+        related_docs: string;
+    };
+    metrics: {
+        total_employees: number;
+        active_employees: number;
+        employees_on_leave: number;
+        terminated_employees: number;
+        full_time_employees: number;
+        part_time_employees: number;
+        contract_employees: number;
+        employee_invites: {
+            sent: number;
+            active: number;
+            require_attention: number;
+        };
+    };
+}
+
 export default function DynamicEntityManagementPage() {
     const params = useParams();
     const router = useRouter();
@@ -90,6 +162,12 @@ export default function DynamicEntityManagementPage() {
     const [foodCategories, setFoodCategories] = useState<any[]>([]);
     const [units, setUnits] = useState<Unit[]>([]);
     const [currentRecipes, setCurrentRecipes] = useState<RecipeItem[]>([]);
+    const [allEmployees, setAllEmployees] = useState<any[]>([]); // For HR entity relationships
+
+    // If the entity is shifts, render the special shift management component
+    if (entityName === 'shifts') {
+        return <ShiftManagement />;
+    }
 
     const refreshData = useCallback(async () => {
         if (!entityConfig) return;
@@ -97,6 +175,8 @@ export default function DynamicEntityManagementPage() {
         setError(null);
         try {
             const promises = [fetchData(entityConfig.endpoint)];
+
+            // Add necessary data for different entities
             if (entityName === 'employees') {
                 promises.push(fetchData('access_roles'));
                 promises.push(fetchData('job_titles'));
@@ -106,19 +186,28 @@ export default function DynamicEntityManagementPage() {
                 promises.push(fetchData('inventory_products'));
                 promises.push(fetchData('categories'));
                 promises.push(fetchData('units'));
+            } else if (['timesheets', 'payrolls'].includes(entityName)) {
+                // For HR entities, we need employee data
+                promises.push(fetchData('employees'));
             }
+
             const results = await Promise.all(promises);
 
             const fetchedEntityData = results[0];
             let fetchedAccessRoles: any, fetchedJobTitles: any, fetchedDepartments: any, fetchedUsers: any;
             let fetchedInventoryProducts, fetchedFoodCategories: any, fetchedUnits;
+            let fetchedEmployees: any;
 
             if (entityName === 'employees') {
                 [fetchedAccessRoles, fetchedJobTitles, fetchedDepartments, fetchedUsers] = results.slice(1);
             } else if (entityName === 'foods' || entityName === 'recipes') {
                 [fetchedInventoryProducts, fetchedFoodCategories, fetchedUnits] = results.slice(1);
+            } else if (['timesheets', 'payrolls'].includes(entityName)) {
+                fetchedEmployees = results[1];
+                setAllEmployees(fetchedEmployees || []);
             }
 
+            // Process data based on entity type
             if (entityName === 'employees') {
                 const combinedData = (fetchedEntityData || []).map((employee: any) => {
                     const user = (fetchedUsers || []).find((u: any) => u.id === employee.user_id);
@@ -152,6 +241,16 @@ export default function DynamicEntityManagementPage() {
                 setInventoryProducts(fetchedInventoryProducts || []);
                 setFoodCategories(fetchedFoodCategories || []);
                 setUnits(fetchedUnits || []);
+            } else if (['timesheets', 'payrolls'].includes(entityName)) {
+                // Add employee names to HR entities
+                const dataWithEmployeeNames = (fetchedEntityData || []).map((item: any) => {
+                    const employee = (fetchedEmployees || []).find((e: any) => e.id === item.employee_id);
+                    return {
+                        ...item,
+                        employee_name: employee ? `${employee.first_name} ${employee.last_name}` : 'N/A',
+                    };
+                });
+                setData(dataWithEmployeeNames);
             } else {
                 setData(fetchedEntityData || []);
             }
@@ -172,14 +271,17 @@ export default function DynamicEntityManagementPage() {
 
     useEffect(() => {
         if (!entityName || !entityConfig) {
-            toast({
-                title: "Error",
-                description: `Invalid entity: ${entityName}`,
-                status: "error",
-                duration: 5000,
-                isClosable: true,
-            });
-            router.replace('/pos/management');
+            // Avoid running for 'shifts' since it has its own component
+            if (entityName !== 'shifts') {
+                toast({
+                    title: "Error",
+                    description: `Invalid entity: ${entityName}`,
+                    status: "error",
+                    duration: 5000,
+                    isClosable: true,
+                });
+                router.replace('/pos/management');
+            }
             return;
         }
         refreshData();
@@ -232,7 +334,6 @@ export default function DynamicEntityManagementPage() {
         onOpen();
     };
 
-    // Wrap handleEdit in useCallback
     const handleEdit = useCallback((item: any) => {
         const otherRoles = Array.isArray(item.other_access_roles) ? item.other_access_roles : [];
         setSelectedItem({
@@ -243,7 +344,7 @@ export default function DynamicEntityManagementPage() {
         setCurrentRecipes(item.recipes || []);
         setIsEditing(true);
         onOpen();
-    }, [onOpen]); // Add any other dependencies if needed
+    }, [onOpen]);
 
     const handleAddRecipe = () => {
         setCurrentRecipes(prev => [
@@ -368,7 +469,7 @@ export default function DynamicEntityManagementPage() {
                     icon={<FaEdit />}
                     onClick={() => handleEdit(row)}
                     size="sm"
-                    colorScheme="blue" // Edit button color changed to blue
+                    colorScheme="blue"
                 />
                 <IconButton
                     aria-label="Delete"
@@ -422,6 +523,33 @@ export default function DynamicEntityManagementPage() {
                     isSortable: false,
                 },
             ];
+        } else if (entityName === 'timesheets') {
+            entityColumns = [
+                { accessorKey: 'employee_name', header: 'Employee', isSortable: true },
+                { accessorKey: 'start_date', header: 'Start Date', isSortable: true },
+                { accessorKey: 'end_date', header: 'End Date', isSortable: true },
+                { accessorKey: 'total_weekly_hours', header: 'Total Hours', isSortable: true },
+            ];
+        } else if (entityName === 'payrolls') {
+            entityColumns = [
+                { accessorKey: 'employee_name', header: 'Employee', isSortable: true },
+                { accessorKey: 'payment_cycle', header: 'Payment Cycle', isSortable: true },
+                { accessorKey: 'pay_period_start', header: 'Period Start', isSortable: true },
+                { accessorKey: 'pay_period_end', header: 'Period End', isSortable: true },
+                { accessorKey: 'net_pay', header: 'Net Pay', isSortable: true },
+                { accessorKey: 'status', header: 'Status', isSortable: true },
+            ];
+        } else if (entityName === 'companies') {
+            entityColumns = [
+                { accessorKey: 'name', header: 'Company Name', isSortable: true },
+                { accessorKey: 'country', header: 'Country', isSortable: true },
+                {
+                    accessorKey: 'metrics.total_employees',
+                    header: 'Total Employees',
+                    isSortable: true,
+                    cell: (row: Company) => row.metrics.total_employees
+                },
+            ];
         } else {
             entityColumns = entityConfig.fields
                 .filter(field => !excludedFields.includes(field))
@@ -432,11 +560,12 @@ export default function DynamicEntityManagementPage() {
                 }));
         }
 
-        return [actionColumn, ...entityColumns]; // Move action buttons to the beginning
+        return [actionColumn, ...entityColumns];
     }, [entityConfig, entityName, excludedFields, actionColumn, inventoryProducts, units]);
 
 
     if (!entityConfig) {
+        // This will be true for 'shifts' on first render, so return null to avoid errors
         return null;
     }
 
@@ -655,6 +784,175 @@ export default function DynamicEntityManagementPage() {
         );
     };
 
+    const renderHRFormFields = () => {
+        if (entityName === 'timesheets') {
+            return (
+                <>
+                    <FormControl isRequired>
+                        <FormLabel>Employee</FormLabel>
+                        <Select
+                            placeholder="Select Employee"
+                            value={selectedItem?.employee_id || ''}
+                            onChange={(e) => handleItemChange('employee_id', e.target.value)}
+                        >
+                            {allEmployees.map(employee => (
+                                <option key={employee.id} value={employee.id}>
+                                    {employee.first_name} {employee.last_name}
+                                </option>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Start Date</FormLabel>
+                        <Input
+                            type="date"
+                            value={selectedItem?.start_date || ''}
+                            onChange={(e) => handleItemChange('start_date', e.target.value)}
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>End Date</FormLabel>
+                        <Input
+                            type="date"
+                            value={selectedItem?.end_date || ''}
+                            onChange={(e) => handleItemChange('end_date', e.target.value)}
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Total Weekly Hours</FormLabel>
+                        <NumberInput
+                            value={selectedItem?.total_weekly_hours || ''}
+                            onChange={(value) => handleItemChange('total_weekly_hours', value)}
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                    </FormControl>
+                </>
+            );
+        } else if (entityName === 'payrolls') {
+            return (
+                <>
+                    <FormControl isRequired>
+                        <FormLabel>Employee</FormLabel>
+                        <Select
+                            placeholder="Select Employee"
+                            value={selectedItem?.employee_id || ''}
+                            onChange={(e) => handleItemChange('employee_id', e.target.value)}
+                        >
+                            {allEmployees.map(employee => (
+                                <option key={employee.id} value={employee.id}>
+                                    {employee.first_name} {employee.last_name}
+                                </option>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Payment Cycle</FormLabel>
+                        <Select
+                            value={selectedItem?.payment_cycle || ''}
+                            onChange={(e) => handleItemChange('payment_cycle', e.target.value)}
+                        >
+                            <option value="Weekly">Weekly</option>
+                            <option value="Bi-weekly">Bi-weekly</option>
+                            <option value="Monthly">Monthly</option>
+                        </Select>
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Pay Period Start</FormLabel>
+                        <Input
+                            type="date"
+                            value={selectedItem?.pay_period_start || ''}
+                            onChange={(e) => handleItemChange('pay_period_start', e.target.value)}
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Pay Period End</FormLabel>
+                        <Input
+                            type="date"
+                            value={selectedItem?.pay_period_end || ''}
+                            onChange={(e) => handleItemChange('pay_period_end', e.target.value)}
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Total Wages Due</FormLabel>
+                        <NumberInput
+                            value={selectedItem?.total_wages_due || ''}
+                            onChange={(value) => handleItemChange('total_wages_due', value)}
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Tax Deductions</FormLabel>
+                        <NumberInput
+                            value={selectedItem?.tax_deductions || ''}
+                            onChange={(value) => handleItemChange('tax_deductions', value)}
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Net Pay</FormLabel>
+                        <NumberInput
+                            value={selectedItem?.net_pay || ''}
+                            onChange={(value) => handleItemChange('net_pay', value)}
+                        >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                                <NumberIncrementStepper />
+                                <NumberDecrementStepper />
+                            </NumberInputStepper>
+                        </NumberInput>
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Status</FormLabel>
+                        <Select
+                            value={selectedItem?.status || ''}
+                            onChange={(e) => handleItemChange('status', e.target.value)}
+                        >
+                            <option value="Pending">Pending</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </Select>
+                    </FormControl>
+                </>
+            );
+        } else if (entityName === 'companies') {
+            return (
+                <>
+                    <FormControl isRequired>
+                        <FormLabel>Company Name</FormLabel>
+                        <Input
+                            value={selectedItem?.name || ''}
+                            onChange={(e) => handleItemChange('name', e.target.value)}
+                        />
+                    </FormControl>
+                    <FormControl isRequired>
+                        <FormLabel>Country</FormLabel>
+                        <Input
+                            value={selectedItem?.country || ''}
+                            onChange={(e) => handleItemChange('country', e.target.value)}
+                        />
+                    </FormControl>
+                </>
+            );
+        }
+
+        return null;
+    };
+
     const renderGenericFormFields = () => {
         const fieldsToRender = entityConfig.fields.filter(field => !excludedFields.includes(field) && field !== 'id');
         return fieldsToRender.map((field) => (
@@ -671,7 +969,7 @@ export default function DynamicEntityManagementPage() {
     return (
         <Box p={6}>
             <Flex mb={6} alignItems="center">
-                <Heading as="h1" size="xl">
+                <Heading as="h1" size="xl" color="#333">
                     {entityName === 'recipes' ? 'Food Recipes' : entityConfig.label} Management
                 </Heading>
                 <Spacer />
@@ -691,7 +989,8 @@ export default function DynamicEntityManagementPage() {
                         <VStack spacing={4}>
                             {entityName === 'employees' ? renderEmployeeFormFields() :
                                 (entityName === 'foods' || entityName === 'recipes') ? renderFoodFormFields() :
-                                    renderGenericFormFields()}
+                                    ['timesheets', 'payrolls', 'companies'].includes(entityName) ? renderHRFormFields() :
+                                        renderGenericFormFields()}
                         </VStack>
                     </ModalBody>
                     <ModalFooter>

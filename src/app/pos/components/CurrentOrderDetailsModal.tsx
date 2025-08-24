@@ -55,7 +55,7 @@ interface CurrentOrderDetailsModalProps {
   onApplyDiscount: () => void;
   onSelectTable: () => void;
   onSendToKitchen: () => void;
-  onCheckout: (paymentMethod: "cash" | "card" | "split") => void;
+  onOpenPaymentModal: () => void; // New prop to pass down
   onClearOrder: () => void;
   tables: Table[]; // Pass tables to display table name
   updateOrder: (orderId: string, updatedOrder: Partial<Order>) => Promise<void>;
@@ -71,7 +71,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
   onApplyDiscount,
   onSelectTable,
   onSendToKitchen,
-  onCheckout,
+  onOpenPaymentModal, // Destructure the new prop
   onClearOrder,
   tables,
   updateOrder,
@@ -134,7 +134,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
                     </Text>
                     <HStack flex="2" justifyContent="center">
                       <IconButton
-                        icon={<DynamicMinusIcon />} // Use dynamic import
+                        icon={<DynamicMinusIcon />}
                         size="xs"
                         onClick={() =>
                           onUpdateQuantity(item.food_id, item.quantity - 1)
@@ -149,7 +149,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
                         {item.quantity}
                       </Text>
                       <IconButton
-                        icon={<DynamicAddIcon />} // Use dynamic import
+                        icon={<DynamicAddIcon />}
                         size="xs"
                         onClick={() =>
                           onUpdateQuantity(item.food_id, item.quantity + 1)
@@ -163,57 +163,75 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
                     <Text
                       flex="1"
                       textAlign="right"
-                      fontWeight="semibold"
+                      fontWeight="bold"
                       color="var(--primary-green)"
                     >
                       R {item.sub_total?.toFixed(2)}
                     </Text>
                     <IconButton
-                      icon={<DynamicDeleteIcon />} // Use dynamic import
+                      icon={<DynamicDeleteIcon />}
                       size="sm"
+                      variant="ghost"
                       colorScheme="red"
                       onClick={() => onRemoveItem(item.food_id)}
                       aria-label="Remove item"
+                      isDisabled={
+                        currentOrder.status === "preparing" ||
+                        currentOrder.status === "ready"
+                      }
                     />
                   </HStack>
                 ))}
               </Box>
 
               <VStack
+                spacing={2}
                 align="stretch"
-                spacing={1}
-                mt={4}
-                p={3}
+                p={4}
                 bg="var(--light-gray-bg)"
                 rounded="md"
               >
-                <Flex justifyContent="space-between">
-                  <Text color="var(--medium-gray-text)">Subtotal:</Text>
-                  <Text fontWeight="semibold" color="var(--dark-gray-text)">
+                <HStack>
+                  <Text flex="1" color="var(--medium-gray-text)">
+                    Subtotal:
+                  </Text>
+                  <Text
+                    flex="1"
+                    textAlign="right"
+                    fontWeight="semibold"
+                    color="var(--dark-gray-text)"
+                  >
                     R {currentOrder.subtotal_amount?.toFixed(2)}
                   </Text>
-                </Flex>
-                <Flex justifyContent="space-between">
-                  <Text color="var(--medium-gray-text)">Discount:</Text>
-                  <Text fontWeight="semibold" color="var(--primary-red)">
-                    - R {currentOrder.discount_amount?.toFixed(2)}
+                </HStack>
+                <HStack>
+                  <Text flex="1" color="var(--medium-gray-text)">
+                    Tax (15%):
                   </Text>
-                </Flex>
-                <Flex justifyContent="space-between">
-                  <Text color="var(--medium-gray-text)">
-                    Tax (
-                    {(
-                      (currentOrder.tax_amount /
-                        (currentOrder.subtotal_amount -
-                          currentOrder.discount_amount)) *
-                        100 || 0
-                    ).toFixed(0)}
-                    %):
-                  </Text>
-                  <Text fontWeight="semibold" color="var(--dark-gray-text)">
+                  <Text
+                    flex="1"
+                    textAlign="right"
+                    fontWeight="semibold"
+                    color="var(--dark-gray-text)"
+                  >
                     R {currentOrder.tax_amount?.toFixed(2)}
                   </Text>
-                </Flex>
+                </HStack>
+                {currentOrder.discount_amount > 0 && (
+                  <HStack>
+                    <Text flex="1" color="var(--medium-gray-text)">
+                      Discount:
+                    </Text>
+                    <Text
+                      flex="1"
+                      textAlign="right"
+                      fontWeight="semibold"
+                      color="var(--primary-red)"
+                    >
+                      - R {currentOrder.discount_amount?.toFixed(2)}
+                    </Text>
+                  </HStack>
+                )}
                 <Flex
                   justifyContent="space-between"
                   pt={2}
@@ -235,16 +253,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
                   </Text>
                 </Flex>
               </VStack>
-
-              <Box mt={4}>
-                <Text
-                  fontSize="lg"
-                  fontWeight="bold"
-                  mb={2}
-                  color="var(--primary-orange)"
-                >
-                  Order Details
-                </Text>
+              <Box p={4} bg="var(--light-gray-bg)" rounded="md">
                 <Flex justifyContent="space-between" alignItems="center" mb={2}>
                   <Text color="var(--medium-gray-text)">Table:</Text>
                   <HStack>
@@ -252,7 +261,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
                       {selectedTableName}
                     </Text>
                     <IconButton
-                      icon={<DynamicEditIcon />} // Use dynamic import
+                      icon={<DynamicEditIcon />}
                       size="sm"
                       variant="ghost"
                       onClick={onSelectTable}
@@ -269,7 +278,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
                       {currentOrder.notes || "None"}
                     </Text>
                     <IconButton
-                      icon={<DynamicEditIcon />} // Use dynamic import
+                      icon={<DynamicEditIcon />}
                       size="sm"
                       variant="ghost"
                       onClick={onAddNotes}
@@ -290,7 +299,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
             onApplyDiscount={onApplyDiscount}
             onSelectTable={onSelectTable}
             onSendToKitchen={onSendToKitchen}
-            onCheckout={onCheckout}
+            onOpenPaymentModal={onOpenPaymentModal} // Pass down the new prop here
             onClearOrder={onClearOrder}
             currentOrder={currentOrder}
             updateOrder={updateOrder}

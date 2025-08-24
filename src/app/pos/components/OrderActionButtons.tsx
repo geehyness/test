@@ -6,19 +6,11 @@ import {
   VStack,
   Button,
   Flex,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
   Text,
   HStack,
   Icon,
   Box,
-  Badge, // Added Badge for selected payment method
+  Badge,
 } from "@chakra-ui/react";
 import {
   FaStickyNote,
@@ -31,18 +23,17 @@ import {
   FaCreditCard,
   FaCheckCircle,
 } from "react-icons/fa";
-import { Order } from "@/app/config/entities"; // Import Order type if needed
+import { Order } from "@/app/config/entities";
 
 interface OrderActionButtonsProps {
   onAddNotes: () => void;
   onApplyDiscount: () => void;
   onSelectTable: () => void;
   onSendToKitchen: () => void;
-  // Changed onCheckout to accept paymentMethod. This matches CurrentOrderDetailsModal.tsx
-  onCheckout: (paymentMethod: "cash" | "card" | "split") => void;
+  onOpenPaymentModal: () => void; // New prop to open the payment modal
   onClearOrder: () => void;
-  currentOrder: Order; // Added to enable/disable buttons based on order state
-  updateOrder: (orderId: string, updatedOrder: Partial<Order>) => Promise<void>; // Added for potential future use
+  currentOrder: Order;
+  updateOrder: (orderId: string, updatedOrder: Partial<Order>) => Promise<void>;
 }
 
 export default function OrderActionButtons({
@@ -50,23 +41,13 @@ export default function OrderActionButtons({
   onApplyDiscount,
   onSelectTable,
   onSendToKitchen,
-  onCheckout,
+  onOpenPaymentModal, // Destructure the new prop
   onClearOrder,
-  currentOrder, // Destructure currentOrder
+  currentOrder,
 }: OrderActionButtonsProps) {
-  const {
-    isOpen: isPaymentModalOpen,
-    onOpen: onPaymentModalOpen,
-    onClose: onPaymentModalClose,
-  } = useDisclosure();
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = React.useState<
-    "cash" | "card" | "split"
-  >("cash");
-
-  // Determine if the "Send to Kitchen" or "Checkout" buttons should be disabled
   const isOrderEmpty = currentOrder.items.length === 0;
   const isOrderSent =
-    currentOrder.status !== "new" && currentOrder.status !== "pending"; // Already sent or paid
+    currentOrder.status !== "new" && currentOrder.status !== "pending";
 
   return (
     <VStack spacing={3} mt={6} width="full">
@@ -81,7 +62,7 @@ export default function OrderActionButtons({
           borderColor="var(--border-color)"
           color="var(--dark-gray-text)"
           _hover={{ bg: "var(--light-gray-bg)" }}
-          isDisabled={isOrderEmpty || isOrderSent} // Disable if order is empty or already sent/paid
+          isDisabled={isOrderEmpty || isOrderSent}
         >
           Add Notes
         </Button>
@@ -95,7 +76,7 @@ export default function OrderActionButtons({
           borderColor="var(--border-color)"
           color="var(--dark-gray-text)"
           _hover={{ bg: "var(--light-gray-bg)" }}
-          isDisabled={isOrderEmpty || isOrderSent} // Disable if order is empty or already sent/paid
+          isDisabled={isOrderEmpty || isOrderSent}
         >
           Discount
         </Button>
@@ -109,7 +90,7 @@ export default function OrderActionButtons({
         bg="blue.500"
         color="white"
         _hover={{ bg: "blue.600" }}
-        isDisabled={isOrderSent} // Disable if order is already sent/paid
+        isDisabled={isOrderSent}
       >
         Select Table
       </Button>
@@ -126,15 +107,15 @@ export default function OrderActionButtons({
           isOrderEmpty ||
           isOrderSent ||
           (!currentOrder.table_id && currentOrder.order_type !== "takeaway")
-        } // Disable if empty, sent, or no table/takeaway
+        }
       >
         Send to Kitchen
       </Button>
 
-      {/* Checkout Button - now opens a modal */}
+      {/* Checkout Button - now opens the parent-controlled modal */}
       <Button
         leftIcon={<FaCashRegister />}
-        onClick={onPaymentModalOpen} // Open payment modal
+        onClick={onOpenPaymentModal}
         colorScheme="green"
         width="full"
         size="lg"
@@ -142,11 +123,10 @@ export default function OrderActionButtons({
         bg="var(--primary-green)"
         color="white"
         _hover={{ bg: "darken(var(--primary-green), 10%)" }}
-        isDisabled={isOrderEmpty || isOrderSent} // Disable if order is empty or already sent/paid
+        isDisabled={isOrderEmpty || isOrderSent}
       >
         Checkout
       </Button>
-
       <Button
         leftIcon={<FaTrash />}
         onClick={onClearOrder}
@@ -157,165 +137,12 @@ export default function OrderActionButtons({
         borderColor="red.300"
         color="red.500"
         _hover={{ bg: "red.50" }}
-        isDisabled={isOrderEmpty} // Disable if order is already empty
+        isDisabled={isOrderEmpty}
       >
         Clear Order
       </Button>
 
-      {/* Payment Method Selection Modal */}
-      <Modal
-        isOpen={isPaymentModalOpen}
-        onClose={onPaymentModalClose}
-        isCentered
-      >
-        <ModalOverlay />
-        <ModalContent
-          rounded="lg"
-          bg="var(--background-color-light)"
-          color="var(--dark-gray-text)"
-        >
-          <ModalHeader borderBottom="1px solid var(--border-color)" pb={3}>
-            Select Payment Method
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4}>
-              <Text
-                fontSize="lg"
-                fontWeight="semibold"
-                color="var(--dark-gray-text)"
-              >
-                Total Amount: R {currentOrder.total_amount?.toFixed(2)}
-              </Text>
-              <HStack spacing={4} justify="center" flexWrap="wrap" width="full">
-                <Button
-                  variant="outline"
-                  borderWidth="2px"
-                  borderColor={
-                    selectedPaymentMethod === "cash"
-                      ? "var(--primary-green)"
-                      : "gray.200"
-                  }
-                  rounded="lg"
-                  p={3}
-                  onClick={() => setSelectedPaymentMethod("cash")}
-                  bg={
-                    selectedPaymentMethod === "cash"
-                      ? "green.50"
-                      : "transparent"
-                  }
-                  _hover={{ bg: "green.50" }}
-                  flexDir="column"
-                  height="auto"
-                  width="100px"
-                  position="relative"
-                >
-                  <Icon
-                    as={FaMoneyBillWave}
-                    w={6}
-                    h={6}
-                    color="gray.500"
-                    mb={1}
-                  />
-                  <Text fontSize="sm" color="var(--medium-gray-text)">
-                    Cash
-                  </Text>
-                  {selectedPaymentMethod === "cash" && (
-                    <Box
-                      position="absolute"
-                      top={1}
-                      right={1}
-                      color="var(--primary-green)"
-                    >
-                      <Icon as={FaCheckCircle} />
-                    </Box>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  borderWidth="2px"
-                  borderColor={
-                    selectedPaymentMethod === "card"
-                      ? "var(--primary-green)"
-                      : "gray.200"
-                  }
-                  rounded="lg"
-                  p={3}
-                  onClick={() => setSelectedPaymentMethod("card")}
-                  bg={
-                    selectedPaymentMethod === "card"
-                      ? "green.50"
-                      : "transparent"
-                  }
-                  _hover={{ bg: "green.50" }}
-                  flexDir="column"
-                  height="auto"
-                  width="100px"
-                  position="relative"
-                >
-                  <Icon as={FaCreditCard} w={6} h={6} color="gray.500" mb={1} />
-                  <Text fontSize="sm" color="var(--medium-gray-text)">
-                    Card
-                  </Text>
-                  {selectedPaymentMethod === "card" && (
-                    <Box
-                      position="absolute"
-                      top={1}
-                      right={1}
-                      color="var(--primary-green)"
-                    >
-                      <Icon as={FaCheckCircle} />
-                    </Box>
-                  )}
-                </Button>
-                {/* Add Split Payment option if desired */}
-                {/* <Button
-                  variant="outline"
-                  borderWidth="2px"
-                  borderColor={selectedPaymentMethod === 'split' ? 'var(--primary-green)' : 'gray.200'}
-                  rounded="lg"
-                  p={3}
-                  onClick={() => setSelectedPaymentMethod('split')}
-                  bg={selectedPaymentMethod === 'split' ? 'green.50' : 'transparent'}
-                  _hover={{ bg: 'green.50' }}
-                  flexDir="column"
-                  height="auto"
-                  width="100px"
-                  position="relative"
-                >
-                  <Icon as={FaMoneyBillWave} w={6} h={6} color="gray.500" mb={1} />
-                  <Text fontSize="sm" color="var(--medium-gray-text)">
-                    Split
-                  </Text>
-                  {selectedPaymentMethod === 'split' && (
-                    <Box position="absolute" top={1} right={1} color="var(--primary-green)">
-                      <Icon as={FaCheckCircle} />
-                    </Box>
-                  )}
-                </Button> */}
-              </HStack>
-            </VStack>
-          </ModalBody>
-          <ModalFooter borderTop="1px solid var(--border-color)" pt={3}>
-            <Button variant="ghost" onClick={onPaymentModalClose} mr={3}>
-              Cancel
-            </Button>
-            <Button
-              bg="var(--primary-green)"
-              color="white"
-              _hover={{ bg: "darken(var(--primary-green), 10%)" }}
-              onClick={() => {
-                onCheckout(selectedPaymentMethod); // Call onCheckout with the selected method
-                onPaymentModalClose(); // Close the modal
-              }}
-              isDisabled={currentOrder.total_amount <= 0} // Disable if total is zero
-            >
-              Confirm Payment
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* The Modal component has been removed from this file */}
     </VStack>
   );
 }

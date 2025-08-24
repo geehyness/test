@@ -25,6 +25,7 @@ import {
   IconButton,
   Flex,
   Spacer,
+  Divider,
 } from "@chakra-ui/react";
 import dynamic from "next/dynamic";
 
@@ -176,23 +177,53 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="full"
+      size="6xl"
       scrollBehavior="inside"
+      isCentered
     >
-      <ModalOverlay />
+      <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(5px)" />
       <ModalContent
-        rounded="lg"
+        rounded="xl"
         bg="var(--background-color-light)"
         color="var(--dark-gray-text)"
+        m={4}
+        maxH="95vh"
+        boxShadow="0 10px 30px rgba(0, 0, 0, 0.2)"
+        border="1px solid"
+        borderColor="gray.200"
       >
-        <ModalHeader borderBottom="1px solid var(--border-color)" pb={3}>
+        <ModalHeader
+          borderBottom="1px solid var(--border-color)"
+          pb={3}
+          fontSize="xl"
+          fontWeight="bold"
+          bg="white"
+          roundedTop="xl"
+          py={4}
+        >
           Add Items to New Order
         </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody p={6}>
-          <Flex direction={{ base: "column", md: "row" }} gap={6} h="full">
+        <ModalCloseButton
+          top={4}
+          right={4}
+          size="md"
+          borderRadius="full"
+          bg="gray.100"
+          _hover={{ bg: "gray.200" }}
+        />
+        <ModalBody p={6} bg="gray.50" roundedBottom="xl" display="flex" flexDirection="column">
+          <Flex direction={{ base: "column", md: "row" }} gap={6} flex="1" minH="0">
             {/* Left side: Menu Selection */}
-            <Box flex="2" overflowY="auto" pr={4}>
+            <Box
+              flex="2"
+              bg="white"
+              p={4}
+              rounded="lg"
+              shadow="sm"
+              overflowY="auto"
+              h="100%"
+              minH="0"
+            >
               <InputGroup mb={4}>
                 <InputLeftElement pointerEvents="none">
                   <DynamicSearchIcon color="gray.300" />
@@ -215,7 +246,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
               />
 
               <SimpleGrid
-                columns={{ base: 2, sm: 3, md: 4, lg: 5 }}
+                minChildWidth="150px"
                 spacing={4}
                 mt={4}
               >
@@ -234,7 +265,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                   >
                     <Image
                       src={
-                        item.image_url || // Changed from item.image to item.image_url
+                        item.image_url ||
                         `https://placehold.co/150x100/E0E0E0/333333?text=${item.name.split(" ")[0]
                         }`
                       }
@@ -271,8 +302,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                       mt={2}
                     >
                       <Text fontWeight="bold" color="var(--primary-green)">
-                        R {item.price?.toFixed(2)}{" "}
-                        {/* Changed from item.sale_price to item.price */}
+                        R {item.price?.toFixed(2)}
                       </Text>
                       <Badge colorScheme="purple" fontSize="xx-small">
                         {categories.find((cat) => cat.id === item.category_id)
@@ -287,44 +317,54 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
             {/* Right side: Temporary Order Summary */}
             <Box
               flex="1"
-              bg="var(--light-gray-bg)"
-              p={4}
-              rounded="md"
-              shadow="sm"
+              bg="white"
+              p={5}
+              rounded="lg"
+              shadow="md"
+              display="flex"
+              flexDirection="column"
               overflowY="auto"
+              h="100%"
+              minH="0"
             >
               <Text
                 fontSize="lg"
                 fontWeight="bold"
-                mb={3}
+                mb={4}
                 color="var(--primary-orange)"
+                borderBottom="2px solid"
+                borderColor="orange.200"
+                pb={2}
               >
                 New Order Summary (
                 {tempOrderItems.reduce((sum, item) => sum + item.quantity, 0)}{" "}
                 items)
               </Text>
+
+              <Divider mb={4} />
+
               {tempOrderItems.length === 0 ? (
-                <Text
-                  textAlign="center"
-                  py={10}
-                  color="var(--medium-gray-text)"
-                >
-                  No items added yet.
-                </Text>
+                <Box textAlign="center" py={10} color="var(--medium-gray-text)" bg="gray.50" rounded="md">
+                  <Text>No items added yet.</Text>
+                  <Text fontSize="sm" mt={2}>Add items from the menu on the left.</Text>
+                </Box>
               ) : (
-                <VStack spacing={3} align="stretch">
+                <VStack spacing={3} align="stretch" flex="1" overflowY="auto">
                   {tempOrderItems.map((item) => (
                     <HStack
                       key={item.food_id}
-                      p={2}
-                      bg="white"
+                      p={3}
+                      bg="gray.50"
                       rounded="md"
-                      shadow="xs"
+                      shadow="sm"
+                      _hover={{ bg: "gray.100" }}
+                      transition="background-color 0.2s"
                     >
                       <Text
                         flex="3"
                         fontWeight="medium"
                         color="var(--dark-gray-text)"
+                        fontSize="sm"
                       >
                         {item.name}
                       </Text>
@@ -340,11 +380,13 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                           }
                           isDisabled={item.quantity <= 1}
                           aria-label="Decrease quantity"
-                          bg="var(--button-bg-light)"
+                          bg="white"
                           color="var(--dark-gray-text)"
-                          _hover={{ bg: "var(--button-hover-light)" }}
+                          _hover={{ bg: "gray.200" }}
+                          border="1px solid"
+                          borderColor="gray.300"
                         />
-                        <Text fontWeight="bold" color="var(--dark-gray-text)">
+                        <Text fontWeight="bold" color="var(--dark-gray-text)" minW="20px" textAlign="center">
                           {item.quantity}
                         </Text>
                         <IconButton
@@ -357,9 +399,11 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                             )
                           }
                           aria-label="Increase quantity"
-                          bg="var(--button-bg-light)"
+                          bg="white"
                           color="var(--dark-gray-text)"
-                          _hover={{ bg: "var(--button-hover-light)" }}
+                          _hover={{ bg: "gray.200" }}
+                          border="1px solid"
+                          borderColor="gray.300"
                         />
                       </HStack>
                       <Text
@@ -367,6 +411,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                         textAlign="right"
                         fontWeight="semibold"
                         color="var(--primary-green)"
+                        fontSize="sm"
                       >
                         R {item.sub_total?.toFixed(2)}
                       </Text>
@@ -374,16 +419,20 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                         icon={<DynamicDeleteIcon />}
                         size="sm"
                         colorScheme="red"
+                        variant="outline"
                         onClick={() => handleRemoveItem(item.food_id)}
                         aria-label="Remove item"
                       />
                     </HStack>
                   ))}
+                </VStack>
+              )}
+
+              {tempOrderItems.length > 0 && (
+                <Box mt="auto" pt={4} borderTop="2px solid" borderColor="gray.200">
                   <Flex
                     justifyContent="space-between"
-                    mt={4}
-                    pt={2}
-                    borderTop="1px solid var(--border-color)"
+                    alignItems="center"
                   >
                     <Text
                       fontSize="lg"
@@ -400,20 +449,36 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                       R {tempOrderTotal.toFixed(2)}
                     </Text>
                   </Flex>
-                </VStack>
+                </Box>
               )}
             </Box>
           </Flex>
         </ModalBody>
 
-        <ModalFooter borderTop="1px solid var(--border-color)" pt={3}>
-          <Button variant="ghost" onClick={onClose} mr={3}>
+        <ModalFooter
+          borderTop="1px solid var(--border-color)"
+          pt={4}
+          pb={4}
+          bg="white"
+          roundedBottom="xl"
+        >
+          <Button
+            variant="outline"
+            onClick={onClose}
+            mr={3}
+            size="md"
+            borderRadius="md"
+          >
             Cancel
           </Button>
           <Button
             colorScheme="green"
             onClick={handleFinish}
             isDisabled={tempOrderItems.length === 0}
+            size="md"
+            borderRadius="md"
+            px={6}
+            fontWeight="semibold"
           >
             Finish Adding Items
           </Button>

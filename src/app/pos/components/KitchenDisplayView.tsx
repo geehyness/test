@@ -26,18 +26,14 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
 }) => {
   const toast = useToast();
 
-  // Filter orders relevant for the kitchen: new and preparing
   const kitchenOrders = orders.filter(
     (order) => order.status === "new" || order.status === "preparing"
   );
 
-  // Modified getTableNumber to correctly handle string | null | undefined
   const getTableNumber = (tableId: string | null | undefined) => {
-    // If tableId is null or undefined, it's a takeaway order
     if (tableId === null || tableId === undefined) {
       return "Takeaway";
     }
-    // Otherwise, try to find the table name
     return tables.find((t) => t.id === tableId)?.name || "Unknown Table";
   };
 
@@ -46,55 +42,71 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
       await updateOrder(order.id, { status: "ready" });
       toast({
         title: "Order Ready",
-        description: `Order #${order.id} is now ready for serving!`,
+        description: `Order #${order.id} is now ready for serving.`,
         status: "success",
         duration: 2000,
         isClosable: true,
       });
       console.log(`LOG: Kitchen marked order #${order.id} as READY.`);
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to mark order as ready.",
+        title: "Error updating order.",
+        description:
+          error.message ||
+          `There was an error updating order #${order.id} status.`,
         status: "error",
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
       console.error(
-        `ERROR: Kitchen failed to mark order #${order.id} as ready.`,
+        `ERROR: Error updating order #${order.id} status:`,
         error
       );
     }
   };
 
-  const KitchenOrderCard: React.FC<{ order: Order }> = ({ order }) => (
+  const OrderCard = ({ order }: { order: Order }) => (
     <Box
-      p={4}
-      borderWidth="1px"
+      p={6}
+      bg="white"
       rounded="lg"
-      shadow="md"
-      bg="var(--background-color-light)"
-      height="100%"
+      shadow="lg"
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
     >
-      <Flex align="center" mb={2}>
-        <Text fontWeight="bold" fontSize="xl" color="var(--dark-gray-text)">
+      <Flex align="center" mb={4}>
+        <Text
+          fontSize="xl"
+          fontWeight="bold"
+          color="var(--dark-gray-text)"
+          mr={2}
+        >
           Order #{order.id}
         </Text>
-        <Spacer />
         <Badge
-          colorScheme={order.status === "new" ? "purple" : "orange"}
-          fontSize="md"
+          colorScheme={
+            order.status === "preparing"
+              ? "orange"
+              : order.status === "new"
+                ? "blue"
+                : "gray"
+          }
         >
           {order.status.toUpperCase()}
         </Badge>
+        <Spacer />
+        <Text fontSize="lg" fontWeight="medium">
+          {getTableNumber(order.table_id)}
+        </Text>
       </Flex>
-      {/* Pass order.table_id to getTableNumber, which now handles null */}
-      <Text fontSize="md" color="var(--medium-gray-text)" mb={2}>
-        Table: {getTableNumber(order.table_id)}
+
+      <Text fontSize="md" color="gray.600" mb={4}>
+        Time: {new Date(order.created_at).toLocaleTimeString()}
       </Text>
 
-      <VStack align="stretch" spacing={1} mb={4}>
-        {(order.items ?? []).map((item, index) => (
+      <VStack align="stretch" spacing={2} mb={4}>
+        {order.items.map((item, index) => (
           <Text
             key={index}
             fontSize="lg"
@@ -103,7 +115,7 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
           >
             {item.quantity}x {item.name}
             {item.notes && (
-              <Text as="span" fontSize="sm" color="red.500" ml={2}>
+              <Text as="span" fontSize="sm" color="gray.600" ml={2}>
                 ({item.notes})
               </Text>
             )}
@@ -111,15 +123,13 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
         ))}
       </VStack>
 
-      <Flex justifyContent="center" mt="auto">
-        {" "}
-        {/* Use mt="auto" to push button to bottom */}
+      <Flex justifyContent="center" mt={4}>
         <Button
           colorScheme="green"
           size="lg"
           width="80%"
           onClick={() => handleMarkReady(order)}
-          isDisabled={order.status === "ready"} // Disable if already ready
+          isDisabled={order.status === "ready"}
           bg="var(--primary-green)"
           color="white"
           _hover={{ bg: "darken(var(--primary-green), 10%)" }}
@@ -154,9 +164,9 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
           No new or preparing orders for the kitchen.
         </Text>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} flex="1">
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {kitchenOrders.map((order) => (
-            <KitchenOrderCard key={order.id} order={order} />
+            <OrderCard key={order.id} order={order} />
           ))}
         </SimpleGrid>
       )}

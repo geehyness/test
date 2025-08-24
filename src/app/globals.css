@@ -5,43 +5,65 @@
 
 :root {
   /* Colors from style.pdf */
-  --primary-green: #8FC73E; /* Green */
-  --text-color-dark: #000000; /* Black */
-  --background-color-light: #FFFFFF; /* White */
-  --border-color: #e0e0e0; /* A light grey, useful for minimal designs like table borders or form inputs */
-  --light-gray-bg: #f9f9f9; /* A very light gray for subtle page background differences */
-  --medium-gray-text: #666666; /* For secondary text */
-  --dark-gray-text: #333333; /* For primary text that isn't pure black */
+  --primary-green: #8FC73E;
+  /* Green */
+  --text-color-dark: #000000;
+  /* Black */
+  --background-color-light: #FFFFFF;
+  /* White */
+  --border-color: #e0e0e0;
+  /* A light grey, useful for minimal designs like table borders or form inputs */
+  --light-gray-bg: #f2f2f2;
+  /* A very light gray for subtle page background differences */
+  --medium-gray-text: #666666;
+  /* For secondary text */
+  --dark-gray-text: #333333;
+  /* For primary text that isn't pure black */
 
   /* Navbar Specific Variables (aligned with new brand colors) */
-  --navbar-bg: var(--background-color-light); /* Changed from var(--text-color-dark) to var(--background-color-light) for a light background */
-  --navbar-heading-color: var(--primary-green); /* Green for "Resto Admin" heading */
+  --navbar-bg: var(--background-color-light);
+  /* Changed from var(--text-color-dark) to var(--background-color-light) for a light background */
+  --navbar-heading-color: var(--primary-green);
+  /* Green for "Resto Admin" heading */
 
-  --navbar-main-item-inactive-text: var(--dark-gray-text); /* Changed from var(--background-color-light) to var(--dark-gray-text) for better contrast on light background */
-  --navbar-main-item-active-text: var(--primary-green); /* Primary green for active main menu items */
-  --navbar-main-item-active-bg: var(--border-color); /* Light gray for active main menu item background */
-  --navbar-main-item-hover-bg: var(--border-color); /* Light gray for hover state */
+  --navbar-main-item-inactive-text: var(--dark-gray-text);
+  /* Changed from var(--background-color-light) to var(--dark-gray-text) for better contrast on light background */
+  --navbar-main-item-active-text: var(--primary-green);
+  /* Primary green for active main menu items */
+  --navbar-main-item-active-bg: var(--border-color);
+  /* Light gray for active main menu item background */
+  --navbar-main-item-hover-bg: var(--border-color);
+  /* Light gray for hover state */
 
-  --navbar-submenu-border-color: #f0f0f0; /* Even lighter gray for submenu borders */
+  --navbar-submenu-border-color: #f0f0f0;
+  /* Even lighter gray for submenu borders */
 
   /* General Application Variables */
-  --background-color-dark: #333333; /* Dark background for potentially dark modes or specific sections */
-  --text-color-light: #FFFFFF; /* White text for dark backgrounds */
-  --button-hover-bg: #EAEAEA; /* A light hover background for buttons */
-  --button-active-bg: #D4D4D4; /* A slightly darker active background */
+  --background-color-dark: #333333;
+  /* Dark background for potentially dark modes or specific sections */
+  --text-color-light: #FFFFFF;
+  /* White text for dark backgrounds */
+  --button-hover-bg: #EAEAEA;
+  /* A light hover background for buttons */
+  --button-active-bg: #D4D4D4;
+  /* A slightly darker active background */
 
   /* Font Families */
   --font-lexend-deca: 'Lexend Deca', sans-serif;
 }
 
 /* Base styles for the HTML and body elements */
-html, body {
+html,
+body {
   padding: 0;
   margin: 0;
   height: 100%;
-  font-family: var(--font-lexend-deca); /* Apply Lexend Deca globally */
-  background-color: var(--light-gray-bg); /* Use the light gray background globally */
-  color: var(--dark-gray-text); /* Default text color */
+  font-family: var(--font-lexend-deca);
+  /* Apply Lexend Deca globally */
+  background-color: var(--light-gray-bg);
+  /* Use the light gray background globally */
+  color: var(--dark-gray-text);
+  /* Default text color */
 }
 
 /* Ensure Next.js app root (#__next) also takes full height */
@@ -60,7 +82,8 @@ a {
 
 /* DataTable Customizations */
 .chakra-datatable th {
-  font-weight: 500; /* Medium font-weight for table headers */
+  font-weight: 500;
+  /* Medium font-weight for table headers */
   color: var(--dark-gray-text);
   border-bottom: 2px solid var(--border-color) !important;
 }
@@ -92,7 +115,8 @@ a {
   border-radius: 4px !important;
   padding: 6px 10px !important;
   margin-left: 8px !important;
-  color: var(--dark-gray-text) !important; /* Dark text for the select dropdown */
+  color: var(--dark-gray-text) !important;
+  /* Dark text for the select dropdown */
   background-color: var(--background-color-light) !important;
 }
 
@@ -102,13 +126,15 @@ a {
   border-radius: 4px !important;
   padding: 6px 10px !important;
   margin-left: 8px !important;
-  color: var(--dark-gray-text) !important; /* Dark text for the search input */
+  color: var(--dark-gray-text) !important;
+  /* Dark text for the search input */
   background-color: var(--background-color-light) !important;
 }
 
 
 .data-table-container .dataTables_info {
-  clear: both; /* Clear floats from filter and length */
+  clear: both;
+  /* Clear floats from filter and length */
   float: left;
   padding-top: 0.755em;
   color: var(--medium-gray-text);
@@ -183,13 +209,15 @@ a {
 .data-table-container .sorting,
 .data-table-container .sorting_asc,
 .data-table-container .sorting_desc {
-  outline: none; /* Remove outline on sortable headers */
+  outline: none;
+  /* Remove outline on sortable headers */
 }
 
 .data-table-container .sorting:after,
 .data-table-container .sorting_asc:after,
 .data-table-container .sorting_desc:after {
-  color: var(--dark-gray-text); /* Ensure sort icons are visible */
+  color: var(--dark-gray-text);
+  /* Ensure sort icons are visible */
 }
 
 /* Custom styles for DataTable wrapper */

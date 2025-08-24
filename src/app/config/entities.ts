@@ -3,10 +3,10 @@
 import { ReactNode } from "react";
 
 export interface EntityConfig {
-  subMenus?: any; // Marked as optional as it's not consistently used
-  label: string; // human-readable name
-  fields: string[]; // exact column names in the table
-  endpoint: string; // Added: The API endpoint for fetching data for this entity
+  subMenus?: any;
+  label: string;
+  fields: string[];
+  endpoint: string;
 }
 
 // --- Core POS Entities ---
@@ -16,132 +16,125 @@ export interface Food {
   id: string;
   name: string;
   description: string;
-  price: number; // Sale price
-  category_id: string; // Linking to Category.id
-  image_url?: string; // Optional URL for an image of the item
-  preparation_time?: number; // Added: Estimated time to prepare in minutes
-  allergens?: string[]; // Added: List of common allergens (e.g., ["Gluten", "Dairy", "Nuts"])
-  created_at?: string; // Added for consistency
-  updated_at?: string; // Added for consistency
-  tenant_id: string; // Modified: To link the food item to a specific tenant
-  recipes?: RecipeItem[]; // NEW: The list of raw materials and quantities required to make this food item
+  price: number;
+  category_id: string;
+  image_url?: string;
+  preparation_time?: number;
+  allergens?: string[];
+  created_at?: string;
+  updated_at?: string;
+  tenant_id: string;
+  recipes?: RecipeItem[];
 }
 
-// NEW: StoreFood Interface
 export interface StoreFood {
-  food_id: string; // Links to Food.id
-  store_id: string; // Links to Store.id
-  is_available: boolean; // Indicates if the food item is currently available at this store
+  food_id: string;
+  store_id: string;
+  is_available: boolean;
 }
 
-// NEW: RecipeItem Interface for linking food items to inventory products
 export interface RecipeItem {
-  id: string; // A unique ID for the recipe item
-  food_id: string; // Links to Food.id
-  inventory_product_id: string; // Links to InventoryProduct.id
-  quantity_used: number; // How much of the raw material is used
-  unit_of_measure: string; // e.g., "grams", "ml", "unit"
-  created_at?: string; // Added for consistency
-  updated_at?: string; // Added for consistency
+  id: string;
+  food_id: string;
+  inventory_product_id: string;
+  quantity_used: number;
+  unit_of_measure: string;
+  created_at?: string;
+  updated_at?: string;
 }
-// Order interface (adding payment details)
+
 export interface Order {
   id: string;
-  store_id?: string; // Corrected: Use store_id instead of tenant_id
-  table_id: string | null; // Can be null for takeaway orders
-  customer_id: string | null; // Can be null for walk-in customers
+  store_id?: string;
+  table_id: string | null;
+  customer_id: string | null;
   total_amount: number;
-  status: string; // e.g., 'new', 'preparing', 'ready', 'served', 'paid', 'cancelled'
+  status: string;
   notes: string;
   created_at: string;
   updated_at: string;
-  // Properties added for app logic/convenience
   items: OrderItem[];
   subtotal_amount: number;
   tax_amount: number;
   discount_amount: number;
-  employee_id?: string; // Assuming employee who took the order
-  order_type?: "dine-in" | "takeaway"; // Type of order
-  payment_status?: string; // Added: e.g., 'pending', 'paid', 'refunded'
-  payment_method?: string; // Added: e.g., 'cash', 'card', 'mobile_pay'
+  employee_id?: string;
+  order_type?: "dine-in" | "takeaway";
+  payment_status?: string;
+  payment_method?: string;
 }
 
-// OrderItem interface remains the same
 export interface OrderItem {
   id: string;
   order_id: string;
-  food_id: string; // Links to Food.id
+  food_id: string;
   quantity: number;
   price: number;
   sub_total: number;
   notes?: string;
   created_at: string;
   updated_at: string;
-  name: string; // Name of the food item (from Food entity)
-  price_at_sale: number; // Price of the item when added to order (from Food entity)
+  name: string;
+  price_at_sale: number;
 }
 
-// Category interface remains the same, adjusted fields for simplicity
 export interface Category {
   id: string;
   name: string;
-  description?: string; // Added description for consistency
-  created_at?: string; // Added for consistency
-  updated_at?: string; // Added for consistency
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
 }
-// Category interface remains the same, adjusted fields for simplicity
+
 export interface invCategory {
   id: string;
   name: string;
-  description?: string; // Added description for consistency
-  created_at?: string; // Added for consistency
-  updated_at?: string; // Added for consistency
-}
-
-// Updated Customer Interface
-export interface Customer {
-  id: string;
-  first_name: string; // Changed from 'name'
-  last_name?: string; // Added, optional
-  email?: string; // Added, optional
-  phone_number?: string; // Added, optional, renamed from 'phone'
-  loyalty_points?: number; // Added: e.g., for a loyalty program, renamed from 'points'
+  description?: string;
   created_at?: string;
   updated_at?: string;
-  store_id: string; // Added: To link the customer to a specific store
 }
 
-// Updated Table Interface
+export interface Customer {
+  id: string;
+  first_name: string;
+  last_name?: string;
+  email?: string;
+  phone_number?: string;
+  loyalty_points?: number;
+  created_at?: string;
+  updated_at?: string;
+  store_id: string;
+}
+
 export interface Table {
   id: string;
-  name: string; // User-friendly name, e.g., "Table 1"
-  capacity: number; // Max number of guests
-  location: string; // Added: e.g., "Indoor", "Outdoor", "Bar Area", replaces 'code'
-  status: string; // e.g., 'available', 'occupied', 'reserved', 'needs_cleaning'
-  current_order_id?: string | null; // ID of the order currently assigned to this table
-  created_at?: string; // Added for consistency
-  updated_at?: string; // Added for consistency
-  store_id: string; // Added: To link the table to a specific store
+  name: string;
+  capacity: number;
+  location: string;
+  status: string;
+  current_order_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  store_id: string;
 }
 
 export interface AccessRole {
   id: string;
-  name: string; // e.g., "Cashier", "Server", "Kitchen Staff", "Manager"
+  name: string;
   description: string;
-  permissions: string[]; // An array of strings representing permissions (e.g., "can_process_payments", "can_view_kitchen_orders")
-  landing_page: string; // e.g., "/pos/dashboard/cashier", "/pos/dashboard/server"
+  permissions: string[];
+  landing_page: string;
   created_at?: string;
   updated_at?: string;
 }
 
-// Updated Employee Interface
+// Updated Employee Interface with HR details
 export interface Employee {
   id: string;
   user_id: string;
   job_title_id: string;
   access_role_ids: string[];
   tenant_id: string;
-  store_id: string; // Corrected: Use store_id instead of 
+  store_id: string;
   main_access_role_id: string;
   hire_date: string;
   salary: number;
@@ -150,24 +143,137 @@ export interface Employee {
   avatar_url?: string;
   created_at?: string;
   updated_at?: string;
+
+  // New HR fields
+  employee_id?: string;
+  full_name?: string;
+  middle_name?: string;
+  suffix?: string;
+  profile_photo_url?: string;
+  personal_details?: PersonalDetails;
+  contact_details?: ContactDetails;
+  employment_details?: EmploymentDetails;
+  status?: EmployeeStatus;
 }
 
+export interface PersonalDetails {
+  citizenship: string;
+  gender: string;
+  birth_date: string;
+  age: string;
+}
 
-// New Reservation Interface
+export interface ContactDetails {
+  cell_phone: string;
+  whatsapp_number: string;
+  email: string;
+  address: string;
+}
+
+export interface EmploymentDetails {
+  job_title: string;
+  team: string;
+  employment_type: string;
+  location: string;
+}
+
+export interface EmployeeStatus {
+  current_status: string;
+  on_leave_since?: string;
+  termination_date?: string;
+  termination_reason?: string;
+}
+
 export interface Reservation {
   id: string;
-  customer_id: string; // Links to Customer.id
-  table_id: string | null; // Can be null if for general seating or takeaway
-  date_time: string; // ISO string for reservation time
+  customer_id: string;
+  table_id: string | null;
+  date_time: string;
   number_of_guests: number;
-  status: string; // e.g., 'confirmed', 'pending', 'cancelled', 'seated', 'no-show'
+  status: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
-  store_id: string; // Added: To link the reservation to a specific store
+  store_id: string;
 }
 
-// --- Other Entities (Retained from previous file, adjusted if needed for clarity/consistency) ---
+// --- New HR Entities ---
+
+export interface Shift {
+  shift_id: string;
+  employee_id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+}
+
+export interface Timesheet {
+  timesheet_id: string;
+  employee_id: string;
+  start_date: string;
+  end_date: string;
+  daily_hours: { [date: string]: string };
+  total_weekly_hours: string;
+}
+
+export interface Payroll {
+  payroll_id: string;
+  employee_id: string;
+  payment_cycle: string;
+  pay_period_start: string;
+  pay_period_end: string;
+  total_wages_due: string;
+  tax_deductions: string;
+  net_pay: string;
+  status: string;
+}
+
+export interface Company {
+  company_id: string;
+  name: string;
+  country: string;
+  tax_details: TaxDetails;
+  metrics: CompanyMetrics;
+}
+
+export interface TaxDetails {
+  tax_year: string;
+  efiling_admin: string;
+  related_docs: string;
+}
+
+export interface CompanyMetrics {
+  total_employees: number;
+  active_employees: number;
+  employees_on_leave: number;
+  terminated_employees: number;
+  full_time_employees: number;
+  part_time_employees: number;
+  contract_employees: number;
+  employee_invites: EmployeeInvites;
+}
+
+export interface EmployeeInvites {
+  sent: number;
+  active: number;
+  require_attention: number;
+}
+
+// Updated Store interface with new fields
+export interface Store {
+  id: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
+  tenant_id: string;
+  created_at: string;
+  updated_at: string;
+  location?: string;
+  manager_id?: string;
+}
+
+// --- Other Entities ---
 
 export interface Tenant {
   id: string;
@@ -248,7 +354,7 @@ export interface Payment {
 
 export interface Stock {
   id: string;
-  food_id: string; // Changed from product_id to food_id
+  food_id: string;
   quantity: number;
   unit_id: string;
   supplier_id: string;
@@ -277,18 +383,7 @@ export interface Tax {
   updated_at: string;
 }
 
-export interface Store {
-  id: string;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  tenant_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface JobTitle { // Retained as JobTitle might be used elsewhere for specific job roles, distinct from `Role`
+export interface JobTitle {
   id: string;
   title: string;
   description: string;
@@ -308,7 +403,7 @@ export interface PaymentMethod {
 export interface Brand {
   id: string;
   name: string;
-  description?: string; // Added for consistency
+  description?: string;
   created_at: string;
   updated_at: string;
 }
@@ -342,49 +437,40 @@ export interface ContactMessage {
   updated_at: string;
 }
 
-// New: Report entity for tracking unauthorized access attempts
 export interface Report {
-  id: string; // Unique ID for the report entry
-  user_id: string; // ID of the user who attempted access
-  user_name: string; // Name of the user (for easier reporting)
-  user_role: string; // Role of the user at the time of attempt
-  attempted_path: string; // The URL path they tried to access
-  attempts: number; // Number of times this specific user/role/path combination was attempted
-  last_attempt_at: string; // Timestamp of the last attempt
-  created_at: string; // Timestamp of the first attempt
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_role: string;
+  attempted_path: string;
+  attempts: number;
+  last_attempt_at: string;
+  created_at: string;
 }
 
-// NEW: InventoryProduct Interface
 export interface InventoryProduct {
   id: string;
   name: string;
   description?: string;
-  sku: string; // Stock Keeping Unit - unique identifier for inventory
-  unit_of_measure: string; // e.g., "kg", "grams", "liter", "unit", "bottle"
+  sku: string;
+  unit_of_measure: string;
   tenant_id: string;
-  unit_cost: number; // Cost to acquire one unit
+  unit_cost: number;
   quantity_in_stock: number;
-  reorder_level: number; // Minimum stock level before reordering
-  supplier_id?: string; // Optional: Link to a Supplier entity if you have one
+  reorder_level: number;
+  supplier_id?: string;
   inv_category_id?: string;
-  location_in_warehouse?: string; // e.g., "Aisle 3, Shelf 2"
+  location_in_warehouse?: string;
   last_restocked_at?: string;
   created_at?: string;
   updated_at?: string;
-}
-export interface Unit {
-  id: string;
-  name: string;
-  symbol: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export const entities: { [key: string]: EntityConfig } = {
   // Core POS Entities
   inventory_products: {
-    label: "Inventory Products", // Corrected Label
-    endpoint: "/api/inventory_products", // Corrected Endpoint    
+    label: "Inventory Products",
+    endpoint: "/api/inventory_products",
     fields: [
       "id",
       "name",
@@ -400,7 +486,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "last_restock_at",
       "created_at",
       "updated_at",
-      "store_id", // Added store_id field
+      "store_id",
     ]
   },
   orders: {
@@ -408,7 +494,7 @@ export const entities: { [key: string]: EntityConfig } = {
     endpoint: "/api/orders",
     fields: [
       "id",
-      "store_id", // Corrected
+      "store_id",
       "table_id",
       "customer_id",
       "total_amount",
@@ -428,7 +514,7 @@ export const entities: { [key: string]: EntityConfig } = {
   },
   reports: {
     label: "Reports",
-    endpoint: "/api/order_items",
+    endpoint: "/api/reports",
     fields: [
       "id",
       "user_id",
@@ -457,9 +543,9 @@ export const entities: { [key: string]: EntityConfig } = {
       "price_at_sale",
     ],
   },
-  foods: { // Renamed from menu_items to foods
-    label: "Foods", // Renamed from Menu Items
-    endpoint: "/api/foods", // Renamed from /api/menu_items
+  foods: {
+    label: "Foods",
+    endpoint: "/api/foods",
     fields: [
       "id",
       "name",
@@ -473,19 +559,19 @@ export const entities: { [key: string]: EntityConfig } = {
       "created_at",
       "updated_at",
       "tenant_id",
-      "recipes" // NEW: Added recipes field
+      "recipes"
     ],
   },
-  store_foods: { // Renamed from menu_items to foods
-    label: "Store Foods", // Renamed from Menu Items
-    endpoint: "/api/store_foods", // Renamed from /api/menu_items
+  store_foods: {
+    label: "Store Foods",
+    endpoint: "/api/store_foods",
     fields: [
       "food_id",
       "store_id",
       "is_available",
     ],
   },
-  recipes: { // NEW: Added recipes entity
+  recipes: {
     label: "Recipes",
     endpoint: "/api/recipes",
     fields: ["id", "food_id", "inventory_product_id", "quantity_used", "unit_of_measure", "created_at", "updated_at"],
@@ -493,12 +579,12 @@ export const entities: { [key: string]: EntityConfig } = {
   categories: {
     label: "Categories",
     endpoint: "/api/categories",
-    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"], // Added store_id field
+    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"],
   },
   inv_categories: {
     label: "Inv. Categories",
     endpoint: "/api/inv_categories",
-    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"], // Added store_id field
+    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"],
   },
   customers: {
     label: "Customers",
@@ -512,7 +598,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "loyalty_points",
       "created_at",
       "updated_at",
-      "store_id", // Added store_id field
+      "store_id",
     ],
   },
   tables: {
@@ -527,28 +613,38 @@ export const entities: { [key: string]: EntityConfig } = {
       "current_order_id",
       "created_at",
       "updated_at",
-      "store_id", // Added store_id field
+      "store_id",
     ],
   },
-  employees: { // Updated employees config
+  employees: {
     label: "Employees",
     endpoint: "/api/employees",
     fields: [
       "id",
       "user_id",
       "job_title_id",
-      "access_role_ids", // Added for access control
-      "main_access_role_id", // Added for determining landing page
+      "access_role_ids",
+      "main_access_role_id",
       "hire_date",
       "salary",
-      "name",
-      "store_id", // Corrected
+      "first_name",
+      "last_name",
+      "store_id",
       "avatar_url",
       "created_at",
       "updated_at",
+      "employee_id",
+      "full_name",
+      "middle_name",
+      "suffix",
+      "profile_photo_url",
+      "personal_details",
+      "contact_details",
+      "employment_details",
+      "status"
     ],
   },
-  access_roles: { // New entity config for access roles
+  access_roles: {
     label: "Access Roles",
     endpoint: "/api/access_roles",
     fields: ["id", "name", "description", "permissions", "landing_page", "created_at", "updated_at"],
@@ -566,7 +662,45 @@ export const entities: { [key: string]: EntityConfig } = {
       "notes",
       "created_at",
       "updated_at",
-      "store_id", // Added store_id field
+      "store_id",
+    ],
+  },
+
+  // New HR Entities
+  shifts: {
+    label: "Shifts",
+    endpoint: "/api/shifts",
+    fields: ["shift_id", "employee_id", "date", "start_time", "end_time"],
+  },
+  timesheets: {
+    label: "Timesheets",
+    endpoint: "/api/timesheets",
+    fields: ["timesheet_id", "employee_id", "start_date", "end_date", "daily_hours", "total_weekly_hours"],
+  },
+  payrolls: {
+    label: "Payrolls",
+    endpoint: "/api/payrolls",
+    fields: [
+      "payroll_id",
+      "employee_id",
+      "payment_cycle",
+      "pay_period_start",
+      "pay_period_end",
+      "total_wages_due",
+      "tax_deductions",
+      "net_pay",
+      "status"
+    ],
+  },
+  companies: {
+    label: "Companies",
+    endpoint: "/api/companies",
+    fields: [
+      "company_id",
+      "name",
+      "country",
+      "tax_details",
+      "metrics"
     ],
   },
 
@@ -700,9 +834,11 @@ export const entities: { [key: string]: EntityConfig } = {
       "tenant_id",
       "created_at",
       "updated_at",
+      "location",
+      "manager_id"
     ],
   },
-  job_titles: { // Kept JobTitle for compatibility, even if Role is now primary for employees
+  job_titles: {
     label: "Job Titles",
     endpoint: "/api/job_titles",
     fields: ["id", "title", "description", "created_at", "updated_at"],
@@ -750,8 +886,6 @@ export const entities: { [key: string]: EntityConfig } = {
       "created_at",
       "updated_at",
     ],
-
-
   },
   units: {
     label: "Units",
@@ -761,7 +895,6 @@ export const entities: { [key: string]: EntityConfig } = {
       {
         label: "Common Units",
         items: [
-          // Volume
           { id: "milliliter", name: "Milliliter", symbol: "ml" },
           { id: "liter", name: "Liter", symbol: "L" },
           { id: "ounce_fl", name: "Fluid Ounce", symbol: "fl oz" },
@@ -771,13 +904,11 @@ export const entities: { [key: string]: EntityConfig } = {
           { id: "gallon", name: "Gallon", symbol: "gal" },
           { id: "teaspoon", name: "Teaspoon", symbol: "tsp" },
           { id: "tablespoon", name: "Tablespoon", symbol: "tbsp" },
-          // Weight/Mass
           { id: "gram", name: "Gram", symbol: "g" },
           { id: "kilogram", name: "Kilogram", symbol: "kg" },
           { id: "milligram", name: "Milligram", symbol: "mg" },
           { id: "ounce_wt", name: "Ounce", symbol: "oz" },
           { id: "pound", name: "Pound", symbol: "lb" },
-          // Count/Other
           { id: "unit", name: "Unit", symbol: "unit" },
           { id: "each", name: "Each", symbol: "ea" },
           { id: "can", name: "Can", symbol: "can" },

@@ -27,10 +27,8 @@ const ServerView: React.FC<ServerViewProps> = ({
 }) => {
   const toast = useToast();
 
-  // Filter orders relevant for servers: only 'ready' orders
   const readyOrders = orders.filter((order) => order.status === "ready");
 
-  // getTableNumber function now explicitly accepts string, null, or undefined
   const getTableNumber = (tableId: string | null | undefined) => {
     return tables.find((t) => t.id === tableId)?.name || "Takeaway";
   };
@@ -46,46 +44,47 @@ const ServerView: React.FC<ServerViewProps> = ({
         isClosable: true,
       });
       console.log(`LOG: Server marked order #${order.id} as SERVED.`);
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to mark order as served.",
+        title: "Error updating order.",
+        description:
+          error.message ||
+          `There was an error updating order #${order.id} status.`,
         status: "error",
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
-      console.error(
-        `ERROR: Server failed to mark order #${order.id} as served.`,
-        error
-      );
+      console.error(`ERROR: Server update failed for order #${order.id}:`, error);
     }
   };
 
-  const ServerOrderCard: React.FC<{ order: Order }> = ({ order }) => (
+  const OrderCard = ({ order }: { order: Order }) => (
     <Box
-      p={4}
-      borderWidth="1px"
+      p={6}
+      bg="white"
       rounded="lg"
-      shadow="md"
-      bg="var(--background-color-light)"
-      height="100%"
+      shadow="lg"
+      display="flex"
+      flexDirection="column"
+      justifyContent="space-between"
     >
-      <Flex align="center" mb={2}>
-        <Text fontWeight="bold" fontSize="xl" color="var(--dark-gray-text)">
+      <Flex align="center" mb={4}>
+        <Text
+          fontSize="xl"
+          fontWeight="bold"
+          color="var(--dark-gray-text)"
+          mr={2}
+        >
           Order #{order.id}
         </Text>
+        <Badge colorScheme="green">{order.status.toUpperCase()}</Badge>
         <Spacer />
-        <Badge colorScheme="green" fontSize="md">
-          READY
-        </Badge>
+        <Text fontSize="lg" fontWeight="medium">
+          {getTableNumber(order.table_id)}
+        </Text>
       </Flex>
-      {/* Pass order.table_id directly, now that getTableNumber handles null */}
-      <Text fontSize="md" color="var(--medium-gray-text)" mb={2}>
-        Table: {getTableNumber(order.table_id)}
-      </Text>
-
-      <VStack align="stretch" spacing={1} mb={4}>
-        {(order.items ?? []).map((item, index) => (
+      <VStack align="stretch" spacing={2} mb={4}>
+        {order.items.map((item, index) => (
           <Text
             key={index}
             fontSize="lg"
@@ -96,10 +95,7 @@ const ServerView: React.FC<ServerViewProps> = ({
           </Text>
         ))}
       </VStack>
-
-      <Flex justifyContent="center" mt="auto">
-        {" "}
-        {/* Use mt="auto" to push button to bottom */}
+      <Flex justifyContent="center" mt={4}>
         <Button
           colorScheme="blue"
           size="lg"
@@ -139,9 +135,9 @@ const ServerView: React.FC<ServerViewProps> = ({
           No orders are ready for serving at the moment.
         </Text>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} flex="1">
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {readyOrders.map((order) => (
-            <ServerOrderCard key={order.id} order={order} />
+            <OrderCard key={order.id} order={order} />
           ))}
         </SimpleGrid>
       )}
