@@ -3,10 +3,10 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react'; // Added useRef for AlertDialog
 import { useParams, useRouter } from 'next/navigation'; // Next.js navigation hooks
-import DataTable from '../../components/DataTable'; // CORRECTED PATH
-import CRUDForm from '../../components/CRUDForm'; // Adjust path based on your project structure
-import { entities } from '../../config/entities'; // Your entity definitions
-import { fetchData, deleteItem } from '../../lib/api'; // API functions for data operations
+import DataTable from '../../../components/DataTable'; // CORRECTED PATH
+import CRUDForm from '../../../components/CRUDForm'; // Adjust path based on your project structure
+import { entities } from '../../../lib/config/entities'; // Your entity definitions
+import { fetchData, deleteItem } from '../../../lib/api'; // API functions for data operations
 
 import {
   Box,
@@ -78,7 +78,7 @@ export default function ResourceDetailPage() {
         setError(null);
         try {
           // Corrected: fetchData for a single item (GET method)
-          const item = await fetchData(resource, id, undefined, 'GET'); 
+          const item = await fetchData(resource, id, undefined, 'GET');
           if (item) {
             setInitialData(item);
           } else {
@@ -129,11 +129,11 @@ export default function ResourceDetailPage() {
     try {
       if (isEditMode) {
         // Corrected: fetchData for update (PUT method)
-        await fetchData(resource, id, formData, 'PUT'); 
+        await fetchData(resource, id, formData, 'PUT');
         router.push(`/${resource}`); // Redirect back to list view after update
       } else {
         // Corrected: fetchData for create (POST method) - pass undefined for id
-        await fetchData(resource, undefined, formData, 'POST'); 
+        await fetchData(resource, undefined, formData, 'POST');
         router.push(`/${resource}`); // Redirect back to list view after creation
       }
     } catch (err) {

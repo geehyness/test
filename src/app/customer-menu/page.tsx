@@ -62,8 +62,8 @@ import {
   FaCheckCircle,
   FaClipboardList,
 } from "react-icons/fa";
-import { fetchData } from "../lib/api";
-import { Table, Food, Category } from "../config/entities"; // Import Table, Food, and Category from entities.ts
+import { fetchData } from "../../lib/api";
+import { Table, Food, Category } from "../../lib/config/entities"; // Import Table, Food, and Category from entities.ts
 
 // Define a new interface for displaying food items, extending the base Food entity
 interface DisplayFoodItem extends Food {

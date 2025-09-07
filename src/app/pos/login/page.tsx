@@ -16,8 +16,8 @@ import {
   useToast
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import { usePOSStore } from '../lib/usePOSStore';
-import { loginEmployee } from '@/app/lib/api';
+import { usePOSStore } from '../../../lib/usePOSStore';
+import { loginEmployee } from '@/lib/api';
 
 export default function POSLoginPage() {
   const [email, setEmail] = useState('');

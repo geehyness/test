@@ -21,9 +21,9 @@ import {
     Button,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { usePOSStore } from "../lib/usePOSStore";
-import { fetchData } from "@/app/lib/api";
-import { Order, Food, OrderItem } from "@/app/config/entities";
+import { usePOSStore } from "../../../lib/usePOSStore";
+import { fetchData } from "@/lib/api";
+import { Order, Food, OrderItem } from "@/lib/config/entities";
 import Link from 'next/link';
 
 import {

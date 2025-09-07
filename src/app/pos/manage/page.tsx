@@ -4,8 +4,8 @@
 import React, { useEffect, useState } from "react";
 import { Box, Heading, Text, SimpleGrid, Button, VStack, Spinner, Center } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { entities, EntityConfig } from "@/app/config/entities"; // Import entities config
-import { usePOSStore } from "../lib/usePOSStore"; // Import the store
+import { entities, EntityConfig } from "@/lib/config/entities"; // Import entities config
+import { usePOSStore } from "../../../lib/usePOSStore"; // Import the store
 
 export default function POSManagementPage() {
     const router = useRouter();

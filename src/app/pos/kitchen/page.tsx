@@ -11,10 +11,10 @@ import {
     AlertDescription,
     Text,
 } from "@chakra-ui/react";
-import KitchenDisplayView from "../components/KitchenDisplayView";
-import { usePOSStore } from "../lib/usePOSStore";
-import { fetchData } from "@/app/lib/api";
-import { Order } from "@/app/config/entities";
+import KitchenDisplayView from "../../../components/pos/KitchenDisplayView";
+import { usePOSStore } from "../../../lib/usePOSStore";
+import { fetchData } from "@/lib/api";
+import { Order } from "@/lib/config/entities";
 
 export default function KitchenPage() {
     const {

@@ -28,9 +28,9 @@ import {
     Spacer,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
-import { usePOSStore } from "../../lib/usePOSStore";
+import { usePOSStore } from "../../../../lib/usePOSStore";
 import { useRouter } from "next/navigation";
-import { Report } from "@/app/config/entities";
+import { Report } from "@/lib/config/entities";
 
 export default function AccessReportsPage() {
     const { currentStaff, accessReports } = usePOSStore();

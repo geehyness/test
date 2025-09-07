@@ -69,19 +69,19 @@ import {
   FaChair,
   FaPlus,
 } from "react-icons/fa";
-import MenuCategoryFilter from "../components/MenuCategoryFilter";
-import MenuItemList from "../components/MenuItemList";
-import TableSelectionModal from "../components/TableSelectionModal";
-import PaymentModal from "../components/PaymentModal";
-import { usePOSStore } from "../lib/usePOSStore";
-import { Food, Category, Table, Order, OrderItem } from "@/app/config/entities";
-import { fetchData } from "@/app/lib/api";
+import MenuCategoryFilter from "../../../components/pos/MenuCategoryFilter";
+import MenuItemList from "../../../components/pos/MenuItemList";
+import TableSelectionModal from "../../../components/pos/TableSelectionModal";
+import PaymentModal from "../../../components/pos/PaymentModal";
+import { usePOSStore } from "../../../lib/usePOSStore";
+import { Food, Category, Table, Order, OrderItem } from "@/lib/config/entities";
+import { fetchData } from "@/lib/api";
 
-import OrderManagementView from "../components/OrderManagementView";
-import KitchenDisplayView from "../components/KitchenDisplayView";
-import ServerView from "../components/ServerView";
-import CurrentOrderDetailsModal from "../components/CurrentOrderDetailsModal";
-import NewOrderMenuModal from "../components/NewOrderMenuModal";
+import OrderManagementView from "../../../components/pos/OrderManagementView";
+import KitchenDisplayView from "../../../components/pos/KitchenDisplayView";
+import ServerView from "../../../components/pos/ServerView";
+import CurrentOrderDetailsModal from "../../../components/pos/CurrentOrderDetailsModal";
+import NewOrderMenuModal from "../../../components/pos/NewOrderMenuModal";
 
 export default function POSDashboardPage() {
   const toast = useToast();

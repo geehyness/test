@@ -1,34 +1,52 @@
-// src/app/pos/layout.tsx
+// src/app/layout.tsx
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { ChakraProvider, Box, Flex, Spinner, Center, VStack, Heading, Text, Link as ChakraLink, IconButton } from '@chakra-ui/react';
-import { POSHeader } from './components/POSHeader';
-import { usePOSStore } from './lib/usePOSStore';
-import { useRouter, usePathname } from 'next/navigation';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import '@/app/globals.css';
+import SidebarContent from '@/components/pos/SidebarContent';
+import { POSHeader } from '@/components/pos/POSHeader';
+import {
+  ChakraProvider,
+  Box,
+  Flex,
+  Heading,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  CloseButton,
+  VStack,
+  useMediaQuery,
+  Spinner,
+  Text,
+  Link as ChakraLink,
+} from "@chakra-ui/react";
 import Link from 'next/link';
-import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
+import { usePOSStore } from '@/lib/usePOSStore';
 
-export default function POSLayout({
+interface AppNotification {
+  id: string;
+  message: string;
+  type: 'success' | 'info' | 'warning' | 'error';
+}
+
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { currentStaff, logAccessAttempt, _hasHydrated } = usePOSStore();
-  const router = useRouter();
+  const [isLargerThanMd] = useMediaQuery('(min-width: 768px)');
+  const [sidebarOpen, setSidebarOpen] = useState(isLargerThanMd);
+  const navbarRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const pathname = usePathname();
+  const router = useRouter();
+  const { currentStaff, _hasHydrated, logAccessAttempt } = usePOSStore();
   const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isUnauthorized, setIsUnauthorized] = useState(false);
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-  console.log('POSLayout: Rendered. Current pathname:', pathname, 'currentStaff:', currentStaff ? currentStaff.id : 'None', '_hasHydrated:', _hasHydrated);
-
-  // Pages where sidebar should be hidden but header should be shown
-  const pagesWithoutSidebar = ['/pos', '/pos/server', '/pos/kitchen'];
-  const shouldShowSidebar = _hasHydrated && currentStaff && pathname !== '/pos/login' && !pagesWithoutSidebar.includes(pathname);
-  const shouldShowHeader = _hasHydrated && currentStaff && pathname !== '/pos/login';
-
-  // Change defaultRolePages to use Record<string, string> type
+  // Default role pages for redirects
   const defaultRolePages: Record<string, string> = useMemo(() => ({
     'admin': '/pos/admin',
     'manager': '/pos/management',
@@ -38,40 +56,42 @@ export default function POSLayout({
     'default': '/pos',
   }), []);
 
+  // Define pages where the sidebar should NOT be visible
+  const hideSidebar =
+    pathname.startsWith('/pos/login') ||
+    pathname.startsWith('/pos/kitchen') ||
+    pathname.startsWith('/pos/server') ||
+    pathname === '/pos';
+
+  // Define pages where the POSHeader should NOT be visible
+  const hidePOSHeader = pathname.startsWith('/pos/login');
+
+  // Role-based access control
   useEffect(() => {
     if (!_hasHydrated) {
-      console.log('POSLayout useEffect: Waiting for state hydration...');
-      if (pathname !== '/pos/login') {
-        setIsAuthChecked(false);
-      }
+      console.log('RootLayout: Waiting for state hydration...');
       return;
     }
 
     const rolePaths: Record<string, string[]> = {
       'admin': ['/pos', '/pos/management', '/pos/kitchen', '/pos/server', '/pos/admin', '/pos/admin/reports', '/pos/management/employees', '/pos/management/users', '/pos/management/access_roles', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/reports', '/pos/management/shifts'],
-
       'manager': ['/pos/management', '/pos/kitchen', '/pos/server', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/employees'],
-
       'server': ['/pos/server'],
-
       'kitchen': ['/pos/kitchen'],
-
       'cashier': ['/pos'],
-
       'supply-chain': ['/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods'],
-
       'hr': ['/pos/management', '/pos/management/employees', '/pos/management/access_roles']
     };
 
     if (!currentStaff && pathname !== '/pos/login') {
-      console.log('POSLayout useEffect: No staff logged in, redirecting to /pos/login.');
+      console.log('RootLayout: No staff logged in, redirecting to /pos/login.');
       router.replace('/pos/login');
       setIsAuthChecked(true);
       return;
     }
 
     if (currentStaff && pathname === '/pos/login') {
-      console.log('POSLayout useEffect: Staff logged in on /pos/login, redirecting to default page.');
+      console.log('RootLayout: Staff logged in on /pos/login, redirecting to default page.');
       const roleName = currentStaff.mainAccessRole?.name?.toLowerCase() || 'default';
       const defaultPage = defaultRolePages[roleName] || defaultRolePages['default'];
       router.replace(defaultPage);
@@ -83,8 +103,8 @@ export default function POSLayout({
       const roleName = currentStaff.mainAccessRole?.name?.toLowerCase() || 'default';
       const allowedPaths = rolePaths[roleName] || [];
 
-      if (!allowedPaths.includes(pathname)) {
-        console.log('POSLayout useEffect: Unauthorized access attempt for', pathname, 'by role', roleName, '.');
+      if (!allowedPaths.some(allowedPath => pathname.startsWith(allowedPath))) {
+        console.log('RootLayout: Unauthorized access attempt for', pathname, 'by role', roleName);
         logAccessAttempt(
           currentStaff.id,
           `${currentStaff.first_name} ${currentStaff.last_name}`,
@@ -96,370 +116,183 @@ export default function POSLayout({
         return;
       }
 
-      console.log('POSLayout useEffect: Authentication check passed for', pathname);
+      console.log('RootLayout: Authentication check passed for', pathname);
       setIsUnauthorized(false);
       setIsAuthChecked(true);
     }
   }, [currentStaff, pathname, router, logAccessAttempt, _hasHydrated, defaultRolePages]);
 
   useEffect(() => {
-    setIsMobileNavOpen(false);
-  }, [pathname]);
-
-  const accessiblePages = useMemo(() => {
-    if (!currentStaff) {
-      return [];
+    if (isLargerThanMd) {
+      setSidebarOpen(true);
     }
+  }, [isLargerThanMd]);
 
-    const pageNames: Record<string, string> = {
-      '/pos/management': 'Management Dashboard',
-      '/pos': 'POS',
-      '/pos/dashboard': 'POS Dashboard',
-      '/pos/kitchen': 'Kitchen Display',
-      '/pos/server': 'Server View',
-      '/pos/admin': 'Admin Home',
-      '/pos/admin/reports': 'Access Reports',
-      '/pos/login': 'Login',
-      '/pos/management/employees': 'Employee Management',
-      '/pos/management/access_roles': 'Access Roles',
-      '/pos/management/inventory_products': 'Inventory Products',
-      '/pos/management/suppliers': 'Suppliers',
-      '/pos/management/foods': 'Foods',
-      '/pos/management/categories': 'Food Categories',
-      '/pos/management/tables': 'Tables',
-    };
-
-    // A more complete map of roles to allowed navigation paths
-    const navPaths: Record<string, string[]> = {
-      'admin': [
-        '/pos',
-        '/pos/admin',
-        '/pos/admin/reports',
-        '/pos/management',
-        '/pos/management/employees',
-        '/pos/management/access_roles',
-        '/pos/management/inventory_products',
-        '/pos/management/suppliers',
-        '/pos/management/foods',
-        '/pos/management/categories',
-        '/pos/management/tables',
-        '/pos/server',
-        '/pos/kitchen',
-      ],
-      'manager': [
-        '/pos/management',
-        '/pos/management/employees',
-        '/pos/management/foods',
-        '/pos/management/categories',
-        '/pos/management/tables',
-        '/pos/server',
-        '/pos/kitchen',
-      ],
-      'server': ['/pos/server'],
-      'kitchen': ['/pos/kitchen'],
-      'cashier': ['/pos'],
-      'supply-chain': [
-        '/pos/management/inventory_products',
-        '/pos/management/suppliers',
-        '/pos/management/foods',
-      ],
-      'hr': [
-        '/pos/management',
-        '/pos/management/employees',
-        '/pos/management/access_roles',
-      ]
-    };
-
-    const roleName = currentStaff.mainAccessRole?.name.toLowerCase();
-    if (roleName && navPaths[roleName]) {
-      // Define categories and their paths
-      // The order of paths within the array determines the display order in the navigation.
-      const categories: { [key: string]: string[] } = {
-        'Admin Tools': ['/pos/admin', '/pos/admin/reports'],
-        'Operations': ['/pos', '/pos/server', '/pos/kitchen'],
-        'Management': [
-          '/pos/management',
-          '/pos/management/employees',
-          '/pos/management/access_roles',
-          '/pos/management/inventory_products',
-          '/pos/management/suppliers',
-          '/pos/management/foods',
-          '/pos/management/categories',
-          '/pos/management/tables',
-        ],
-      };
-
-      const pagesByCategory: { [key: string]: { path: string; name: string }[] } = {};
-
-      for (const category in categories) {
-        pagesByCategory[category] = [];
-        for (const path of categories[category]) {
-          if (navPaths[roleName].includes(path)) {
-            pagesByCategory[category].push({
-              path,
-              name: pageNames[path] || path,
-            });
-          }
-        }
+  // Handle click outside of the sidebar on mobile
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!isLargerThanMd && sidebarOpen && event.target instanceof Node && navbarRef.current && !navbarRef.current.contains(event.target)) {
+        setSidebarOpen(false);
       }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [sidebarOpen, isLargerThanMd]);
 
-      // Flatten the categorized pages into a single array for rendering,
-      // maintaining category order and the explicit order defined above.
-      const categorizedAndSortedPages: { category: string; pages: { path: string; name: string }[] }[] = [];
-      for (const category in pagesByCategory) {
-        if (pagesByCategory[category].length > 0) {
-          categorizedAndSortedPages.push({
-            category,
-            pages: pagesByCategory[category],
-          });
-        }
-      }
+  const dismissNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
 
-      return categorizedAndSortedPages;
-    }
-    return [];
-  }, [currentStaff]);
+  const shouldPadLeft = !hideSidebar;
+  const headerHeight = "90px";
 
   const showMainContent = _hasHydrated && (currentStaff || pathname === '/pos/login');
 
-  const headerHeight = "80px";
-  const mainContentPaddingTop = shouldShowHeader ? headerHeight : "0";
-  const sidebarWidth = "250px";
-  const sidebarTop = headerHeight;
-  const sidebarHeight = `calc(100vh - ${headerHeight})`;
-
-  const mobileNavOpenLeft = "0";
-  const mobileNavClosedLeft = `-${sidebarWidth}`;
-
   return (
-    <ChakraProvider>
-      {showMainContent ? (
-        <Flex direction="column" minH="100vh" bg="var(--light-gray-bg)">
-          {shouldShowHeader && (
-            <Box
-              position="fixed"
-              top="0"
-              left="0"
-              right="0"
-              width="full"
-              zIndex="100"
-            >
-              <POSHeader onOpen={() => setIsMobileNavOpen(true)} />
-            </Box>
-          )}
+    <html lang="en">
+      <head />
+      <body>
+        <ChakraProvider>
+          {showMainContent ? (
+            <Flex direction="row" minH="100vh" bg="var(--light-gray-bg)">
+              {/* Conditional rendering for desktop sidebar */}
+              {!hideSidebar && (
+                <SidebarContent
+                  onClose={() => setSidebarOpen(false)}
+                  display={{ base: "none", md: "block" }}
+                />
+              )}
 
-          {/* Mobile Nav Overlay */}
-          {shouldShowSidebar && isMobileNavOpen && (
+              {/* Conditional rendering for mobile sidebar */}
+              {sidebarOpen && !hideSidebar && (
+                <Box
+                  as="nav"
+                  ref={navbarRef}
+                  pos="fixed"
+                  top="0"
+                  left="0"
+                  h="100%"
+                  zIndex="200"
+                  transition="transform 0.3s ease-in-out"
+                  transform={{
+                    base: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+                    md: "translateX(0)",
+                  }}
+                  bg="white"
+                  borderRightWidth="1px"
+                  display={{ base: "block", md: "none" }}
+                >
+                  <SidebarContent onClose={() => setSidebarOpen(false)} />
+                </Box>
+              )}
+
+              <Box flex="1" ml={{ base: 0, md: !hideSidebar ? '250px' : 0 }}>
+                {/* Conditional rendering for POSHeader */}
+                {!hidePOSHeader && (
+                  <Box
+                    position="fixed"
+                    top="0"
+                    left={{ base: 0, md: !hideSidebar ? '250px' : 0 }}
+                    right="0"
+                    zIndex="100"
+                  >
+                    <POSHeader onOpen={() => setSidebarOpen(true)} />
+                  </Box>
+                )}
+
+                <Box
+                  as="main"
+                  flex="1"
+                  minH="calc(100vh - 60px)"
+                  pt={{
+                    base: !hidePOSHeader ? headerHeight : '60px',
+                    md: !hidePOSHeader ? headerHeight : 6
+                  }}
+                >
+                  <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
+                    {notifications.map((notification) => (
+                      <Alert
+                        key={notification.id}
+                        status={notification.type}
+                        variant="left-accent"
+                        rounded="md"
+                        shadow="md"
+                        width="full"
+                        maxWidth="600px"
+                      >
+                        <AlertIcon />
+                        <Box flex="1">
+                          <AlertTitle>{notification.type === 'info' ? 'New Order!' : 'Notification'}</AlertTitle>
+                          <AlertDescription display="block">{notification.message}</AlertDescription>
+                        </Box>
+                        <CloseButton
+                          position="absolute"
+                          right="8px"
+                          top="8px"
+                          onClick={() => dismissNotification(notification.id)}
+                        />
+                      </Alert>
+                    ))}
+                  </VStack>
+                  {children}
+                </Box>
+              </Box>
+            </Flex>
+          ) : (
             <Box
               position="fixed"
               top="0"
               left="0"
               right="0"
               bottom="0"
-              zIndex="9"
-              bg="rgba(0, 0, 0, 0.5)"
-              display={{ base: 'block', md: 'none' }}
-              onClick={() => {
-                setIsMobileNavOpen(false);
-              }}
-            />
-          )}
-
-          {/* Mobile Sidebar Toggle Button (Hamburger/Close) */}
-          {shouldShowSidebar && (
-            <IconButton
-              aria-label={isMobileNavOpen ? "Close mobile navigation" : "Open mobile navigation"}
-              icon={isMobileNavOpen ? <CloseIcon /> : <HamburgerIcon />}
-              onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
-              size="md"
-              bg="var(--background-color-light)"
-              color="var(--primary-green)"
-              shadow="md"
-              borderRadius="md"
-              position="fixed"
-              top={`calc(${headerHeight} + 20px)`}
-              left={isMobileNavOpen ? `calc(${sidebarWidth} - 40px)` : "20px"}
-              transform="translateY(-50%)"
-              p={2}
-              zIndex={101}
-              display={{ base: 'flex', md: 'none' }}
-              transition="left 0.3s ease-in-out"
-            />
-          )}
-
-          <Flex flex="1">
-            {shouldShowSidebar && (
-              <Box
-                width={sidebarWidth}
-                bg="var(--background-color-light)"
-                p={4}
-                pt="0"
-                position="fixed"
-                height={sidebarHeight}
-                top={sidebarTop}
-                left="0"
-                flexShrink={0}
-                zIndex={10}
-                display={{ base: 'none', md: 'block' }}
-                borderRadius="0"
-                borderRight="1px solid"
-                borderColor="gray.200"
-              >
-                {accessiblePages.length > 0 && (
-                  <Heading as="h2" size="md" mb={4} color="var(--dark-gray-text)" mt="20px">
-                    Navigation
-                  </Heading>
-                )}
-                <VStack align="stretch" spacing={2}>
-                  {accessiblePages.map((categoryGroup) => (
-                    <React.Fragment key={categoryGroup.category}>
-                      <Text
-                        fontSize="sm"
-                        fontWeight="bold"
-                        color="var(--primary-green)"
-                        mt={categoryGroup.pages.length > 0 ? 4 : 0}
-                        mb={2}
-                      >
-                        {categoryGroup.category}
-                      </Text>
-                      {categoryGroup.pages.map((page) => (
-                        <ChakraLink
-                          key={page.path}
-                          as={Link}
-                          href={page.path}
-                          p={2}
-                          rounded="md"
-                          _hover={{ bg: "var(--light-gray-bg)", color: "var(--primary-green)" }}
-                          bg={pathname === page.path ? "var(--primary-green)" : "transparent"}
-                          color={pathname === page.path ? "white" : "var(--dark-gray-text)"}
-                        >
-                          {page.name}
-                        </ChakraLink>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </VStack>
-              </Box>
-            )}
-
-            {shouldShowSidebar && (
-              <Box
-                width={sidebarWidth}
-                bg="var(--background-color-light)"
-                p={4}
-                pt="0"
-                position="fixed"
-                height="100vh"
-                top="0"
-                left={isMobileNavOpen ? mobileNavOpenLeft : mobileNavClosedLeft}
-                flexShrink={0}
-                zIndex={100}
-                display={{ base: 'block', md: 'none' }}
-                transition="left 0.3s ease-in-out"
-                borderRadius="0"
-                borderRight="1px solid"
-                borderColor="gray.200"
-                pt={headerHeight}
-              >
-                {accessiblePages.length > 0 && (
-                  <Heading as="h2" size="md" mb={4} color="var(--dark-gray-text)" mt="20px">
-                    Navigation
-                  </Heading>
-                )}
-                <VStack align="stretch" spacing={2}>
-                  {accessiblePages.map((categoryGroup) => (
-                    <React.Fragment key={categoryGroup.category}>
-                      <Text
-                        fontSize="sm"
-                        fontWeight="bold"
-                        color="var(--primary-green)"
-                        mt={categoryGroup.pages.length > 0 ? 4 : 0}
-                        mb={2}
-                      >
-                        {categoryGroup.category}
-                      </Text>
-                      {categoryGroup.pages.map((page) => (
-                        <ChakraLink
-                          key={page.path}
-                          as={Link}
-                          href={page.path}
-                          p={2}
-                          rounded="md"
-                          _hover={{ bg: "var(--light-gray-bg)", color: "var(--primary-green)" }}
-                          bg={pathname === page.path ? "var(--primary-green)" : "transparent"}
-                          color={pathname === page.path ? "white" : "var(--dark-gray-text)"} >
-                          {page.name}
-                        </ChakraLink>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </VStack>
-              </Box>
-            )}
-
-            <Box
-              as="main"
-              flex="1"
-              p={1}
-              pt={mainContentPaddingTop}
-              pl={{ base: 4, md: shouldShowSidebar ? `calc(${sidebarWidth} + 5px)` : "5px" }}
-              pr={{ base: 1, md: "5px" }}
+              zIndex="9999"
+              bg="rgba(255, 255, 255, 1)"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
             >
-              {children}
+              <Spinner
+                size="xl"
+                thickness="4px"
+                speed="0.65s"
+                emptyColor="gray.200"
+                color="var(--primary-green)"
+              />
             </Box>
-          </Flex>
-        </Flex>
-      ) : (
-        <Box
-          position="fixed"
-          top="0"
-          left="0"
-          right="0"
-          bottom="0"
-          zIndex="9999"
-          bg="rgba(255, 255, 255, 1)"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <Spinner
-            size="xl"
-            thickness="4px"
-            speed="0.65s"
-            emptyColor="gray.200"
-            color="var(--primary-green)"
-          />
-        </Box>
-      )}
+          )}
 
-      {isUnauthorized && (
-        <Box
-          position="fixed"
-          top="0"
-          left="0"
-          right="0"
-          bottom="0"
-          zIndex="9998"
-          bg="rgba(255, 255, 255, 1)"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <VStack spacing={4}>
-            <Heading as="h2" size="xl" color="red.500">
-              Unauthorized Access
-            </Heading>
-            <Text fontSize="lg" color="gray.600">
-              You do not have permission to view this page.
-            </Text>
-            <Link href={defaultRolePages[currentStaff?.mainAccessRole?.name?.toLowerCase() || 'default']} passHref>
-              <ChakraLink color="blue.500">
-                Go to my dashboard
-              </ChakraLink>
-            </Link>
-          </VStack>
-        </Box>
-      )}
-    </ChakraProvider>
+          {isUnauthorized && (
+            <Box
+              position="fixed"
+              top="0"
+              left="0"
+              right="0"
+              bottom="0"
+              zIndex="9998"
+              bg="rgba(255, 255, 255, 1)"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <VStack spacing={4}>
+                <Heading as="h2" size="xl" color="red.500">
+                  Unauthorized Access
+                </Heading>
+                <Text fontSize="lg" color="gray.600">
+                  You do not have permission to view this page.
+                </Text>
+                <Link href={defaultRolePages[currentStaff?.mainAccessRole?.name?.toLowerCase() || 'default']} passHref>
+                  <ChakraLink color="blue.500">
+                    Go to my dashboard
+                  </ChakraLink>
+                </Link>
+              </VStack>
+            </Box>
+          )}
+        </ChakraProvider>
+      </body>
+    </html>
   );
 }

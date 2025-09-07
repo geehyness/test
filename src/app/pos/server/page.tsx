@@ -11,10 +11,10 @@ import {
     AlertDescription,
     Text,
 } from "@chakra-ui/react";
-import ServerView from "../components/ServerView";
-import { usePOSStore } from "../lib/usePOSStore";
-import { fetchData } from "@/app/lib/api";
-import { Order, Table, Food, Category } from "@/app/config/entities";
+import ServerView from "../../../components/pos/ServerView";
+import { usePOSStore } from "../../../lib/usePOSStore";
+import { fetchData } from "@/lib/api";
+import { Order, Table, Food, Category } from "@/lib/config/entities";
 
 export default function ServerPage() {
     const {

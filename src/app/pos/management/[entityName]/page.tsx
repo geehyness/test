@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import DataTable from "@/app/components/DataTable";
+import DataTable from "@/components/DataTable";
 import {
     Box,
     Heading,
@@ -40,8 +40,8 @@ import {
     Textarea,
 } from "@chakra-ui/react";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
-import { entities, EntityConfig, RecipeItem, InventoryProduct, Food, Unit } from "@/app/config/entities";
-import { fetchData, deleteItem } from "@/app/lib/api";
+import { entities, EntityConfig, RecipeItem, InventoryProduct, Food, Unit } from "@/lib/config/entities";
+import { fetchData, deleteItem } from "@/lib/api";
 import { v4 as uuidv4 } from 'uuid';
 
 // Import the new shift management components
@@ -51,6 +51,11 @@ const ShiftManagement = dynamic(() => import('./ShiftManagement'), {
     loading: () => <Center minH="400px"><Spinner size="xl" /></Center>
 });
 
+// ADDED: Import the new TimesheetManagement component
+const TimesheetManagement = dynamic(() => import('./TimesheetManagement'), {
+    ssr: false,
+    loading: () => <Center minH="400px"><Spinner size="xl" /></Center>
+});
 
 interface Column {
     accessorKey: string;
@@ -89,16 +94,6 @@ interface Shift {
     date: string;
     start_time: string;
     end_time: string;
-    employee_name?: string;
-}
-
-interface Timesheet {
-    timesheet_id: string;
-    employee_id: string;
-    start_date: string;
-    end_date: string;
-    daily_hours: { [date: string]: string };
-    total_weekly_hours: string;
     employee_name?: string;
 }
 
@@ -169,6 +164,11 @@ export default function DynamicEntityManagementPage() {
         return <ShiftManagement />;
     }
 
+    // ADDED: If the entity is timesheets, render the new timesheet management component
+    if (entityName === 'timesheets') {
+        return <TimesheetManagement />;
+    }
+
     const refreshData = useCallback(async () => {
         if (!entityConfig) return;
         setIsLoading(true);
@@ -186,7 +186,7 @@ export default function DynamicEntityManagementPage() {
                 promises.push(fetchData('inventory_products'));
                 promises.push(fetchData('categories'));
                 promises.push(fetchData('units'));
-            } else if (['timesheets', 'payrolls'].includes(entityName)) {
+            } else if (['payrolls'].includes(entityName)) {
                 // For HR entities, we need employee data
                 promises.push(fetchData('employees'));
             }
@@ -195,14 +195,14 @@ export default function DynamicEntityManagementPage() {
 
             const fetchedEntityData = results[0];
             let fetchedAccessRoles: any, fetchedJobTitles: any, fetchedDepartments: any, fetchedUsers: any;
-            let fetchedInventoryProducts, fetchedFoodCategories: any, fetchedUnits;
+            let fetchedInventoryProducts, fetchedFoodCategories, fetchedUnits;
             let fetchedEmployees: any;
 
             if (entityName === 'employees') {
                 [fetchedAccessRoles, fetchedJobTitles, fetchedDepartments, fetchedUsers] = results.slice(1);
             } else if (entityName === 'foods' || entityName === 'recipes') {
                 [fetchedInventoryProducts, fetchedFoodCategories, fetchedUnits] = results.slice(1);
-            } else if (['timesheets', 'payrolls'].includes(entityName)) {
+            } else if (['payrolls'].includes(entityName)) {
                 fetchedEmployees = results[1];
                 setAllEmployees(fetchedEmployees || []);
             }
@@ -271,8 +271,8 @@ export default function DynamicEntityManagementPage() {
 
     useEffect(() => {
         if (!entityName || !entityConfig) {
-            // Avoid running for 'shifts' since it has its own component
-            if (entityName !== 'shifts') {
+            // Avoid running for 'shifts' and 'timesheets' since they have their own components
+            if (entityName !== 'shifts' && entityName !== 'timesheets') {
                 toast({
                     title: "Error",
                     description: `Invalid entity: ${entityName}`,
@@ -505,30 +505,18 @@ export default function DynamicEntityManagementPage() {
                 { accessorKey: 'description', header: 'Description', isSortable: true },
                 { accessorKey: 'price', header: 'Price', isSortable: true },
                 {
-                    accessorKey: 'recipes',
-                    header: 'Ingredients',
-                    cell: (row: Food) => (
+                    accessorKey: 'recipes', header: 'Ingredients', cell: (row: Food) => (
                         <VStack align="start" spacing={1}>
                             {(row.recipes || []).map((recipe: RecipeItem, index: number) => {
                                 const product = inventoryProducts.find(p => p.id === recipe.inventory_product_id);
                                 const unit = units.find(u => u.id === recipe.unit_of_measure);
                                 return (
-                                    <Text key={index} fontSize="sm">
-                                        - {recipe.quantity_used} {unit?.symbol || recipe.unit_of_measure} of {product?.name || 'N/A'}
-                                    </Text>
+                                    <Text key={index} fontSize="sm"> - {recipe.quantity_used} {unit?.symbol || recipe.unit_of_measure} of {product?.name || 'N/A'} </Text>
                                 );
                             })}
                         </VStack>
-                    ),
-                    isSortable: false,
+                    ), isSortable: false,
                 },
-            ];
-        } else if (entityName === 'timesheets') {
-            entityColumns = [
-                { accessorKey: 'employee_name', header: 'Employee', isSortable: true },
-                { accessorKey: 'start_date', header: 'Start Date', isSortable: true },
-                { accessorKey: 'end_date', header: 'End Date', isSortable: true },
-                { accessorKey: 'total_weekly_hours', header: 'Total Hours', isSortable: true },
             ];
         } else if (entityName === 'payrolls') {
             entityColumns = [
@@ -543,12 +531,7 @@ export default function DynamicEntityManagementPage() {
             entityColumns = [
                 { accessorKey: 'name', header: 'Company Name', isSortable: true },
                 { accessorKey: 'country', header: 'Country', isSortable: true },
-                {
-                    accessorKey: 'metrics.total_employees',
-                    header: 'Total Employees',
-                    isSortable: true,
-                    cell: (row: Company) => row.metrics.total_employees
-                },
+                { accessorKey: 'metrics.total_employees', header: 'Total Employees', isSortable: true, cell: (row: Company) => row.metrics.total_employees },
             ];
         } else {
             entityColumns = entityConfig.fields
@@ -559,16 +542,13 @@ export default function DynamicEntityManagementPage() {
                     isSortable: true,
                 }));
         }
-
         return [actionColumn, ...entityColumns];
     }, [entityConfig, entityName, excludedFields, actionColumn, inventoryProducts, units]);
 
-
     if (!entityConfig) {
-        // This will be true for 'shifts' on first render, so return null to avoid errors
+        // This will be true for 'shifts' and 'timesheets' on first render, so return null to avoid errors
         return null;
     }
-
     if (isLoading) {
         return (
             <Center minH="100vh">
@@ -579,287 +559,227 @@ export default function DynamicEntityManagementPage() {
 
     if (error) {
         return (
-            <Center minH="100vh">
-                <Text color="red.500">Error: {error}</Text>
-            </Center>
+            <Box p={8}>
+                <Heading>Error</Heading>
+                <Text>Failed to load data for {entityName}.</Text>
+                <Text color="red.500">{error}</Text>
+            </Box>
         );
     }
 
-    const renderEmployeeFormFields = () => {
-        return (
-            <>
-                <FormControl isRequired>
-                    <FormLabel>First Name</FormLabel>
-                    <Input
-                        value={selectedItem?.first_name || ''}
-                        onChange={(e) => handleItemChange('first_name', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Last Name</FormLabel>
-                    <Input
-                        value={selectedItem?.last_name || ''}
-                        onChange={(e) => handleItemChange('last_name', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel>Email</FormLabel>
-                    <Input
-                        type="email"
-                        value={selectedItem?.user?.email || ''}
-                        onChange={(e) => handleUserChange('email', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Password</FormLabel>
-                    <Input
-                        type="password"
-                        value={selectedItem?.user?.password || ''}
-                        onChange={(e) => handleUserChange('password', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Phone Number</FormLabel>
-                    <Input
-                        value={selectedItem?.phone_number || ''}
-                        onChange={(e) => handleItemChange('phone_number', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel>Main Access Role</FormLabel>
-                    <Select
-                        placeholder="Select a role"
-                        value={selectedItem?.main_access_role_id || ''}
-                        onChange={(e) => handleItemChange('main_access_role_id', e.target.value)}
-                    >
+    // Render special form fields for different entities
+    const renderEmployeeFormFields = () => (
+        <>
+            <FormControl isRequired>
+                <FormLabel>First Name</FormLabel>
+                <Input
+                    value={selectedItem?.first_name || ''}
+                    onChange={(e) => handleItemChange('first_name', e.target.value)}
+                />
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel>Last Name</FormLabel>
+                <Input
+                    value={selectedItem?.last_name || ''}
+                    onChange={(e) => handleItemChange('last_name', e.target.value)}
+                />
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel>Email</FormLabel>
+                <Input
+                    type="email"
+                    value={selectedItem?.user?.email || ''}
+                    onChange={(e) => handleUserChange('email', e.target.value)}
+                />
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel>Main Access Role</FormLabel>
+                <Select
+                    placeholder="Select role"
+                    value={selectedItem?.main_access_role_id || ''}
+                    onChange={(e) => handleItemChange('main_access_role_id', e.target.value)}
+                >
+                    {accessRoles.map(role => (
+                        <option key={role.id} value={role.id}>{role.name}</option>
+                    ))}
+                </Select>
+            </FormControl>
+            <FormControl>
+                <FormLabel>Other Access Roles</FormLabel>
+                <CheckboxGroup
+                    value={selectedItem?.other_access_roles || []}
+                    onChange={(val) => handleItemChange('other_access_roles', val)}
+                >
+                    <Stack direction="row" flexWrap="wrap">
                         {accessRoles.map(role => (
-                            <option key={role.id} value={role.id}>{role.name}</option>
+                            <Checkbox key={role.id} value={role.id}>{role.name}</Checkbox>
                         ))}
-                    </Select>
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Other Access Roles</FormLabel>
-                    <CheckboxGroup
-                        value={selectedItem?.other_access_roles || []}
-                        onChange={(value) => handleItemChange('other_access_roles', value)}
-                    >
-                        <Stack spacing={2} direction="column">
-                            {accessRoles.map(role => (
-                                <Checkbox key={role.id} value={role.id}>{role.name}</Checkbox>
-                            ))}
-                        </Stack>
-                    </CheckboxGroup>
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel>Position</FormLabel>
-                    <Select
-                        placeholder="Select a position"
-                        value={selectedItem?.job_title_id || ''}
-                        onChange={(e) => handleItemChange('job_title_id', e.target.value)}
-                    >
-                        {jobTitles.map(jobTitle => (
-                            <option key={jobTitle.id} value={jobTitle.id}>{jobTitle.title}</option>
-                        ))}
-                    </Select>
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Department</FormLabel>
-                    <Select
-                        placeholder="Select a department"
-                        value={selectedItem?.department || ''}
-                        onChange={(e) => handleItemChange('department', e.target.value)}
-                    >
-                        {departments.map(department => (
-                            <option key={department.id} value={department.id}>{department.name}</option>
-                        ))}
-                    </Select>
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Is Active?</FormLabel>
-                    <Checkbox
-                        isChecked={selectedItem?.user?.is_active || false}
-                        onChange={(e) => handleUserChange('is_active', e.target.checked)}
-                    >
-                        Active
-                    </Checkbox>
-                </FormControl>
-            </>
-        );
-    };
+                    </Stack>
+                </CheckboxGroup>
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel>Job Title</FormLabel>
+                <Select
+                    placeholder="Select job title"
+                    value={selectedItem?.job_title_id || ''}
+                    onChange={(e) => handleItemChange('job_title_id', e.target.value)}
+                >
+                    {jobTitles.map(title => (
+                        <option key={title.id} value={title.id}>{title.title}</option>
+                    ))}
+                </Select>
+            </FormControl>
+            <FormControl>
+                <FormLabel>Department</FormLabel>
+                <Select
+                    placeholder="Select department"
+                    value={selectedItem?.department || ''}
+                    onChange={(e) => handleItemChange('department', e.target.value)}
+                >
+                    {departments.map(department => (
+                        <option key={department.id} value={department.id}>{department.name}</option>
+                    ))}
+                </Select>
+            </FormControl>
+            <FormControl>
+                <Checkbox
+                    isChecked={selectedItem?.is_active}
+                    onChange={(e) => handleItemChange('is_active', e.target.checked)}
+                >
+                    Is Active
+                </Checkbox>
+            </FormControl>
+        </>
+    );
 
-    const renderFoodFormFields = () => {
-        return (
-            <>
-                <FormControl isRequired>
-                    <FormLabel>Food Name</FormLabel>
-                    <Input
-                        value={selectedItem?.name || ''}
-                        onChange={(e) => handleItemChange('name', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl>
-                    <FormLabel>Description</FormLabel>
-                    <Input
-                        value={selectedItem?.description || ''}
-                        onChange={(e) => handleItemChange('description', e.target.value)}
-                    />
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel>Price</FormLabel>
-                    <Input
-                        type="number"
-                        value={selectedItem?.price || ''}
-                        onChange={(e) => handleItemChange('price', parseFloat(e.target.value))}
-                    />
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel>Category</FormLabel>
-                    <Select
-                        placeholder="Select a category"
-                        value={selectedItem?.category_id || ''}
-                        onChange={(e) => handleItemChange('category_id', e.target.value)}
-                    >
-                        {foodCategories.map(category => (
-                            <option key={category.id} value={category.id}>{category.name}</option>
-                        ))}
-                    </Select>
-                </FormControl>
-                <Box mt={4} p={4} borderWidth="1px" borderRadius="md">
-                    <Flex alignItems="center" mb={2}>
-                        <Heading size="sm">Recipe</Heading>
-                        <Spacer />
-                        <IconButton
-                            aria-label="Add Recipe Item"
-                            icon={<FaPlus />}
-                            onClick={handleAddRecipe}
-                            colorScheme="green"
-                            size="sm"
-                        />
-                    </Flex>
-                    <VStack spacing={3} align="stretch">
-                        {currentRecipes.map((recipe, index) => (
-                            <HStack key={recipe.id} spacing={3}>
-                                <FormControl>
-                                    <Select
-                                        placeholder="Select Raw Material"
-                                        value={recipe.inventory_product_id}
-                                        onChange={(e) => handleRecipeChange(index, 'inventory_product_id', e.target.value)}
-                                    >
-                                        {inventoryProducts.map(product => (
-                                            <option key={product.id} value={product.id}>{product.name}</option>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                                <FormControl>
-                                    <Input
-                                        type="number"
-                                        placeholder="Quantity"
-                                        value={recipe.quantity_used}
-                                        onChange={(e) => handleRecipeChange(index, 'quantity_used', parseFloat(e.target.value))}
-                                    />
-                                </FormControl>
-                                <FormControl>
-                                    <Select
-                                        placeholder="Unit of Measure"
-                                        value={recipe.unit_of_measure}
-                                        onChange={(e) => handleRecipeChange(index, 'unit_of_measure', e.target.value)}
-                                    >
-                                        {units.map(unit => (
-                                            <option key={unit.id} value={unit.id}>{unit.name} ({unit.symbol})</option>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                                <IconButton
-                                    aria-label="Remove Recipe Item"
-                                    icon={<FaTrash />}
-                                    onClick={() => handleRemoveRecipe(recipe.id)}
-                                    colorScheme="red"
-                                    size="sm"
-                                />
-                            </HStack>
-                        ))}
-                    </VStack>
-                </Box>
-            </>
-        );
-    };
+    const renderFoodFormFields = () => (
+        <>
+            <FormControl isRequired>
+                <FormLabel>Food Name</FormLabel>
+                <Input
+                    value={selectedItem?.name || ''}
+                    onChange={(e) => handleItemChange('name', e.target.value)}
+                />
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel>Price</FormLabel>
+                <NumberInput
+                    value={selectedItem?.price || 0}
+                    onChange={(_, value) => handleItemChange('price', value)}
+                >
+                    <NumberInputField />
+                    <NumberInputStepper>
+                        <NumberIncrementStepper />
+                        <NumberDecrementStepper />
+                    </NumberInputStepper>
+                </NumberInput>
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel>Category</FormLabel>
+                <Select
+                    placeholder="Select category"
+                    value={selectedItem?.category_id || ''}
+                    onChange={(e) => handleItemChange('category_id', e.target.value)}
+                >
+                    {foodCategories.map((category: any) => (
+                        <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
+                </Select>
+            </FormControl>
+            <FormControl>
+                <FormLabel>Description</FormLabel>
+                <Textarea
+                    value={selectedItem?.description || ''}
+                    onChange={(e) => handleItemChange('description', e.target.value)}
+                />
+            </FormControl>
 
-    const renderHRFormFields = () => {
-        if (entityName === 'timesheets') {
-            return (
+            <Box w="100%">
+                <Heading size="md" mb={4}>Recipes</Heading>
+                <VStack spacing={4} align="stretch">
+                    {currentRecipes.map((recipe, index) => (
+                        <HStack key={recipe.id} spacing={2} borderWidth="1px" p={4} borderRadius="lg">
+                            <FormControl>
+                                <FormLabel>Product</FormLabel>
+                                <Select
+                                    placeholder="Select inventory product"
+                                    value={recipe.inventory_product_id}
+                                    onChange={(e) => handleRecipeChange(index, 'inventory_product_id', e.target.value)}
+                                >
+                                    {inventoryProducts.map(product => (
+                                        <option key={product.id} value={product.id}>{product.name}</option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <FormControl w="30%">
+                                <FormLabel>Quantity</FormLabel>
+                                <NumberInput
+                                    value={recipe.quantity_used}
+                                    onChange={(_, value) => handleRecipeChange(index, 'quantity_used', value)}
+                                >
+                                    <NumberInputField />
+                                    <NumberInputStepper>
+                                        <NumberIncrementStepper />
+                                        <NumberDecrementStepper />
+                                    </NumberInputStepper>
+                                </NumberInput>
+                            </FormControl>
+                            <FormControl w="30%">
+                                <FormLabel>Unit</FormLabel>
+                                <Select
+                                    placeholder="Select unit"
+                                    value={recipe.unit_of_measure}
+                                    onChange={(e) => handleRecipeChange(index, 'unit_of_measure', e.target.value)}
+                                >
+                                    {units.map(unit => (
+                                        <option key={unit.id} value={unit.id}>{unit.symbol}</option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <IconButton
+                                icon={<FaTrash />}
+                                aria-label="Remove recipe item"
+                                onClick={() => handleRemoveRecipe(recipe.id)}
+                                colorScheme="red"
+                                alignSelf="flex-end"
+                            />
+                        </HStack>
+                    ))}
+                    <Button
+                        leftIcon={<FaPlus />}
+                        onClick={handleAddRecipe}
+                        colorScheme="teal"
+                        variant="outline"
+                    >
+                        Add Recipe Item
+                    </Button>
+                </VStack>
+            </Box>
+        </>
+    );
+
+    const renderHRFormFields = () => (
+        <>
+            <FormControl isRequired>
+                <FormLabel>Employee</FormLabel>
+                <Select
+                    placeholder="Select employee"
+                    value={selectedItem?.employee_id || ''}
+                    onChange={(e) => handleItemChange('employee_id', e.target.value)}
+                >
+                    {allEmployees.map((emp: any) => (
+                        <option key={emp.id} value={emp.id}>{emp.first_name} {emp.last_name}</option>
+                    ))}
+                </Select>
+            </FormControl>
+            {entityName === 'payrolls' && (
                 <>
-                    <FormControl isRequired>
-                        <FormLabel>Employee</FormLabel>
-                        <Select
-                            placeholder="Select Employee"
-                            value={selectedItem?.employee_id || ''}
-                            onChange={(e) => handleItemChange('employee_id', e.target.value)}
-                        >
-                            {allEmployees.map(employee => (
-                                <option key={employee.id} value={employee.id}>
-                                    {employee.first_name} {employee.last_name}
-                                </option>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <FormControl isRequired>
-                        <FormLabel>Start Date</FormLabel>
-                        <Input
-                            type="date"
-                            value={selectedItem?.start_date || ''}
-                            onChange={(e) => handleItemChange('start_date', e.target.value)}
-                        />
-                    </FormControl>
-                    <FormControl isRequired>
-                        <FormLabel>End Date</FormLabel>
-                        <Input
-                            type="date"
-                            value={selectedItem?.end_date || ''}
-                            onChange={(e) => handleItemChange('end_date', e.target.value)}
-                        />
-                    </FormControl>
-                    <FormControl isRequired>
-                        <FormLabel>Total Weekly Hours</FormLabel>
-                        <NumberInput
-                            value={selectedItem?.total_weekly_hours || ''}
-                            onChange={(value) => handleItemChange('total_weekly_hours', value)}
-                        >
-                            <NumberInputField />
-                            <NumberInputStepper>
-                                <NumberIncrementStepper />
-                                <NumberDecrementStepper />
-                            </NumberInputStepper>
-                        </NumberInput>
-                    </FormControl>
-                </>
-            );
-        } else if (entityName === 'payrolls') {
-            return (
-                <>
-                    <FormControl isRequired>
-                        <FormLabel>Employee</FormLabel>
-                        <Select
-                            placeholder="Select Employee"
-                            value={selectedItem?.employee_id || ''}
-                            onChange={(e) => handleItemChange('employee_id', e.target.value)}
-                        >
-                            {allEmployees.map(employee => (
-                                <option key={employee.id} value={employee.id}>
-                                    {employee.first_name} {employee.last_name}
-                                </option>
-                            ))}
-                        </Select>
-                    </FormControl>
                     <FormControl isRequired>
                         <FormLabel>Payment Cycle</FormLabel>
-                        <Select
+                        <Input
                             value={selectedItem?.payment_cycle || ''}
                             onChange={(e) => handleItemChange('payment_cycle', e.target.value)}
-                        >
-                            <option value="Weekly">Weekly</option>
-                            <option value="Bi-weekly">Bi-weekly</option>
-                            <option value="Monthly">Monthly</option>
-                        </Select>
+                        />
                     </FormControl>
                     <FormControl isRequired>
                         <FormLabel>Pay Period Start</FormLabel>
@@ -880,8 +800,8 @@ export default function DynamicEntityManagementPage() {
                     <FormControl isRequired>
                         <FormLabel>Total Wages Due</FormLabel>
                         <NumberInput
-                            value={selectedItem?.total_wages_due || ''}
-                            onChange={(value) => handleItemChange('total_wages_due', value)}
+                            value={selectedItem?.total_wages_due || 0}
+                            onChange={(_, value) => handleItemChange('total_wages_due', value)}
                         >
                             <NumberInputField />
                             <NumberInputStepper>
@@ -893,8 +813,8 @@ export default function DynamicEntityManagementPage() {
                     <FormControl isRequired>
                         <FormLabel>Tax Deductions</FormLabel>
                         <NumberInput
-                            value={selectedItem?.tax_deductions || ''}
-                            onChange={(value) => handleItemChange('tax_deductions', value)}
+                            value={selectedItem?.tax_deductions || 0}
+                            onChange={(_, value) => handleItemChange('tax_deductions', value)}
                         >
                             <NumberInputField />
                             <NumberInputStepper>
@@ -906,8 +826,8 @@ export default function DynamicEntityManagementPage() {
                     <FormControl isRequired>
                         <FormLabel>Net Pay</FormLabel>
                         <NumberInput
-                            value={selectedItem?.net_pay || ''}
-                            onChange={(value) => handleItemChange('net_pay', value)}
+                            value={selectedItem?.net_pay || 0}
+                            onChange={(_, value) => handleItemChange('net_pay', value)}
                         >
                             <NumberInputField />
                             <NumberInputStepper>
@@ -918,63 +838,43 @@ export default function DynamicEntityManagementPage() {
                     </FormControl>
                     <FormControl isRequired>
                         <FormLabel>Status</FormLabel>
-                        <Select
+                        <Input
                             value={selectedItem?.status || ''}
                             onChange={(e) => handleItemChange('status', e.target.value)}
-                        >
-                            <option value="Pending">Pending</option>
-                            <option value="Paid">Paid</option>
-                            <option value="Cancelled">Cancelled</option>
-                        </Select>
-                    </FormControl>
-                </>
-            );
-        } else if (entityName === 'companies') {
-            return (
-                <>
-                    <FormControl isRequired>
-                        <FormLabel>Company Name</FormLabel>
-                        <Input
-                            value={selectedItem?.name || ''}
-                            onChange={(e) => handleItemChange('name', e.target.value)}
-                        />
-                    </FormControl>
-                    <FormControl isRequired>
-                        <FormLabel>Country</FormLabel>
-                        <Input
-                            value={selectedItem?.country || ''}
-                            onChange={(e) => handleItemChange('country', e.target.value)}
                         />
                     </FormControl>
                 </>
-            );
-        }
+            )}
+        </>
+    );
 
-        return null;
-    };
-
-    const renderGenericFormFields = () => {
-        const fieldsToRender = entityConfig.fields.filter(field => !excludedFields.includes(field) && field !== 'id');
-        return fieldsToRender.map((field) => (
-            <FormControl key={field}>
-                <FormLabel textTransform="capitalize">{field.replace(/_/g, ' ')}</FormLabel>
-                <Input
-                    value={selectedItem?.[field] || ''}
-                    onChange={(e) => handleItemChange(field, e.target.value)}
-                />
-            </FormControl>
-        ));
-    };
+    const renderGenericFormFields = () => (
+        <>
+            {entityConfig?.fields
+                .filter(field => !excludedFields.includes(field))
+                .map(field => (
+                    <FormControl key={field} isRequired={field !== 'description'}>
+                        <FormLabel>
+                            {field.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        </FormLabel>
+                        <Input
+                            value={selectedItem?.[field] || ''}
+                            onChange={(e) => handleItemChange(field, e.target.value)}
+                        />
+                    </FormControl>
+                ))}
+        </>
+    );
 
     return (
-        <Box p={6}>
-            <Flex mb={6} alignItems="center">
-                <Heading as="h1" size="xl" color="#333">
-                    {entityName === 'recipes' ? 'Food Recipes' : entityConfig.label} Management
+        <Box p={8}>
+            <Flex mb={6} align="center">
+                <Heading as="h1" size="xl">
+                    {entityConfig?.label} Management
                 </Heading>
                 <Spacer />
-                <Button onClick={handleAdd} colorScheme="green">
-                    Add {entityName === 'recipes' ? 'Food' : entityConfig.label}
+                <Button colorScheme="green" leftIcon={<FaPlus />} onClick={handleAdd}>
+                    Add New {entityConfig?.label}
                 </Button>
             </Flex>
 

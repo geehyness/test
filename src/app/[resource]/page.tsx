@@ -3,11 +3,11 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import DataTable from '../components/DataTable'; // Direct import
+import DataTable from '../../components/DataTable'; // Direct import
 
-import { entities } from '../config/entities';
-import { fetchData, deleteItem } from '../lib/api';
-import { dashboardMenu } from '../components/Navbar'; // Import dashboardMenu
+import { entities } from '../../lib/config/entities';
+import { fetchData, deleteItem } from '../../lib/api';
+import { dashboardMenu } from '../../components/Navbar'; // Import dashboardMenu
 
 import {
   Box,

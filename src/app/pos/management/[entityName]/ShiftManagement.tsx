@@ -1,71 +1,94 @@
-// src/app/pos/management/[entityName]/ShiftManagement.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Box, Center, Flex, Heading, Spinner, useToast } from '@chakra-ui/react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import EmployeeList from './components/EmployeeList';
-import ShiftCalendar from './components/ShiftCalendar';
-import { fetchData } from "@/app/lib/api";
+import { Box, Center, Flex, Heading, Spinner, useToast, useDisclosure, Text } from '@chakra-ui/react';
+import ShiftCalendar from './ShiftManagementComponents/ShiftCalendar';
+import EmployeeList from './ShiftManagementComponents/EmployeeList';
+import ShiftModal from './ShiftManagementComponents/ShiftModal';
+import ShiftUpdateModal from './ShiftManagementComponents/ShiftUpdateModal';
+import { getShifts, getEmployees, createShift, updateShift } from "@/lib/api";
+import { usePOSStore } from '@/lib/usePOSStore';
+import moment from 'moment';
+import { Employee as EmployeeDetails, Shift as ShiftDetails } from "@/lib/config/entities";
+import { logger } from "@/lib/logger";
 
-export interface Employee {
-    id: string;
-    first_name: string;
-    last_name: string;
-    role: 'Cashier' | 'Waiter' | 'Kitchen Staff' | string;
-    mainAccessRoleName?: string;
+export interface Employee extends EmployeeDetails {
+    name?: string;
+    role?: string;
 }
 
-export interface Shift {
-    id: string;
-    title: string;
-    start: string;
-    end: string;
-    employee_id: string;
-    employee_name?: string;
+export interface Shift extends ShiftDetails {
+    start: Date;
+    end: Date;
 }
 
 export default function ShiftsPage() {
-    const [shifts, setShifts] = useState<Shift[]>([]);
-    const [employees, setEmployees] = useState<Employee[]>([]);
+    const {
+        shifts,
+        setShifts,
+        addShift,
+        updateShift: updateStoreShift,
+        deleteShift: deleteStoreShift,
+        employees: storeEmployees,
+        setEmployees
+    } = usePOSStore();
+
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
     const toast = useToast();
+    const { isOpen, onOpen, onClose } = useDisclosure();
 
     useEffect(() => {
+        logger.info("ShiftManagement: useEffect triggered. Starting data load.");
         const loadData = async () => {
+            setIsLoading(true);
             try {
-                setIsLoading(true);
                 const [fetchedShifts, fetchedEmployees] = await Promise.all([
-                    fetchData('shifts'),
-                    fetchData('employees')
+                    getShifts(),
+                    getEmployees(),
                 ]);
 
-                // Map employees to the expected format
-                const mappedEmployees = (fetchedEmployees || []).map((emp: any) => ({
-                    id: emp.id,
-                    first_name: emp.first_name,
-                    last_name: emp.last_name,
-                    role: emp.mainAccessRoleName || 'Staff',
-                    name: `${emp.first_name} ${emp.last_name}`
+                logger.info("ShiftManagement: Raw data from API received.");
+                logger.info("   - Fetched Shifts: ", fetchedShifts);
+                logger.info("   - Fetched Employees: ", fetchedEmployees);
+
+                const mappedEmployees: Employee[] = fetchedEmployees.map(emp => ({
+                    ...emp,
+                    name: `${emp.first_name} ${emp.last_name}`,
+                    role: emp.job_title_id,
                 }));
 
-                // Map shifts to include employee names
-                const shiftsWithNames = (fetchedShifts || []).map((shift: any) => {
-                    const employee = mappedEmployees.find((e: any) => e.id === shift.employee_id);
-                    return {
-                        ...shift,
-                        employee_name: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
-                        title: employee ? `${employee.first_name} ${employee.last_name} - ${employee.role}` : 'Unassigned Shift'
-                    };
-                });
+                logger.info("ShiftManagement: Processed and mapped employees.", mappedEmployees);
 
+                const shiftsWithNamesAndDates: Shift[] = fetchedShifts
+                    .map((shift) => {
+                        try {
+                            const employee = mappedEmployees.find(e => e.id === shift.employee_id);
+
+                            return {
+                                ...shift,
+                                start: moment(shift.start).toDate(),
+                                end: moment(shift.end).toDate(),
+                                employee_name: employee ? employee.name : 'Unknown',
+                                color: employee?.color || '#3182CE',
+                            };
+                        } catch (error) {
+                            logger.error("ShiftManagement: Invalid date found for a shift, skipping.", shift);
+                            return null;
+                        }
+                    }).filter(Boolean) as Shift[];
+
+                logger.info("ShiftManagement: Processed shifts with employee names.", shiftsWithNamesAndDates);
+
+                setShifts(shiftsWithNamesAndDates);
                 setEmployees(mappedEmployees);
-                setShifts(shiftsWithNames);
-            } catch (err: any) {
+                logger.info("ShiftManagement: Data successfully set in Zustand store.");
+
+            } catch (error) {
                 toast({
-                    title: "Error",
-                    description: err.message || "Failed to load shift data.",
+                    title: "Failed to load data.",
+                    description: "Could not fetch shifts or employees. Please try again.",
                     status: "error",
                     duration: 5000,
                     isClosable: true,
@@ -76,113 +99,184 @@ export default function ShiftsPage() {
         };
 
         loadData();
-    }, [toast]);
+    }, [setShifts, setEmployees, toast]);
 
-    const handleAddShift = async (newShift: Shift) => {
+    const handleAddShift = async (newShiftData: { employeeId: string; start: Date; end: Date; recurs: boolean }) => {
+        if (!selectedEmployee) return;
+
+        const { employeeId, start, end, recurs } = newShiftData;
+        const recurringDay = recurs ? moment(start).day() : undefined;
+
         try {
-            // Save to API
-            await fetchData('shifts', undefined, {
-                employee_id: newShift.employee_id,
-                start: newShift.start,
-                end: newShift.end
-            }, "POST");
+            const createdShift = await createShift({
+                employee_id: employeeId,
+                start: start.toISOString(),
+                end: end.toISOString(),
+                recurs,
+                recurringDay,
+                active: true,
+            });
 
+            const shiftToAdd = {
+                ...createdShift,
+                start: moment(createdShift.start).toDate(),
+                end: moment(createdShift.end).toDate(),
+                employee_name: selectedEmployee.name,
+                color: selectedEmployee.color,
+                recurs: createdShift.recurs,
+                recurringDay: createdShift.recurringDay,
+                active: createdShift.active,
+            };
+
+            addShift(shiftToAdd);
             toast({
-                title: 'Shift Added.',
-                description: `Assigned ${newShift.title} from ${new Date(newShift.start).toLocaleString()} to ${new Date(newShift.end).toLocaleString()}`,
+                title: 'Shift added successfully.',
                 status: 'success',
                 duration: 5000,
                 isClosable: true,
             });
-
-            // Refresh data
-            const fetchedShifts = await fetchData('shifts');
-            const shiftsWithNames = (fetchedShifts || []).map((shift: any) => {
-                const employee = employees.find((e: any) => e.id === shift.employee_id);
-                return {
-                    ...shift,
-                    employee_name: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
-                    title: employee ? `${employee.first_name} ${employee.last_name} - ${employee.role}` : 'Unassigned Shift'
-                };
-            });
-            setShifts(shiftsWithNames);
-        } catch (err: any) {
+            onClose();
+        } catch (error) {
             toast({
-                title: "Error",
-                description: err.message || "Failed to add shift.",
-                status: "error",
+                title: 'Failed to add shift.',
+                description: 'An error occurred while saving the shift.',
+                status: 'error',
                 duration: 5000,
                 isClosable: true,
             });
         }
     };
 
-    const handleUpdateShift = async (updatedShift: Shift) => {
+    const handleUpdateShift = async (shiftId: string, updates: Partial<Shift>) => {
         try {
-            // Update in API
-            await fetchData('shifts', updatedShift.id, {
-                employee_id: updatedShift.employee_id,
-                start: updatedShift.start,
-                end: updatedShift.end
-            }, "PUT");
+            const originalShift = shifts.find(s => s.id === shiftId);
+            if (!originalShift) {
+                logger.error("Shift not found for update:", shiftId);
+                toast({
+                    title: "Error Updating Shift",
+                    description: "Original shift not found.",
+                    status: "error",
+                    duration: 4000,
+                    isClosable: true,
+                });
+                return;
+            }
 
+            const apiPayload = {
+                ...originalShift,
+                ...updates,
+                start: updates.start?.toISOString() ?? originalShift.start.toISOString(),
+                end: updates.end?.toISOString() ?? originalShift.end.toISOString(),
+            };
+
+            const updatedShift = await updateShift(shiftId, apiPayload);
+
+            const shiftToUpdate = {
+                ...updatedShift,
+                start: moment(updatedShift.start).toDate(),
+                end: moment(updatedShift.end).toDate(),
+            };
+
+            updateStoreShift(shiftId, shiftToUpdate);
             toast({
-                title: 'Shift Updated.',
-                description: `Updated shift for ${updatedShift.title}`,
-                status: 'info',
+                title: 'Shift updated successfully.',
+                status: 'success',
                 duration: 5000,
                 isClosable: true,
             });
-
-            // Refresh data
-            const fetchedShifts = await fetchData('shifts');
-            const shiftsWithNames = (fetchedShifts || []).map((shift: any) => {
-                const employee = employees.find((e: any) => e.id === shift.employee_id);
-                return {
-                    ...shift,
-                    employee_name: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
-                    title: employee ? `${employee.first_name} ${employee.last_name} - ${employee.role}` : 'Unassigned Shift'
-                };
-            });
-            setShifts(shiftsWithNames);
-        } catch (err: any) {
+            onClose();
+        } catch (error) {
             toast({
-                title: "Error",
-                description: err.message || "Failed to update shift.",
-                status: "error",
+                title: 'Failed to update shift.',
+                description: 'An error occurred while updating the shift.',
+                status: 'error',
                 duration: 5000,
                 isClosable: true,
             });
         }
     };
 
-    if (isLoading) {
-        return (
-            <Center minH="400px">
-                <Spinner size="xl" />
-            </Center>
-        );
-    }
+    const handleDeleteShift = (shiftId: string) => {
+        deleteStoreShift(shiftId);
+        onClose();
+    };
+
+    const handleSelectEmployee = (employee: Employee) => {
+        setSelectedEmployee(employee);
+        setSelectedShift(null);
+        onOpen();
+    };
+
+    const handleEditShift = (shift: Shift) => {
+        setSelectedShift(shift);
+        const employee = storeEmployees.find(emp => emp.id === shift.employee_id);
+        setSelectedEmployee(employee || null);
+        onOpen();
+    };
+
+    const handleModalClose = () => {
+        setSelectedEmployee(null);
+        setSelectedShift(null);
+        onClose();
+    };
 
     return (
-        <DndProvider backend={HTML5Backend}>
-            <Box p={4}>
-                <Heading as="h1" size="xl" mb={6}>
-                    Shift Management
-                </Heading>
+        <Box bg="gray.50" minH="100vh">
+            <Flex
+                as="header"
+                position="sticky"
+                top="0"
+                zIndex="10"
+                bg="white"
+                p={5}
+                borderBottom="1px"
+                borderColor="gray.200"
+                justifyContent="space-between"
+                alignItems="center"
+            >
+                <Heading as="h1" size="xl">Shift Management</Heading>
+            </Flex>
+            <Box p={5}>
                 <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
-                    <Box w={{ base: '100%', md: '30%' }}>
-                        <EmployeeList employees={employees} />
+                    <Box flex="1" bg="white" p={6} rounded="md" shadow="sm">
+                        <EmployeeList employees={storeEmployees || []} onEmployeeClick={handleSelectEmployee} />
                     </Box>
-                    <Box w={{ base: '100%', md: '70%' }}>
-                        <ShiftCalendar
-                            initialShifts={shifts}
-                            onAddShift={handleAddShift}
-                            onUpdateShift={handleUpdateShift}
-                        />
+                    <Box flex="3" bg="white" p={6} rounded="md" shadow="sm">
+                        <Heading as="h2" size="lg" mb={4}>Shift Calendar</Heading>
+                        {isLoading ? (
+                            <Center h="300px">
+                                <Spinner size="xl" />
+                            </Center>
+                        ) : (
+                            <ShiftCalendar
+                                shifts={shifts.filter(s => s.active)}
+                                employees={storeEmployees || []}
+                                onUpdateShift={handleUpdateShift}
+                                onDeleteShift={handleDeleteShift}
+                                onSelectShift={handleEditShift}
+                            />
+                        )}
                     </Box>
                 </Flex>
             </Box>
-        </DndProvider>
+            {selectedShift ? (
+                <ShiftUpdateModal
+                    isOpen={isOpen}
+                    onClose={handleModalClose}
+                    selectedShift={selectedShift}
+                    employee={selectedEmployee}
+                    onUpdateShift={handleUpdateShift}
+                    onDeleteShift={handleDeleteShift}
+                />
+            ) : (
+                <ShiftModal
+                    isOpen={isOpen}
+                    onClose={handleModalClose}
+                    employee={selectedEmployee}
+                    existingShifts={shifts.filter(s => s.employee_id === selectedEmployee?.id && s.active)}
+                    onAddShift={handleAddShift}
+                />
+            )}
+        </Box>
     );
 }

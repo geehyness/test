@@ -22,9 +22,9 @@ import {
     SimpleGrid,
     Icon,
 } from "@chakra-ui/react";
-import { usePOSStore } from "../lib/usePOSStore";
-import { fetchData } from "@/app/lib/api";
-import { Order, Table, Food, Category } from "@/app/config/entities";
+import { usePOSStore } from "../../../lib/usePOSStore";
+import { fetchData } from "@/lib/api";
+import { Order, Table, Food, Category } from "@/lib/config/entities";
 import {
     FaUserTie,
     FaUtensils,

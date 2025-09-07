@@ -19,15 +19,20 @@ import {
     Spacer,
     useToast,
     Icon,
+    Tabs,
+    TabList,
+    TabPanels,
+    Tab,
+    TabPanel,
 } from "@chakra-ui/react";
 import { FaPlus, FaShoppingCart, FaClipboardList } from "react-icons/fa";
-import { usePOSStore } from "./lib/usePOSStore";
-import { Order, Table } from "@/app/config/entities";
-import { fetchData } from "@/app/lib/api";
-import EditOrderModal from "./components/EditOrderModal";
-import NewOrderMenuModal from "./components/NewOrderMenuModal";
-import TableSelectionModal from "./components/TableSelectionModal";
-import TableActionModal from "./components/TableActionModal";
+import { usePOSStore } from "../../lib/usePOSStore";
+import { Order, Table } from "@/lib/config/entities";
+import { fetchData } from "@/lib/api";
+import EditOrderModal from "../../components/pos/EditOrderModal";
+import NewOrderMenuModal from "../../components/pos/NewOrderMenuModal";
+import TableSelectionModal from "../../components/pos/TableSelectionModal";
+import TableActionModal from "../../components/pos/TableActionModal";
 
 export default function POSDashboardPage() {
     const toast = useToast();
@@ -466,296 +471,291 @@ export default function POSDashboardPage() {
                     w="full"
                 >
                     <VStack spacing={6} align="stretch" h="100%">
-                        <Box w="full">
-                            <HStack
-                                textAlign="center"
-                                position="relative"
-                                display="flex"
-                                flexDirection="row"
-                                justifyContent="center"
-                                alignItems="center"
+                        <HStack
+                            textAlign="center"
+                            position="relative"
+                            display="flex"
+                            flexDirection="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                        >
+                            <Text
+                                fontSize="xl"
+                                fontWeight="bold"
+                                color="var(--dark-gray-text)"
                             >
-                                <Text
-                                    fontSize="xl"
-                                    fontWeight="bold"
-                                    color="var(--dark-gray-text)"
-                                >
-                                    Restaurant Tables
-                                </Text>
+                                POS Dashboard
+                            </Text>
+                            <Button
+                                leftIcon={<FaPlus />}
+                                colorScheme="green"
+                                onClick={handleStartNewOrder}
+                                size="md"
+                                fontSize="md"
+                                fontWeight="semibold"
+                            >
+                                Add Order
+                            </Button>
+                        </HStack>
 
-                                <Spacer />
-                                <Button
-                                    leftIcon={<FaPlus />}
-                                    colorScheme="green"
-                                    onClick={handleStartNewOrder}
-                                    ml={4}
-                                    size="md"
-                                    fontSize="md"
-                                    fontWeight="semibold"
-                                >
-                                    Add Order
-                                </Button>
-                            </HStack>
-                            <br /><hr /><br />
-                            <SimpleGrid
-                                columns={{ base: 2, md: 3, lg: 4 }}
-                                spacing={6}
-                                w="full"
-                            >
-                                {tables.map((table) => (
-                                    <Box
-                                        key={table.id}
-                                        p={4}
-                                        borderWidth="2px"
-                                        borderColor={
-                                            table.status === "occupied"
-                                                ? "var(--primary-red)"
-                                                : "var(--primary-green)"
-                                        }
-                                        rounded="xl"
-                                        shadow="md"
-                                        bg={
-                                            table.status === "occupied"
-                                                ? "var(--primary-red-light)"
-                                                : "var(--primary-green-light)"
-                                        }
-                                        textAlign="center"
-                                        cursor="pointer"
-                                        _hover={{
-                                            transform: "scale(1.02)",
-                                            shadow: "lg",
-                                        }}
-                                        transition="all 0.2s ease-in-out"
-                                        position="relative"
-                                        height="180px"
-                                        display="flex"
-                                        flexDirection="column"
-                                        justifyContent="center"
-                                        alignItems="center"
-                                        onClick={() => handleTableClick(table)}
+                        <Tabs isFitted variant="enclosed" colorScheme="green">
+                            <TabList mb="1em">
+                                <Tab fontWeight="semibold">Restaurant Tables</Tab>
+                                <Tab fontWeight="semibold">Live Orders</Tab>
+                            </TabList>
+                            <TabPanels>
+                                <TabPanel p={0}>
+                                    <SimpleGrid
+                                        columns={{ base: 2, md: 3, lg: 4 }}
+                                        spacing={6}
+                                        w="full"
                                     >
-                                        <Box
-                                            width="120px"
-                                            height="120px"
-                                            bg={
-                                                table.status === "occupied"
-                                                    ? "#aaaaaa"
-                                                    : "var(--primary-green)"
-                                            }
-                                            rounded="full"
-                                            display="flex"
-                                            flexDirection="column"
-                                            justifyContent="center"
-                                            alignItems="center"
-                                            color="white"
-                                            fontWeight="bold"
-                                            fontSize="lg"
-                                            zIndex="1"
-                                            p={2}
-                                        >
-                                            <Text fontSize="md" lineHeight="1.2">
-                                                {table.name}
-                                            </Text>
-                                            <Badge
-                                                colorScheme={
-                                                    table.status === "occupied" ? "red" : "green"
+                                        {tables.map((table) => (
+                                            <Box
+                                                key={table.id}
+                                                p={4}
+                                                borderWidth="2px"
+                                                borderColor={
+                                                    table.status === "occupied"
+                                                        ? "var(--primary-red)"
+                                                        : "var(--primary-green)"
                                                 }
-                                                variant="solid"
-                                                px={2}
-                                                py={0.5}
-                                                rounded="full"
-                                                fontSize="xx-small"
+                                                rounded="xl"
+                                                shadow="md"
+                                                bg={
+                                                    table.status === "occupied"
+                                                        ? "var(--primary-red-light)"
+                                                        : "var(--primary-green-light)"
+                                                }
+                                                textAlign="center"
+                                                cursor="pointer"
+                                                _hover={{
+                                                    transform: "scale(1.02)",
+                                                    shadow: "lg",
+                                                }}
+                                                transition="all 0.2s ease-in-out"
+                                                position="relative"
+                                                height="180px"
+                                                display="flex"
+                                                flexDirection="column"
+                                                justifyContent="center"
+                                                alignItems="center"
+                                                onClick={() => handleTableClick(table)}
                                             >
-                                                {table.status?.toUpperCase()}
-                                            </Badge>
-                                            <Text fontSize="xx-small" lineHeight="1.2" mt={1}>
-                                                Seats: {table.capacity}
-                                            </Text>
-                                            {table.current_order_id && (
-                                                <Text fontSize="xx-small" lineHeight="1.2">
-                                                    Order: #{table.current_order_id}
-                                                </Text>
-                                            )}
-                                        </Box>
-                                        {Array.from({ length: table.capacity }).map((_, i) => {
-                                            const angle = (i / table.capacity) * 2 * Math.PI;
-                                            const radius = 60;
-                                            const translateX = radius * Math.cos(angle);
-                                            const translateY = radius * Math.sin(angle);
-                                            return (
                                                 <Box
-                                                    key={i}
-                                                    w="20px"
-                                                    h="20px"
-                                                    bg="gray.500"
-                                                    rounded="full"
-                                                    position="absolute"
-                                                    style={{
-                                                        transform: `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px))`,
-                                                        top: "50%",
-                                                        left: "50%",
-                                                    }}
-                                                    zIndex="0"
-                                                />
-                                            );
-                                        })}
-                                    </Box>
-                                ))}
-                            </SimpleGrid>
-                        </Box>
-
-                        <Box mt={6} w="full">
-                            <Flex justifyContent="space-between" alignItems="center" mb={4}>
-                                <Text
-                                    fontSize="xl"
-                                    fontWeight="bold"
-                                    color="var(--dark-gray-text)"
-                                >
-                                    Live Orders
-                                </Text>
-                            </Flex>
-                            {activeOrders.length === 0 ? (
-                                <Text
-                                    textAlign="center"
-                                    py={10}
-                                    color="var(--medium-gray-text)"
-                                >
-                                    No active orders at the moment.
-                                </Text>
-                            ) : (
-                                <SimpleGrid
-                                    columns={{ base: 1, sm: 2, md: 3, lg: 4 }}
-                                    spacing={4}
-                                    w="full"
-                                >
-                                    {activeOrders.map((order) => (
-                                        <Box
-                                            key={order.id}
-                                            p={4}
-                                            borderWidth="1px"
-                                            rounded="md"
-                                            shadow="sm"
-                                            bg="var(--light-gray-bg)"
-                                            cursor="pointer"
-                                            _hover={{ transform: "scale(1.02)", shadow: "md" }}
-                                            transition="all 0.2s ease-in-out"
-                                            onClick={() => {
-                                                handleEditOrder(order);
-                                            }}
-                                        >
-                                            <Flex align="center" mb={2}>
-                                                <Text
-                                                    fontWeight="bold"
-                                                    fontSize="md"
-                                                    color="var(--dark-gray-text)"
-                                                >
-                                                    Order #{order.id}
-                                                </Text>
-                                                <Spacer />
-                                                <Badge
-                                                    colorScheme={
-                                                        order.status === "new"
-                                                            ? "purple"
-                                                            : order.status === "preparing"
-                                                                ? "orange"
-                                                                : order.status === "ready"
-                                                                    ? "green"
-                                                                    : order.status === "served"
-                                                                        ? "blue"
-                                                                        : "gray"
+                                                    width="120px"
+                                                    height="120px"
+                                                    bg={
+                                                        table.status === "occupied"
+                                                            ? "#aaaaaa"
+                                                            : "var(--primary-green)"
                                                     }
+                                                    rounded="full"
+                                                    display="flex"
+                                                    flexDirection="column"
+                                                    justifyContent="center"
+                                                    alignItems="center"
+                                                    color="white"
+                                                    fontWeight="bold"
+                                                    fontSize="lg"
+                                                    zIndex="1"
+                                                    p={2}
                                                 >
-                                                    {order.status.toUpperCase()}
-                                                </Badge>
-                                            </Flex>
-                                            <Text fontSize="sm" color="var(--medium-gray-text)">
-                                                Table:{" "}
-                                                {tables.find((t) => t.id === order.table_id)?.name ||
-                                                    "Takeaway"}
-                                            </Text>
-                                            <Text fontSize="sm" color="var(--medium-gray-text)">
-                                                Total: R {order.total_amount?.toFixed(2)}
-                                            </Text>
-                                            <Text fontSize="sm" color="var(--medium-gray-text)">
-                                                Items:{" "}
-                                                {(order.items ?? [])
-                                                    .map((item) => `${item.name} (x${item.quantity})`)
-                                                    .join(", ")}
-                                            </Text>
-                                            {order.created_at && (
-                                                <Text
-                                                    fontSize="xs"
-                                                    color="var(--medium-gray-text)"
-                                                    mt={1}
-                                                >
-                                                    Created: {new Date(order.created_at).toLocaleString()}
-                                                </Text>
-                                            )}
-                                            <HStack mt={3} justifyContent="flex-end">
-                                                <Button
-                                                    size="sm"
-                                                    colorScheme="blue"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
+                                                    <Text fontSize="md" lineHeight="1.2">
+                                                        {table.name}
+                                                    </Text>
+                                                    <Badge
+                                                        colorScheme={
+                                                            table.status === "occupied" ? "red" : "green"
+                                                        }
+                                                        variant="solid"
+                                                        px={2}
+                                                        py={0.5}
+                                                        rounded="full"
+                                                        fontSize="xx-small"
+                                                    >
+                                                        {table.status?.toUpperCase()}
+                                                    </Badge>
+                                                    <Text fontSize="xx-small" lineHeight="1.2" mt={1}>
+                                                        Seats: {table.capacity}
+                                                    </Text>
+                                                    {table.current_order_id && (
+                                                        <Text fontSize="xx-small" lineHeight="1.2">
+                                                            Order: #{table.current_order_id}
+                                                        </Text>
+                                                    )}
+                                                </Box>
+                                                {Array.from({ length: table.capacity }).map((_, i) => {
+                                                    const angle = (i / table.capacity) * 2 * Math.PI;
+                                                    const radius = 60;
+                                                    const translateX = radius * Math.cos(angle);
+                                                    const translateY = radius * Math.sin(angle);
+                                                    return (
+                                                        <Box
+                                                            key={i}
+                                                            w="20px"
+                                                            h="20px"
+                                                            bg="gray.500"
+                                                            rounded="full"
+                                                            position="absolute"
+                                                            style={{
+                                                                transform: `translate(calc(-50% + ${translateX}px), calc(-50% + ${translateY}px))`,
+                                                                top: "50%",
+                                                                left: "50%",
+                                                            }}
+                                                            zIndex="0"
+                                                        />
+                                                    );
+                                                })}
+                                            </Box>
+                                        ))}
+                                    </SimpleGrid>
+                                </TabPanel>
+                                <TabPanel p={0}>
+                                    {activeOrders.length === 0 ? (
+                                        <Text
+                                            textAlign="center"
+                                            py={10}
+                                            color="var(--medium-gray-text)"
+                                        >
+                                            No active orders at the moment.
+                                        </Text>
+                                    ) : (
+                                        <SimpleGrid
+                                            columns={{ base: 1, sm: 2, md: 3, lg: 4 }}
+                                            spacing={4}
+                                            w="full"
+                                        >
+                                            {activeOrders.map((order) => (
+                                                <Box
+                                                    key={order.id}
+                                                    p={4}
+                                                    borderWidth="1px"
+                                                    rounded="md"
+                                                    shadow="sm"
+                                                    bg="var(--light-gray-bg)"
+                                                    cursor="pointer"
+                                                    _hover={{ transform: "scale(1.02)", shadow: "md" }}
+                                                    transition="all 0.2s ease-in-out"
+                                                    onClick={() => {
                                                         handleEditOrder(order);
                                                     }}
                                                 >
-                                                    Load Order
-                                                </Button>
-                                                {order.status === "new" && (
-                                                    <Button
-                                                        size="sm"
-                                                        colorScheme="orange"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOrderStatusChange(order, "preparing");
-                                                        }}
-                                                    >
-                                                        Mark Preparing
-                                                    </Button>
-                                                )}
-                                                {order.status === "preparing" && (
-                                                    <Button
-                                                        size="sm"
-                                                        colorScheme="green"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOrderStatusChange(order, "ready");
-                                                        }}
-                                                    >
-                                                        Mark Ready
-                                                    </Button>
-                                                )}
-                                                {order.status === "ready" && (
-                                                    <Button
-                                                        size="sm"
-                                                        colorScheme="blue"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOrderStatusChange(order, "served");
-                                                        }}
-                                                    >
-                                                        Mark Served
-                                                    </Button>
-                                                )}
-                                                {(order.status === "new" || order.status === "preparing") && (
-                                                    <Button
-                                                        size="sm"
-                                                        colorScheme="red"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOrderStatusChange(order, "cancelled");
-                                                        }}
-                                                    >
-                                                        Cancel
-                                                    </Button>
-                                                )}
-                                            </HStack>
-                                        </Box>
-                                    ))}
-                                </SimpleGrid>
-                            )}
-                        </Box>
+                                                    <Flex align="center" mb={2}>
+                                                        <Text
+                                                            fontWeight="bold"
+                                                            fontSize="md"
+                                                            color="var(--dark-gray-text)"
+                                                        >
+                                                            Order #{order.id}
+                                                        </Text>
+                                                        <Spacer />
+                                                        <Badge
+                                                            colorScheme={
+                                                                order.status === "new"
+                                                                    ? "purple"
+                                                                    : order.status === "preparing"
+                                                                        ? "orange"
+                                                                        : order.status === "ready"
+                                                                            ? "green"
+                                                                            : order.status === "served"
+                                                                                ? "blue"
+                                                                                : "gray"
+                                                            }
+                                                        >
+                                                            {order.status.toUpperCase()}
+                                                        </Badge>
+                                                    </Flex>
+                                                    <Text fontSize="sm" color="var(--medium-gray-text)">
+                                                        Table:{" "}
+                                                        {tables.find((t) => t.id === order.table_id)?.name ||
+                                                            "Takeaway"}
+                                                    </Text>
+                                                    <Text fontSize="sm" color="var(--medium-gray-text)">
+                                                        Total: R {order.total_amount?.toFixed(2)}
+                                                    </Text>
+                                                    <Text fontSize="sm" color="var(--medium-gray-text)">
+                                                        Items:{" "}
+                                                        {(order.items ?? [])
+                                                            .map((item) => `${item.name} (x${item.quantity})`)
+                                                            .join(", ")}
+                                                    </Text>
+                                                    {order.created_at && (
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color="var(--medium-gray-text)"
+                                                            mt={1}
+                                                        >
+                                                            Created: {new Date(order.created_at).toLocaleString()}
+                                                        </Text>
+                                                    )}
+                                                    <HStack mt={3} justifyContent="flex-end">
+                                                        <Button
+                                                            size="sm"
+                                                            colorScheme="blue"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditOrder(order);
+                                                            }}
+                                                        >
+                                                            Load Order
+                                                        </Button>
+                                                        {order.status === "new" && (
+                                                            <Button
+                                                                size="sm"
+                                                                colorScheme="orange"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOrderStatusChange(order, "preparing");
+                                                                }}
+                                                            >
+                                                                Mark Preparing
+                                                            </Button>
+                                                        )}
+                                                        {order.status === "preparing" && (
+                                                            <Button
+                                                                size="sm"
+                                                                colorScheme="green"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOrderStatusChange(order, "ready");
+                                                                }}
+                                                            >
+                                                                Mark Ready
+                                                            </Button>
+                                                        )}
+                                                        {order.status === "ready" && (
+                                                            <Button
+                                                                size="sm"
+                                                                colorScheme="blue"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOrderStatusChange(order, "served");
+                                                                }}
+                                                            >
+                                                                Mark Served
+                                                            </Button>
+                                                        )}
+                                                        {(order.status === "new" || order.status === "preparing") && (
+                                                            <Button
+                                                                size="sm"
+                                                                colorScheme="red"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOrderStatusChange(order, "cancelled");
+                                                                }}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        )}
+                                                    </HStack>
+                                                </Box>
+                                            ))}
+                                        </SimpleGrid>
+                                    )}
+                                </TabPanel>
+                            </TabPanels>
+                        </Tabs>
                     </VStack>
                 </Box>
             </Flex>
@@ -813,7 +813,6 @@ export default function POSDashboardPage() {
                     </Badge>
                 )}
             </Button>
-            {/*
             {activeOrders.length > 0 && (
                 <Button
                     onClick={() => {
