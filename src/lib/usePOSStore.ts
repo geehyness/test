@@ -19,19 +19,8 @@ import {
   Shift as ShiftDetails,
   TimesheetEntry,
 } from "@/lib/config/entities";
-import { fetchData, updateShiftStatus, login as loginApi } from "@/lib/api";
+import { fetchData, updateShiftStatus } from "@/lib/api";
 import { useToast } from "@chakra-ui/react";
-import { POSStaffRole } from "@/types/pos.types";
-
-export interface POSStaff {
-  id: string;
-  first_name: string;
-  last_name: string;
-  username: string;
-  password?: string;
-  role: POSStaffRole;
-  mainAccessRole: AccessRole;
-}
 
 // --- Types for Shift Management ---
 
@@ -125,7 +114,6 @@ interface POSActions {
   deleteShift: (shiftId: string) => void;
   setCurrentTimesheetId: (id: string | null) => void;
   setKioskUserId: (id: string | null) => void;
-  login: (username: string, password: string) => Promise<void>;
 }
 
 export const usePOSStore = create<POSState & POSActions>()(
@@ -162,17 +150,6 @@ export const usePOSStore = create<POSState & POSActions>()(
       kioskUserId: null,
       _hasHydrated: false,
 
-      // --- New Login Action ---
-      login: async (username, password) => {
-        try {
-          const staff = await loginApi(username, password);
-          set({ currentStaff: staff });
-        } catch (error) {
-          console.error("Login failed", error);
-          return Promise.reject(error);
-        }
-      },
-
       setHasHydrated: (state: boolean) => {
         set({ _hasHydrated: state });
       },
@@ -200,8 +177,8 @@ export const usePOSStore = create<POSState & POSActions>()(
         }));
       },
 
+      // In usePOSStore.ts - Replace the deleteShift action:
       deleteShift: async (shiftId) => {
-        const toast = useToast();
         try {
           await updateShiftStatus(shiftId, false);
           set((state) => ({
@@ -209,21 +186,9 @@ export const usePOSStore = create<POSState & POSActions>()(
               shift.id === shiftId ? { ...shift, active: false } : shift
             )
           }));
-          toast({
-            title: "Shift deleted.",
-            description: "Shift has been set as inactive.",
-            status: "success",
-            duration: 5000,
-            isClosable: true,
-          });
+          return { success: true }; // Return success status
         } catch (error: any) {
-          toast({
-            title: "Failed to delete shift.",
-            description: error.message || "An error occurred.",
-            status: "error",
-            duration: 5000,
-            isClosable: true,
-          });
+          return { success: false, error: error.message || "An error occurred." };
         }
       },
       logAccessAttempt: (userId, userName, userRole, attemptedPath) => {
@@ -298,7 +263,6 @@ export const usePOSStore = create<POSState & POSActions>()(
         const newOrder: Order = {
           id: "new-order",
           store_id: staffStore ? staffStore.id : "",
-          tenant_id: "tenant-231",
           table_id: null,
           customer_id: null,
           total_amount: 0,
@@ -670,16 +634,7 @@ export const usePOSStore = create<POSState & POSActions>()(
       },
 
       processOrderPayment: async (order: Order, paymentMethod: "cash" | "card" | "split") => {
-        const completedOrder = {
-          ...order,
-          status: "completed",
-          payment_method: paymentMethod,
-          completed_at: new Date().toISOString(),
-        };
-        await fetchData("orders", order.id, completedOrder, "PUT");
-        set((state) => ({
-          activeOrders: state.activeOrders.filter(o => o.id !== order.id)
-        }));
+        return Promise.resolve();
       },
 
       setKioskUserId: (id) => set({ kioskUserId: id }),

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
     Box,
     Flex,
@@ -24,15 +24,22 @@ import {
     TabPanels,
     Tab,
     TabPanel,
+    InputGroup,
+    InputLeftElement,
+    Input,
+    Image,
+    IconButton,
+    Divider,
 } from "@chakra-ui/react";
-import { FaPlus, FaShoppingCart, FaClipboardList } from "react-icons/fa";
-import { usePOSStore } from "../../lib/usePOSStore";
-import { Order, Table } from "@/lib/config/entities";
+import { FaPlus, FaShoppingCart, FaClipboardList, FaSearch, FaPlusCircle, FaMinusCircle, FaTrash, FaUtensils, FaChair, FaList } from "react-icons/fa";
+import { usePOSStore } from "@/lib/usePOSStore";
+import { Order, Table, Food, Category, OrderItem } from "@/lib/config/entities";
 import { fetchData } from "@/lib/api";
-import EditOrderModal from "../../components/pos/EditOrderModal";
-import NewOrderMenuModal from "../../components/pos/NewOrderMenuModal";
-import TableSelectionModal from "../../components/pos/TableSelectionModal";
-import TableActionModal from "../../components/pos/TableActionModal";
+import EditOrderModal from "@/components/pos/EditOrderModal";
+import NewOrderMenuModal from "@/components/pos/NewOrderMenuModal";
+import TableSelectionModal from "@/components/pos/TableSelectionModal";
+import TableActionModal from "@/components/pos/TableActionModal";
+import MenuCategoryFilter from "@/components/pos/MenuCategoryFilter";
 
 export default function POSDashboardPage() {
     const toast = useToast();
@@ -53,13 +60,15 @@ export default function POSDashboardPage() {
         updateOrder: updateOrderInStore,
         setActiveOrders,
         setCurrentOrder,
-        removeOrder,
     } = usePOSStore();
 
     // Local state for UI and data fetching status
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+    const [tempOrderItems, setTempOrderItems] = useState<OrderItem[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
     // === New Order Creation Flow State ===
     const {
@@ -126,6 +135,101 @@ export default function POSDashboardPage() {
 
         loadData();
     }, [setMenuItems, setCategories, setTables, setActiveOrders]);
+
+    // Memoized filtering of menu items based on search term and selected category
+    const filteredMenuItems = useMemo(() => {
+        let items = menuItems;
+        if (selectedCategory) {
+            items = items.filter((item) => item.category_id === selectedCategory);
+        }
+        if (searchTerm) {
+            items = items.filter(
+                (item) =>
+                    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    item.description.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        return items;
+    }, [menuItems, selectedCategory, searchTerm]);
+
+    // Add item to temporary order
+    const handleAddItem = (food: Food) => {
+        setTempOrderItems((prevItems) => {
+            const existingItem = prevItems.find((item) => item.food_id === food.id);
+            if (existingItem) {
+                return prevItems.map((item) =>
+                    item.food_id === food.id
+                        ? {
+                            ...item,
+                            quantity: item.quantity + 1,
+                            sub_total: (item.quantity + 1) * (food.price || 0),
+                        }
+                        : item
+                );
+            } else {
+                return [
+                    ...prevItems,
+                    {
+                        id: `temp-oi-${Date.now()}-${Math.random()
+                            .toString(36)
+                            .substring(7)}`,
+                        order_id: "",
+                        food_id: food.id,
+                        quantity: 1,
+                        price: food.price || 0,
+                        sub_total: food.price || 0,
+                        name: food.name,
+                        price_at_sale: food.price || 0,
+                        notes: "",
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    },
+                ];
+            }
+        });
+        toast({
+            title: `${food.name} added.`,
+            status: "success",
+            duration: 1000,
+            isClosable: true,
+            position: "bottom-right",
+        });
+    };
+
+    // Update quantity of item in temporary order
+    const handleUpdateQuantity = (foodId: string, quantity: number) => {
+        setTempOrderItems((prevItems) => {
+            const updated = prevItems.map((item) => {
+                if (item.food_id === foodId) {
+                    const food = menuItems.find((f) => f.id === foodId);
+                    const itemPrice = food?.price || item.price;
+                    return { ...item, quantity, sub_total: quantity * (itemPrice || 0) };
+                }
+                return item;
+            });
+            return updated.filter((item) => item.quantity > 0);
+        });
+    };
+
+    // Remove item from temporary order
+    const handleRemoveItem = (foodId: string) => {
+        setTempOrderItems((prevItems) =>
+            prevItems.filter((item) => item.food_id !== foodId)
+        );
+        toast({
+            title: "Item removed.",
+            status: "info",
+            duration: 1000,
+            isClosable: true,
+            position: "bottom-right",
+        });
+    };
+
+    // Calculate total for the temporary order
+    const tempOrderTotal = tempOrderItems.reduce(
+        (sum, item) => sum + (item.sub_total || 0),
+        0
+    );
 
     // Function to update table status
     const updateTable = async (tableId: string, updates: Partial<Table>) => {
@@ -500,10 +604,281 @@ export default function POSDashboardPage() {
 
                         <Tabs isFitted variant="enclosed" colorScheme="green">
                             <TabList mb="1em">
-                                <Tab fontWeight="semibold">Restaurant Tables</Tab>
-                                <Tab fontWeight="semibold">Live Orders</Tab>
+                                <Tab fontWeight="semibold" fontSize="lg">
+                                    <Icon as={FaUtensils} mr={2} />
+                                    Menu
+                                </Tab>
+                                <Tab fontWeight="semibold" fontSize="lg">
+                                    <Icon as={FaChair} mr={2} />
+                                    Restaurant Tables
+                                </Tab>
+                                <Tab fontWeight="semibold" fontSize="lg">
+                                    <Icon as={FaList} mr={2} />
+                                    Live Orders
+                                </Tab>
                             </TabList>
                             <TabPanels>
+                                {/* Menu Tab */}
+                                <TabPanel p={0}>
+                                    <Flex direction={{ base: "column", md: "row" }} gap={6} flex="1" minH="0">
+                                        {/* Left side: Menu Selection */}
+                                        <Box
+                                            flex="2"
+                                            bg="white"
+                                            p={4}
+                                            rounded="lg"
+                                            shadow="sm"
+                                            overflowY="auto"
+                                            h="100%"
+                                            minH="0"
+                                        >
+                                            <InputGroup mb={4}>
+                                                <InputLeftElement pointerEvents="none">
+                                                    <Icon as={FaSearch} color="gray.300" />
+                                                </InputLeftElement>
+                                                <Input
+                                                    placeholder="Search menu items..."
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    rounded="md"
+                                                    borderColor="var(--border-color)"
+                                                    focusBorderColor="var(--primary-green)"
+                                                    color="var(--dark-gray-text)"
+                                                />
+                                            </InputGroup>
+
+                                            <MenuCategoryFilter
+                                                categories={categories}
+                                                selectedCategory={selectedCategory}
+                                                onSelectCategory={setSelectedCategory}
+                                            />
+
+                                            <SimpleGrid
+                                                minChildWidth="150px"
+                                                spacing={4}
+                                                mt={4}
+                                            >
+                                                {filteredMenuItems.map((item) => (
+                                                    <Box
+                                                        key={item.id}
+                                                        p={3}
+                                                        borderWidth="1px"
+                                                        rounded="md"
+                                                        shadow="sm"
+                                                        bg="white"
+                                                        cursor="pointer"
+                                                        _hover={{ shadow: "md", transform: "scale(1.02)" }}
+                                                        transition="all 0.2s ease-in-out"
+                                                        onClick={() => handleAddItem(item)}
+                                                    >
+                                                        <Image
+                                                            src={
+                                                                item.image_url ||
+                                                                `https://placehold.co/150x100/E0E0E0/333333?text=${item.name.split(" ")[0]
+                                                                }`
+                                                            }
+                                                            alt={item.name}
+                                                            rounded="md"
+                                                            mb={2}
+                                                            objectFit="cover"
+                                                            height="100px"
+                                                            width="full"
+                                                            onError={(e: any) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = `https://placehold.co/150x100/E0E0E0/333333?text=${item.name.split(" ")[0]
+                                                                    }`;
+                                                            }}
+                                                        />
+                                                        <Text
+                                                            fontWeight="semibold"
+                                                            fontSize="sm"
+                                                            noOfLines={1}
+                                                            color="var(--dark-gray-text)"
+                                                        >
+                                                            {item.name}
+                                                        </Text>
+                                                        <Text
+                                                            fontSize="xs"
+                                                            color="var(--medium-gray-text)"
+                                                            noOfLines={2}
+                                                        >
+                                                            {item.description}
+                                                        </Text>
+                                                        <Flex
+                                                            justifyContent="space-between"
+                                                            alignItems="center"
+                                                            mt={2}
+                                                        >
+                                                            <Text fontWeight="bold" color="var(--primary-green)">
+                                                                R {item.price?.toFixed(2)}
+                                                            </Text>
+                                                            <Badge colorScheme="purple" fontSize="xx-small">
+                                                                {categories.find((cat) => cat.id === item.category_id)
+                                                                    ?.name || "Category"}
+                                                            </Badge>
+                                                        </Flex>
+                                                    </Box>
+                                                ))}
+                                            </SimpleGrid>
+                                        </Box>
+
+                                        {/* Right side: Temporary Order Summary */}
+                                        <Box
+                                            flex="1"
+                                            bg="white"
+                                            p={5}
+                                            rounded="lg"
+                                            shadow="md"
+                                            display="flex"
+                                            flexDirection="column"
+                                            overflowY="auto"
+                                            h="100%"
+                                            minH="0"
+                                        >
+                                            <Text
+                                                fontSize="lg"
+                                                fontWeight="bold"
+                                                mb={4}
+                                                color="var(--primary-orange)"
+                                                borderBottom="2px solid"
+                                                borderColor="orange.200"
+                                                pb={2}
+                                            >
+                                                New Order Summary (
+                                                {tempOrderItems.reduce((sum, item) => sum + item.quantity, 0)}{" "}
+                                                items)
+                                            </Text>
+
+                                            <Divider mb={4} />
+
+                                            {tempOrderItems.length === 0 ? (
+                                                <Box textAlign="center" py={10} color="var(--medium-gray-text)" bg="gray.50" rounded="md">
+                                                    <Text>No items added yet.</Text>
+                                                    <Text fontSize="sm" mt={2}>Add items from the menu on the left.</Text>
+                                                </Box>
+                                            ) : (
+                                                <VStack spacing={3} align="stretch" flex="1" overflowY="auto">
+                                                    {tempOrderItems.map((item) => (
+                                                        <HStack
+                                                            key={item.food_id}
+                                                            p={3}
+                                                            bg="gray.50"
+                                                            rounded="md"
+                                                            shadow="sm"
+                                                            _hover={{ bg: "gray.100" }}
+                                                            transition="background-color 0.2s"
+                                                        >
+                                                            <Text
+                                                                flex="3"
+                                                                fontWeight="medium"
+                                                                color="var(--dark-gray-text)"
+                                                                fontSize="sm"
+                                                            >
+                                                                {item.name}
+                                                            </Text>
+                                                            <HStack flex="2" justifyContent="center">
+                                                                <IconButton
+                                                                    icon={<FaMinusCircle />}
+                                                                    size="xs"
+                                                                    onClick={() =>
+                                                                        handleUpdateQuantity(
+                                                                            item.food_id,
+                                                                            item.quantity - 1
+                                                                        )
+                                                                    }
+                                                                    isDisabled={item.quantity <= 1}
+                                                                    aria-label="Decrease quantity"
+                                                                    bg="white"
+                                                                    color="var(--dark-gray-text)"
+                                                                    _hover={{ bg: "gray.200" }}
+                                                                    border="1px solid"
+                                                                    borderColor="gray.300"
+                                                                />
+                                                                <Text fontWeight="bold" color="var(--dark-gray-text)" minW="20px" textAlign="center">
+                                                                    {item.quantity}
+                                                                </Text>
+                                                                <IconButton
+                                                                    icon={<FaPlusCircle />}
+                                                                    size="xs"
+                                                                    onClick={() =>
+                                                                        handleUpdateQuantity(
+                                                                            item.food_id,
+                                                                            item.quantity + 1
+                                                                        )
+                                                                    }
+                                                                    aria-label="Increase quantity"
+                                                                    bg="white"
+                                                                    color="var(--dark-gray-text)"
+                                                                    _hover={{ bg: "gray.200" }}
+                                                                    border="1px solid"
+                                                                    borderColor="gray.300"
+                                                                />
+                                                            </HStack>
+                                                            <Text
+                                                                flex="1"
+                                                                textAlign="right"
+                                                                fontWeight="semibold"
+                                                                color="var(--primary-green)"
+                                                                fontSize="sm"
+                                                            >
+                                                                R {item.sub_total?.toFixed(2)}
+                                                            </Text>
+                                                            <IconButton
+                                                                icon={<FaTrash />}
+                                                                size="sm"
+                                                                colorScheme="red"
+                                                                variant="outline"
+                                                                onClick={() => handleRemoveItem(item.food_id)}
+                                                                aria-label="Remove item"
+                                                            />
+                                                        </HStack>
+                                                    ))}
+                                                </VStack>
+                                            )}
+
+                                            {tempOrderItems.length > 0 && (
+                                                <Box mt="auto" pt={4} borderTop="2px solid" borderColor="gray.200">
+                                                    <Flex
+                                                        justifyContent="space-between"
+                                                        alignItems="center"
+                                                    >
+                                                        <Text
+                                                            fontSize="lg"
+                                                            fontWeight="bold"
+                                                            color="var(--primary-green)"
+                                                        >
+                                                            Total:
+                                                        </Text>
+                                                        <Text
+                                                            fontSize="lg"
+                                                            fontWeight="bold"
+                                                            color="var(--primary-green)"
+                                                        >
+                                                            R {tempOrderTotal.toFixed(2)}
+                                                        </Text>
+                                                    </Flex>
+                                                    <Button
+                                                        colorScheme="green"
+                                                        onClick={() => {
+                                                            setTempNewOrderItems(tempOrderItems);
+                                                            setTempOrderItems([]);
+                                                            onNewOrderTableModalOpen();
+                                                        }}
+                                                        isDisabled={tempOrderItems.length === 0}
+                                                        size="md"
+                                                        width="full"
+                                                        mt={4}
+                                                        fontWeight="semibold"
+                                                    >
+                                                        Continue to Table Selection
+                                                    </Button>
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    </Flex>
+                                </TabPanel>
+
+                                {/* Tables Tab */}
                                 <TabPanel p={0}>
                                     <SimpleGrid
                                         columns={{ base: 2, md: 3, lg: 4 }}
@@ -611,6 +986,8 @@ export default function POSDashboardPage() {
                                         ))}
                                     </SimpleGrid>
                                 </TabPanel>
+
+                                {/* Live Orders Tab */}
                                 <TabPanel p={0}>
                                     {activeOrders.length === 0 ? (
                                         <Text
@@ -759,106 +1136,6 @@ export default function POSDashboardPage() {
                     </VStack>
                 </Box>
             </Flex>
-
-            {/* Floating action buttons 
-            <Button
-                onClick={() => {
-                    if (currentOrder.id) {
-                        handleEditOrder(currentOrder);
-                    } else {
-                        toast({
-                            title: "No Active Order",
-                            description: "Please create an order first.",
-                            status: "info",
-                            duration: 3000,
-                            isClosable: true,
-                        });
-                    }
-                }}
-                colorScheme="green"
-                size="lg"
-                rounded="full"
-                height="60px"
-                width="60px"
-                shadow="lg"
-                _hover={{
-                    bg: "var(--primary-green)",
-                    transform: "scale(1.05)",
-                }}
-                transition="all 0.2s ease-in-out"
-                position="fixed"
-                bottom="20px"
-                right="20px"
-                bg="var(--primary-green)"
-                color="white"
-                zIndex={10}
-            >
-                <Icon as={FaShoppingCart} w={6} h={6} />
-                {(currentOrder.items ?? []).length > 0 && (
-                    <Badge
-                        colorScheme="red"
-                        position="absolute"
-                        top="-5px"
-                        right="-5px"
-                        rounded="full"
-                        px={2}
-                        py={1}
-                        fontSize="xs"
-                        fontWeight="bold"
-                    >
-                        {(currentOrder.items ?? []).reduce(
-                            (sum, item) => sum + item.quantity,
-                            0
-                        )}
-                    </Badge>
-                )}
-            </Button>
-            {activeOrders.length > 0 && (
-                <Button
-                    onClick={() => {
-                        toast({
-                            title: "View All Orders",
-                            description: "This feature is coming soon!",
-                            status: "info",
-                            duration: 3000,
-                            isClosable: true,
-                        });
-                    }}
-                    colorScheme="blue"
-                    size="lg"
-                    rounded="full"
-                    height="60px"
-                    width="60px"
-                    shadow="lg"
-                    _hover={{
-                        bg: "blue.600",
-                        transform: "scale(1.05)",
-                    }}
-                    transition="all 0.2s ease-in-out"
-                    position="fixed"
-                    bottom="20px"
-                    right="90px"
-                    bg="blue.500"
-                    color="white"
-                    zIndex={10}
-                >
-                    <Icon as={FaClipboardList} w={6} h={6} />
-                    <Badge
-                        colorScheme="orange"
-                        position="absolute"
-                        top="-5px"
-                        right="-5px"
-                        rounded="full"
-                        px={2}
-                        py={1}
-                        fontSize="xs"
-                        fontWeight="bold"
-                    >
-                        {activeOrders.length}
-                    </Badge>
-                </Button>
-            )}
-                */}
 
             {/* Modals */}
             <EditOrderModal

@@ -61,15 +61,25 @@ export default function RootLayout({
     pathname.startsWith('/pos/login') ||
     pathname.startsWith('/pos/kitchen') ||
     pathname.startsWith('/pos/server') ||
+    pathname.startsWith('/pos/kiosk') || // ADDED: Hide sidebar for kiosk
     pathname === '/pos';
 
   // Define pages where the POSHeader should NOT be visible
-  const hidePOSHeader = pathname.startsWith('/pos/login');
+  const hidePOSHeader =
+    pathname.startsWith('/pos/login') ||
+    pathname.startsWith('/pos/kiosk'); // ADDED: Hide header for kiosk
 
   // Role-based access control
   useEffect(() => {
     if (!_hasHydrated) {
       console.log('RootLayout: Waiting for state hydration...');
+      return;
+    }
+
+    // ADD: Skip auth check for kiosk page
+    if (pathname.startsWith('/pos/kiosk')) {
+      console.log('RootLayout: Kiosk page detected, skipping auth check');
+      setIsAuthChecked(true);
       return;
     }
 
@@ -148,11 +158,10 @@ export default function RootLayout({
   const shouldPadLeft = !hideSidebar;
   const headerHeight = "90px";
 
-  const showMainContent = _hasHydrated && (currentStaff || pathname === '/pos/login');
+  const showMainContent = _hasHydrated && (currentStaff || pathname === '/pos/login' || pathname.startsWith('/pos/kiosk'));
 
   return (
-    <html lang="en">
-      <head />
+    <>
       <body>
         <ChakraProvider>
           {showMainContent ? (
@@ -293,6 +302,6 @@ export default function RootLayout({
           )}
         </ChakraProvider>
       </body>
-    </html>
+    </>
   );
 }

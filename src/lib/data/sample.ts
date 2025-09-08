@@ -123,7 +123,7 @@ const invCatProduceId = "inv-cat-produce";
 const invCatBeveragesId = "inv-cat-beverages";
 const invCatMiscId = "inv-cat-misc";
 const invCatPantryId = "inv-cat-pantry";
-
+const kioskUserId = "user-kiosk"; // Add this constant
 
 export const sampleData: SampleData = {
   tenants: [
@@ -149,9 +149,8 @@ export const sampleData: SampleData = {
       email: "downtown@provision.com",
       created_at: "2025-07-01T08:00:00Z",
       updated_at: "2025-07-01T08:00:00Z",
-      kiosk_user_id: adminUserId
-    },
-  ],
+      kiosk_user_id: kioskUserId // Updated to use kiosk user ID
+    },],
   users: [
     {
       id: adminUserId,
@@ -160,6 +159,15 @@ export const sampleData: SampleData = {
       email_verified_at: "2025-07-01T09:00:00Z",
       password: "hashedpassword1",
       remember_token: "token123",
+      created_at: "2025-07-01T09:00:00Z",
+      updated_at: "2025-07-01T09:00:00Z",
+    }, {
+      id: kioskUserId, // Use the kiosk user ID constant
+      name: "Kiosk User",
+      email: "kiosk@provision.com", // The requested email
+      email_verified_at: "2025-07-01T09:00:00Z",
+      password: "hashedpassword6", // Different password for kiosk
+      remember_token: "tokenkiosk",
       created_at: "2025-07-01T09:00:00Z",
       updated_at: "2025-07-01T09:00:00Z",
     },
@@ -358,6 +366,21 @@ export const sampleData: SampleData = {
       created_at: "2025-07-01T09:00:00Z",
       updated_at: "2025-07-01T09:00:00Z",
       main_access_role_id: "ar-admin"
+    },
+    {
+      id: "emp-kiosk",
+      user_id: kioskUserId, // Link to kiosk user
+      job_title_id: cashierJobId, // Use an appropriate job title
+      tenant_id: tenantId,
+      store_id: storeId,
+      access_role_ids: [cashierRoleId], // Use appropriate role(s)
+      hire_date: "2025-07-01T00:00:00Z",
+      salary: 0, // Kiosk account might not have a salary
+      first_name: "Kiosk",
+      last_name: "Account",
+      created_at: "2025-07-01T09:00:00Z",
+      updated_at: "2025-07-01T09:00:00Z",
+      main_access_role_id: cashierRoleId // Use appropriate main role
     },
   ],
   categories: [

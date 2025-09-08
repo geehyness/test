@@ -18,6 +18,8 @@ export interface Employee extends EmployeeDetails {
 }
 
 export interface Shift extends ShiftDetails {
+    recurs: boolean;
+    recurringDay?: number; // Add this property
     start: Date;
     end: Date;
 }

@@ -452,7 +452,13 @@ export async function updateShiftStatus(
 
 // --- API functions for Timesheet Management ---
 export async function clockIn(employeeId: string, storeId: string): Promise<TimesheetEntry> {
-  const newTimesheetEntry = await fetchData("timesheets", undefined, { employee_id: employeeId, clock_in: new Date().toISOString(), clock_out: null, duration_minutes: 0, store_id: storeId }, "POST");
+  const newTimesheetEntry = await fetchData("timesheets", undefined, {
+    employee_id: employeeId,
+    clock_in: new Date().toISOString(),
+    clock_out: null,
+    duration_minutes: 0,
+    store_id: storeId
+  }, "POST");
   return newTimesheetEntry;
 }
 
@@ -464,7 +470,11 @@ export async function clockOut(timesheetId: string, storeId: string): Promise<Ti
   const clockInTime = new Date(existingEntry.clock_in);
   const clockOutTime = new Date();
   const duration = Math.round((clockOutTime.getTime() - clockInTime.getTime()) / 60000); // Duration in minutes
-  const updatedEntry = await fetchData("timesheets", timesheetId, { clock_out: clockOutTime.toISOString(), duration_minutes: duration }, "PUT");
+  const updatedEntry = await fetchData("timesheets", timesheetId, {
+    clock_out: clockOutTime.toISOString(),
+    duration_minutes: duration,
+    store_id: storeId
+  }, "PUT");
   return updatedEntry;
 }
 
