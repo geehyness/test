@@ -45,17 +45,17 @@ SAMPLE_DATA = {
         {"name": "Waiter", "description": "POS system access", "permissions": ["pos"], "landing_page": "/pos"},
     ],
     "job_titles": [
-        {"title": "Administrator", "department": "IT", "store_id": ""},
-        {"title": "Store Manager", "department": "Management", "store_id": ""},
-        {"title": "Head Chef", "department": "Kitchen", "store_id": ""},
-        {"title": "Waiter", "department": "Operations", "store_id": ""},
+        {"title": "Administrator", "department": "IT", "store_id": "The Braai Spot"},
+        {"title": "Store Manager", "department": "Management", "store_id": "The Braai Spot"},
+        {"title": "Head Chef", "department": "Kitchen", "store_id": "The Braai Spot"},
+        {"title": "Waiter", "department": "Operations", "store_id": "The Braai Spot"},
     ],
     "employees": [
-        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "", "main_access_role_id": "", "hire_date": date.today(), "salary": 90000.0, "first_name": "Sipho", "last_name": "Dube", "avatar_url": "https://randomuser.me/api/portraits/men/1.jpg"},
-        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "", "main_access_role_id": "", "hire_date": date.today(), "salary": 75000.0, "first_name": "Lebo", "last_name": "Mokoena", "avatar_url": "https://randomuser.me/api/portraits/women/2.jpg"},
-        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "", "main_access_role_id": "", "hire_date": date.today(), "salary": 75000.0, "first_name": "Thabo", "last_name": "Ndlovu", "avatar_url": "https://randomuser.me/api/portraits/men/3.jpg"},
-        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "", "main_access_role_id": "", "hire_date": date.today(), "salary": 60000.0, "first_name": "Nomusa", "last_name": "Zwane", "avatar_url": "https://randomuser.me/api/portraits/women/4.jpg"},
-        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "", "main_access_role_id": "", "hire_date": date.today(), "salary": 45000.0, "first_name": "Zola", "last_name": "Khumalo", "avatar_url": "https://randomuser.me/api/portraits/men/5.jpg"},
+        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "The Braai Spot", "main_access_role_id": "", "hire_date": date.today(), "salary": 90000.0, "first_name": "Sipho", "last_name": "Dube", "avatar_url": "https://randomuser.me/api/portraits/men/1.jpg"},
+        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "The Braai Spot", "main_access_role_id": "", "hire_date": date.today(), "salary": 75000.0, "first_name": "Lebo", "last_name": "Mokoena", "avatar_url": "https://randomuser.me/api/portraits/women/2.jpg"},
+        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "Jozi's Kitchen", "main_access_role_id": "", "hire_date": date.today(), "salary": 75000.0, "first_name": "Thabo", "last_name": "Ndlovu", "avatar_url": "https://randomuser.me/api/portraits/men/3.jpg"},
+        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "The Braai Spot", "main_access_role_id": "", "hire_date": date.today(), "salary": 60000.0, "first_name": "Nomusa", "last_name": "Zwane", "avatar_url": "https://randomuser.me/api/portraits/women/4.jpg"},
+        {"user_id": "", "job_title_id": "", "access_role_ids": [], "tenant_id": "", "store_id": "The Braai Spot", "main_access_role_id": "", "hire_date": date.today(), "salary": 45000.0, "first_name": "Zola", "last_name": "Khumalo", "avatar_url": "https://randomuser.me/api/portraits/men/5.jpg"},
     ],
     "units": [
         {"name": "Kilogram", "symbol": "kg"}, {"name": "Gram", "symbol": "g"},
@@ -178,6 +178,8 @@ class DataLoader:
             self.ids[role["name"]] = str(result.inserted_id)
 
         for title in SAMPLE_DATA["job_titles"]:
+            # Correctly assign store_id for consistency
+            title["store_id"] = self.ids[title["store_id"]]
             await titles_collection.insert_one(title)
 
     async def _load_employees(self):
@@ -185,7 +187,7 @@ class DataLoader:
         title_collection = get_collection("job_titles")
         
         employee_map = {
-            "Sipho": ("admin", "Administrator", "Admin", None),
+            "Sipho": ("admin", "Administrator", "Admin", "The Braai Spot"), # Changed store from None to a valid ID
             "Lebo": ("manager.cpt", "Store Manager", "Manager", "The Braai Spot"),
             "Thabo": ("manager.jhb", "Store Manager", "Manager", "Jozi's Kitchen"),
             "Nomusa": ("chef.cpt", "Head Chef", "Chef", "The Braai Spot"),
@@ -203,8 +205,11 @@ class DataLoader:
             employee["access_role_ids"] = [self.ids[role_name]]
             employee["main_access_role_id"] = self.ids[role_name]
             employee["tenant_id"] = self.ids["Mzansi Eats Co."]
-            employee["store_id"] = self.ids[store_name] if store_name else None
+            employee["store_id"] = self.ids[store_name]
             
+            # Fix: Convert date object to datetime object
+            employee["hire_date"] = datetime.combine(employee["hire_date"], datetime.min.time())
+
             result = await employees_collection.insert_one(employee)
             self.ids[f"employee_{name}"] = str(result.inserted_id)
 
@@ -366,27 +371,27 @@ class DataLoader:
         ts_collection = get_collection("timesheet_entries")
         payroll_collection = get_collection("payroll")
         
-        today = datetime.now().date()
+        today = datetime.now()
         
         shifts_data = [
-            {"employee_id": self.ids["employee_Lebo"], "start": datetime.combine(today, datetime.min.time()) + timedelta(hours=9), "end": datetime.combine(today, datetime.min.time()) + timedelta(hours=17), "title": "Manager Shift", "store_id": self.ids["The Braai Spot"], "employee_name": "Lebo Mokoena"},
-            {"employee_id": self.ids["employee_Nomusa"], "start": datetime.combine(today, datetime.min.time()) + timedelta(hours=8), "end": datetime.combine(today, datetime.min.time()) + timedelta(hours=16), "title": "Chef Shift", "store_id": self.ids["The Braai Spot"], "employee_name": "Nomusa Zwane"},
-            {"employee_id": self.ids["employee_Zola"], "start": datetime.combine(today, datetime.min.time()) + timedelta(hours=11), "end": datetime.combine(today, datetime.min.time()) + timedelta(hours=19), "title": "Waiter Shift", "store_id": self.ids["The Braai Spot"], "employee_name": "Zola Khumalo"},
+            {"employee_id": self.ids["employee_Lebo"], "start": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=9), "end": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=17), "title": "Manager Shift", "store_id": self.ids["The Braai Spot"], "employee_name": "Lebo Mokoena"},
+            {"employee_id": self.ids["employee_Nomusa"], "start": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=8), "end": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=16), "title": "Chef Shift", "store_id": self.ids["The Braai Spot"], "employee_name": "Nomusa Zwane"},
+            {"employee_id": self.ids["employee_Zola"], "start": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=11), "end": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=19), "title": "Waiter Shift", "store_id": self.ids["The Braai Spot"], "employee_name": "Zola Khumalo"},
         ]
         for shift in shifts_data:
             await shifts_collection.insert_one(shift)
 
         ts_data = [
-            {"employee_id": self.ids["employee_Lebo"], "clock_in": datetime.combine(today, datetime.min.time()) + timedelta(hours=9, minutes=0), "clock_out": datetime.combine(today, datetime.min.time()) + timedelta(hours=17, minutes=15), "duration_minutes": 495, "store_id": self.ids["The Braai Spot"]},
-            {"employee_id": self.ids["employee_Zola"], "clock_in": datetime.combine(today, datetime.min.time()) + timedelta(hours=11, minutes=1), "clock_out": datetime.combine(today, datetime.min.time()) + timedelta(hours=19, minutes=10), "duration_minutes": 489, "store_id": self.ids["The Braai Spot"]},
+            {"employee_id": self.ids["employee_Lebo"], "clock_in": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=9, minutes=0), "clock_out": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=17, minutes=15), "duration_minutes": 495, "store_id": self.ids["The Braai Spot"]},
+            {"employee_id": self.ids["employee_Zola"], "clock_in": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=11, minutes=1), "clock_out": datetime.combine(today.date(), datetime.min.time()) + timedelta(hours=19, minutes=10), "duration_minutes": 489, "store_id": self.ids["The Braai Spot"]},
         ]
         for ts in ts_data:
             await ts_collection.insert_one(ts)
         
         payroll_data = {
             "employee_id": self.ids["employee_Lebo"],
-            "pay_period_start": today - timedelta(days=7),
-            "pay_period_end": today,
+            "pay_period_start": datetime.combine(today.date() - timedelta(days=7), datetime.min.time()),
+            "pay_period_end": datetime.combine(today.date(), datetime.min.time()),
             "payment_cycle": "weekly",
             "gross_pay": 1442.31,
             "tax_deductions": 216.35,

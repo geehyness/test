@@ -48,6 +48,9 @@ class MongoModel(BaseModel):
         if not data:
             return data
         id_val = data.pop('_id', None)
+        # Convert ObjectId to PyObjectId
+        if id_val is not None:
+            id_val = PyObjectId(id_val)
         return cls(**dict(data, id=id_val))
 
     def to_mongo(self, **kwargs):
