@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.routes import core, hr, inventory, auth
 from app.database import client
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="POS System API", version="1.0.0")
 
@@ -23,8 +24,11 @@ app.include_router(auth.router)
 @app.on_event("startup")
 async def startup_event():
     # Test database connection
-    await client.admin.command('ping')
-    print("Connected to MongoDB!")
+    try:
+        await client.admin.command('ping')
+        print("Connected to MongoDB!")
+    except Exception as e:
+        print(f"Could not connect to MongoDB: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -36,4 +40,8 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "database": "connected"}
+    try:
+        await client.admin.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception:
+        return {"status": "unhealthy", "database": "disconnected"}

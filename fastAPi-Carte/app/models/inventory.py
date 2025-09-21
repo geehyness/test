@@ -1,5 +1,7 @@
+# app/models/inventory.py
 from typing import Optional
 from pydantic import Field
+from datetime import datetime
 from .base import MongoModel
 
 class InventoryProduct(MongoModel):
@@ -14,7 +16,7 @@ class InventoryProduct(MongoModel):
     supplier_id: Optional[str] = None
     inv_category_id: Optional[str] = None
     location_in_warehouse: Optional[str] = None
-    last_restocked_at: Optional[str] = None
+    last_restocked_at: Optional[datetime] = None
 
 class Supplier(MongoModel):
     name: str
@@ -28,15 +30,15 @@ class Unit(MongoModel):
     symbol: str
 
 class Stock(MongoModel):
-    food_id: str
+    inventory_product_id: str
     quantity: float
     unit_id: str
     supplier_id: str
-    last_restock_date: str
-    expiration_date: Optional[str] = None
+    last_restock_date: datetime
+    expiration_date: Optional[datetime] = None
 
 class StockAdjustment(MongoModel):
     stock_id: str
     quantity_change: float
     reason: str
-    adjustment_date: str
+    adjustment_date: datetime

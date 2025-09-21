@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System Demo Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f4f7f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #1a202c;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            color: #2d3748;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+
+        .credentials-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .credentials-table th,
+        .credentials-table td {
+            border: 1px solid #cbd5e0;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .credentials-table th {
+            background-color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .credentials-table tr:nth-child(even) {
+            background-color: #edf2f7;
+        }
+
+        .note {
+            background-color: #fff8f8;
+            border-left: 4px solid #f56565;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .code-block {
+            background-color: #2d3748;
+            color: #f7fafc;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>POS System Demo Guide</h1>
+    <p>This guide provides the necessary credentials and information to help you navigate and demonstrate the full
+        capabilities of the Point of Sale system with pre-populated South African-themed data.</p>
+
+    <div class="note">
+        <h3>🚨 Important Note</h3>
+        <p>The sample data loader script (<code>load_sa_demo_data.py</code>) will <strong>wipe and replace all existing
+                data</strong> in your database. Please only run this on a development environment.</p>
+        <p>You can run it from your terminal using: <code>python load_sa_demo_data.py</code></p>
+    </div>
+
+    <h2>Login Credentials</h2>
+    <p>Use these credentials to log in and explore different user roles and permissions.</p>
+
+    <table class="credentials-table">
+        <thead>
+            <tr>
+                <th>Role</th>
+                <th>Email / Username</th>
+                <th>Password</th>
+                <th>Access Rights</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Admin</strong></td>
+                <td><code>admin@mzansieats.com</code></td>
+                <td><code>password</code></td>
+                <td>Full access to all modules (POS, Inventory, HR, Reporting).</td>
+            </tr>
+            <tr>
+                <td><strong>Manager</strong></td>
+                <td><code>manager.cpt@mzansieats.com</code></td>
+                <td><code>password</code></td>
+                <td>Access to a specific store's data, including HR, Inventory, and POS.</td>
+            </tr>
+            <tr>
+                <td><strong>Waiter</strong></td>
+                <td><code>waiter.cpt@mzansieats.com</code></td>
+                <td><code>password</code></td>
+                <td>Limited access to the POS and order management functionality.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>What to Demo</h2>
+    <p>With the new data, you can showcase the following features:</p>
+    <ul>
+        <li><strong>Multi-Store & Tenant Support:</strong> Show how the system can manage different stores and tenants.
+            The "Durban Spice Grill" is on a separate tenant.</li>
+        <li><strong>Comprehensive Menu:</strong> Browse the menu with local dishes like "Boerewors Roll" and "Melktert."
+        </li>
+        <li><strong>Inventory Management:</strong> Go to the inventory section to see stock levels for ingredients like
+            Boerewors and Pap, and view a completed purchase order.</li>
+        <li><strong>HR & Payroll:</strong> Demonstrate the employee management, shift scheduling, and payroll features.
+            You can see how shifts are logged and payroll is calculated.</li>
+        <li><strong>Order Lifecycle:</strong> View orders with different statuses (e.g., a "completed" dine-in order and
+            a "pending" takeaway order).</li>
+    </ul>
+
+</body>
+
+</html>

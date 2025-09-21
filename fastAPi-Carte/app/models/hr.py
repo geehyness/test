@@ -1,17 +1,19 @@
+# app/models/hr.py
 from typing import Optional, List
-from pydantic import Field
+from pydantic import Field, EmailStr
+from datetime import datetime, date
 from .base import MongoModel
 
 class PersonalDetails(MongoModel):
     citizenship: str
     gender: str
-    birth_date: str
-    age: str
+    birth_date: date
+    age: int
 
 class ContactDetails(MongoModel):
     cell_phone: str
     whatsapp_number: str
-    email: str
+    email: EmailStr
     address: str
 
 class EmploymentDetails(MongoModel):
@@ -22,8 +24,8 @@ class EmploymentDetails(MongoModel):
 
 class EmployeeStatus(MongoModel):
     current_status: str
-    on_leave_since: Optional[str] = None
-    termination_date: Optional[str] = None
+    on_leave_since: Optional[date] = None
+    termination_date: Optional[date] = None
     termination_reason: Optional[str] = None
 
 class Employee(MongoModel):
@@ -33,7 +35,7 @@ class Employee(MongoModel):
     tenant_id: str
     store_id: str
     main_access_role_id: str
-    hire_date: str
+    hire_date: date
     salary: float
     first_name: str
     last_name: Optional[str] = None
@@ -54,20 +56,26 @@ class AccessRole(MongoModel):
     permissions: List[str]
     landing_page: str
 
+class JobTitle(MongoModel):
+    title: str
+    description: Optional[str] = None
+    department: str
+    store_id: str
+
 class Shift(MongoModel):
     employee_id: str
-    start: str
-    end: str
+    start: datetime
+    end: datetime
     title: Optional[str] = None
     employee_name: Optional[str] = None
     color: Optional[str] = None
     active: Optional[bool] = True
     recurring: Optional[bool] = False
-
+    
 class TimesheetEntry(MongoModel):
     employee_id: str
-    clock_in: str
-    clock_out: Optional[str] = None
+    clock_in: datetime
+    clock_out: Optional[datetime] = None
     duration_minutes: Optional[int] = 0
     store_id: str
 
@@ -77,10 +85,16 @@ class PayrollDeduction(MongoModel):
     description: str
     amount: float
 
+class PayrollSettings(MongoModel):
+    pay_period: str
+    tax_rate: float
+    overtime_multiplier: float
+    store_id: str
+
 class Payroll(MongoModel):
     employee_id: str
-    pay_period_start: str
-    pay_period_end: str
+    pay_period_start: date
+    pay_period_end: date
     payment_cycle: str
     gross_pay: float
     tax_deductions: float
@@ -88,12 +102,4 @@ class Payroll(MongoModel):
     status: str
     hours_worked: float
     overtime_hours: float
-    overtime_rate: float
-    deductions: List[PayrollDeduction] = []
-    store_id: str
-
-class PayrollSettings(MongoModel):
-    store_id: str
-    default_payment_cycle: str
-    tax_rate: float
-    overtime_multiplier: float
+    deductions: Optional[List[PayrollDeduction]] = []

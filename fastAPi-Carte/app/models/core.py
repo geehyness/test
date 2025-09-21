@@ -1,3 +1,4 @@
+# app/models/core.py
 from typing import Optional, List, Dict, Any
 from pydantic import Field, EmailStr
 from datetime import datetime
@@ -77,14 +78,46 @@ class Store(MongoModel):
     phone: str
     email: str
     tenant_id: str
-    location: Optional[str] = None
-    manager_id: Optional[str] = None
-    kiosk_user_id: str
 
-class Tenant(MongoModel):
-    name: str
+class PurchaseOrderItem(MongoModel):
+    inventory_product_id: str
+    quantity: float
+    unit_of_measure: str
+    unit_cost: float
+    total_cost: float
+    notes: Optional[str] = None
+
+class PurchaseOrder(MongoModel):
+    po_number: str
+    supplier_id: str
+    store_id: str = Field(alias="site_id")
+    status: str
+    order_date: datetime
+    expected_delivery_date: datetime
+    total_amount: float
+    ordered_by: str
+    notes: Optional[str] = None
+    items: List[PurchaseOrderItem] = []
+
+class GoodsReceiptItem(MongoModel):
+    inventory_product_id: str
+    purchase_order_id: str
+    received_quantity: float
+    unit_of_measure: str
+    condition: str
+    notes: Optional[str] = None
+
+class GoodsReceipt(MongoModel):
+    receipt_number: str
+    purchase_order_id: str
+    store_id: str
+    receipt_date: datetime
+    received_by: str
+    items: List[GoodsReceiptItem] = []
+
+class User(MongoModel):
     email: EmailStr
-    password: Optional[str] = None
-    remember_token: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
+    username: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    password: str

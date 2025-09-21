@@ -1,3 +1,4 @@
+# app/routes/auth.py
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.database import get_collection
@@ -54,4 +55,5 @@ async def get_current_employee(token: str = Depends(oauth2_scheme)):
     employee = await employees_collection.find_one({"email": email})
     if employee is None:
         raise credentials_exception
+    
     return Employee.from_mongo(employee)
