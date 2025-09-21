@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
     Box,
     Flex,
@@ -36,8 +36,6 @@ import { usePOSStore } from "@/lib/usePOSStore";
 import { Order, Table, Food, Category, OrderItem } from "@/lib/config/entities";
 import { fetchData } from "@/lib/api";
 import EditOrderModal from "@/components/pos/EditOrderModal";
-import NewOrderMenuModal from "@/components/pos/NewOrderMenuModal";
-import TableSelectionModal from "@/components/pos/TableSelectionModal";
 import TableActionModal from "@/components/pos/TableActionModal";
 import MenuCategoryFilter from "@/components/pos/MenuCategoryFilter";
 
@@ -69,22 +67,7 @@ export default function POSDashboardPage() {
     const [tempOrderItems, setTempOrderItems] = useState<OrderItem[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-    // === New Order Creation Flow State ===
-    const {
-        isOpen: isNewOrderMenuModalOpen,
-        onOpen: onNewOrderMenuModalOpen,
-        onClose: onNewOrderMenuModalClose,
-    } = useDisclosure();
-    const {
-        isOpen: isNewOrderTableModalOpen,
-        onOpen: onNewOrderTableModalOpen,
-        onClose: onNewOrderTableModalClose,
-    } = useDisclosure();
-    const [tempNewOrderItems, setTempNewOrderItems] = useState<any[]>([]);
-    const [tempNewOrderTableId, setTempNewOrderTableId] = useState<string | null>(
-        null
-    );
+    const [activeTabIndex, setActiveTabIndex] = useState(0); // Add this state for controlling tabs
 
     // Use existing modal state for EditOrderModal
     const {
@@ -399,107 +382,10 @@ export default function POSDashboardPage() {
         }
     };
 
+    // NEW: Simplified function to start new order
     const handleStartNewOrder = () => {
-        setTempNewOrderItems([]);
-        setTempNewOrderTableId(null);
-        onNewOrderMenuModalOpen();
-    };
-
-    const handleFinishAddingItems = (items: any[]) => {
-        setTempNewOrderItems(items);
-        onNewOrderMenuModalClose();
-        if (items.length > 0) {
-            onNewOrderTableModalOpen();
-        } else {
-            toast({
-                title: "No Items Added",
-                description: "Please add items to the order before selecting a table.",
-                status: "warning",
-                duration: 3000,
-                isClosable: true,
-            });
-        }
-    };
-
-    const handleSelectNewOrderTable = async (tableId: string | null) => {
-        setTempNewOrderTableId(tableId);
-        onNewOrderTableModalClose();
-
-        const subtotal_amount = tempNewOrderItems.reduce(
-            (sum, item) => sum + (item.sub_total || 0),
-            0
-        );
-        const tax_percentage = 0.15;
-        const tax_amount = subtotal_amount * tax_percentage;
-        const total_amount = subtotal_amount + tax_amount;
-
-        let storeId = 'default-store';
-        if (currentStaff?.storeId) {
-            storeId = currentStaff.storeId;
-        } else if (tableId) {
-            const table = tables.find(t => t.id === tableId);
-            if (table && table.store_id) {
-                storeId = table.store_id;
-            }
-        }
-
-        // Generate a temporary order ID (will be replaced by server)
-        const tempOrderId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-
-        const newOrder: Order = {
-            id: tempOrderId,
-            store_id: storeId,
-            table_id: tableId,
-            customer_id: null,
-            total_amount: total_amount,
-            status: "new",
-            notes: "",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            items: tempNewOrderItems.map(item => ({
-                ...item,
-                price: item.price || item.price_at_sale || 0,
-                price_at_sale: item.price_at_sale || item.price || 0,
-            })),
-            subtotal_amount: subtotal_amount,
-            tax_amount: tax_amount,
-            discount_amount: 0,
-            employee_id: currentStaff?.id || "emp-101",
-            order_type: tableId ? "dine-in" : "takeaway",
-        };
-
-        // If a table is selected, mark it as occupied
-        if (tableId) {
-            try {
-                await updateTable(tableId, {
-                    status: "occupied",
-                    current_order_id: tempOrderId
-                });
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: "Failed to update table status. Order was not created.",
-                    status: "error",
-                    duration: 5000,
-                    isClosable: true,
-                });
-                return; // Don't proceed with order creation
-            }
-        }
-
-        // Add the order to the store
-        addOrder(newOrder);
-        setActiveOrders([...activeOrders, newOrder]);
-        setCurrentOrder(newOrder);
-        setEditingOrder(newOrder);
-        onCurrentOrderDetailsModalOpen();
-        toast({
-            title: "New Order Created",
-            description: "Order is ready for review and sending to kitchen.",
-            status: "success",
-            duration: 3000,
-            isClosable: true,
-        });
+        setTempOrderItems([]); // Clear any existing items
+        setActiveTabIndex(0); // Switch to the first tab (Menu tab)
     };
 
     // Handle table click to show action modal
@@ -602,7 +488,14 @@ export default function POSDashboardPage() {
                             </Button>
                         </HStack>
 
-                        <Tabs isFitted variant="enclosed" colorScheme="green">
+                        {/* Updated Tabs component with controlled index */}
+                        <Tabs
+                            isFitted
+                            variant="enclosed"
+                            colorScheme="green"
+                            index={activeTabIndex}
+                            onChange={setActiveTabIndex}
+                        >
                             <TabList mb="1em">
                                 <Tab fontWeight="semibold" fontSize="lg">
                                     <Icon as={FaUtensils} mr={2} />
@@ -860,9 +753,50 @@ export default function POSDashboardPage() {
                                                     <Button
                                                         colorScheme="green"
                                                         onClick={() => {
-                                                            setTempNewOrderItems(tempOrderItems);
+                                                            // You'll need to implement the table selection logic here
+                                                            // For now, let's just create the order directly
+                                                            const subtotal_amount = tempOrderItems.reduce(
+                                                                (sum, item) => sum + (item.sub_total || 0),
+                                                                0
+                                                            );
+                                                            const tax_percentage = 0.15;
+                                                            const tax_amount = subtotal_amount * tax_percentage;
+                                                            const total_amount = subtotal_amount + tax_amount;
+
+                                                            const tempOrderId = `temp-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+                                                            const newOrder: Order = {
+                                                                id: tempOrderId,
+                                                                store_id: 'default-store',
+                                                                table_id: null, // No table selected
+                                                                customer_id: null,
+                                                                total_amount: total_amount,
+                                                                status: "new",
+                                                                notes: "",
+                                                                created_at: new Date().toISOString(),
+                                                                updated_at: new Date().toISOString(),
+                                                                items: tempOrderItems,
+                                                                subtotal_amount: subtotal_amount,
+                                                                tax_amount: tax_amount,
+                                                                discount_amount: 0,
+                                                                employee_id: currentStaff?.id || "emp-101",
+                                                                order_type: "takeaway",
+                                                            };
+
+                                                            addOrder(newOrder);
+                                                            setActiveOrders([...activeOrders, newOrder]);
+                                                            setCurrentOrder(newOrder);
+                                                            setEditingOrder(newOrder);
                                                             setTempOrderItems([]);
-                                                            onNewOrderTableModalOpen();
+                                                            onCurrentOrderDetailsModalOpen();
+
+                                                            toast({
+                                                                title: "New Order Created",
+                                                                description: "Order is ready for review and sending to kitchen.",
+                                                                status: "success",
+                                                                duration: 3000,
+                                                                isClosable: true,
+                                                            });
                                                         }}
                                                         isDisabled={tempOrderItems.length === 0}
                                                         size="md"
@@ -870,7 +804,7 @@ export default function POSDashboardPage() {
                                                         mt={4}
                                                         fontWeight="semibold"
                                                     >
-                                                        Continue to Table Selection
+                                                        Create Order
                                                     </Button>
                                                 </Box>
                                             )}
@@ -1135,16 +1069,17 @@ export default function POSDashboardPage() {
                         </Tabs>
                     </VStack>
                 </Box>
-            </Flex>
+            </Flex >
 
             {/* Modals */}
-            <EditOrderModal
+            < EditOrderModal
                 isOpen={isCurrentOrderDetailsModalOpen}
                 onClose={onCurrentOrderDetailsModalClose}
                 menuItems={menuItems}
                 categories={categories}
                 tables={tables}
-                currentTableId={editingOrder?.table_id || null}
+                currentTableId={editingOrder?.table_id || null
+                }
                 orderItems={editingOrder?.items || []}
                 currentOrder={editingOrder || undefined}
                 onUpdateOrder={(items, tableId) => {
@@ -1161,23 +1096,6 @@ export default function POSDashboardPage() {
                 }}
                 onSaveChanges={handleSaveOrderChanges}
                 onStatusChange={handleStatusChange}
-            />
-
-            <NewOrderMenuModal
-                isOpen={isNewOrderMenuModalOpen}
-                onClose={onNewOrderMenuModalClose}
-                menuItems={menuItems}
-                categories={categories}
-                onFinishAddingItems={handleFinishAddingItems}
-            />
-
-            <TableSelectionModal
-                isOpen={isNewOrderTableModalOpen}
-                onClose={onNewOrderTableModalClose}
-                tables={tables}
-                onSelectTable={handleSelectNewOrderTable}
-                currentSelectedTableId={tempNewOrderTableId}
-                allowTakeaway={true}
             />
 
             <TableActionModal

@@ -229,3 +229,41 @@ a {
 .chakra-datatable .chakra-input {
   /* border-color: var(--border-color); */
 }
+
+
+
+/* styles/globals.css or similar */
+.rbc-addons-dnd-resize-ns-anchor {
+  height: 8px !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 2px !important;
+  cursor: ns-resize !important;
+}
+
+.rbc-addons-dnd-resize-ew-anchor {
+  width: 8px !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 2px !important;
+  cursor: ew-resize !important;
+}
+
+.rbc-addons-dnd-resize-ns-anchor:first-child {
+  top: -4px !important;
+}
+
+.rbc-addons-dnd-resize-ns-anchor:last-child {
+  bottom: -4px !important;
+}
+
+.rbc-addons-dnd-resize-ew-anchor:first-child {
+  left: -4px !important;
+}
+
+.rbc-addons-dnd-resize-ew-anchor:last-child {
+  right: -4px !important;
+}
+
+.rbc-addons-dnd-resize-ns-anchor:hover,
+.rbc-addons-dnd-resize-ew-anchor:hover {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+}

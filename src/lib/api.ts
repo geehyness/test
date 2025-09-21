@@ -18,6 +18,8 @@ import {
   RecipeItem,
   Shift,
   TimesheetEntry,
+  Payroll,
+  PayrollSettings,
 } from "./config/entities";
 import { sampleData } from "./data/sample"; // Directly import sampleData for easier access
 
@@ -481,4 +483,221 @@ export async function clockOut(timesheetId: string, storeId: string): Promise<Ti
 export async function getTimesheets(): Promise<TimesheetEntry[]> {
   const timesheets = await fetchData("timesheets");
   return timesheets;
+}
+
+// Add these functions to your api.ts file
+
+// Payroll API functions
+export async function getPayrolls(): Promise<Payroll[]> {
+  const payrolls = await fetchData("payrolls");
+  return payrolls;
+}
+
+export async function getPayrollById(id: string): Promise<Payroll | null> {
+  const payroll = await fetchData("payrolls", id);
+  return payroll;
+}
+
+export async function getPayrollInfo(employeeId: string): Promise<Payroll | null> {
+  try {
+    const payrolls = await getPayrolls();
+    const currentPayroll = payrolls.find(p =>
+      p.employee_id === employeeId &&
+      p.status === "pending" &&
+      new Date(p.pay_period_end) > new Date()
+    );
+
+    return currentPayroll || null;
+  } catch (error) {
+    console.error("Error fetching payroll info:", error);
+    return null;
+  }
+}
+
+export async function createPayroll(payrollData: Partial<Payroll>): Promise<Payroll> {
+  const createdPayroll = await fetchData("payrolls", undefined, payrollData, "POST");
+  return createdPayroll;
+}
+
+export async function updatePayroll(payrollId: string, updates: Partial<Payroll>): Promise<Payroll> {
+  const updatedPayroll = await fetchData("payrolls", payrollId, updates, "PUT");
+  return updatedPayroll;
+}
+
+export async function processPayroll(payrollId: string): Promise<Payroll> {
+  const payroll = await updatePayroll(payrollId, { status: "processing" });
+
+  // Simulate payroll processing
+  await new Promise(resolve => setTimeout(resolve, 2000));
+
+  const processedPayroll = await updatePayroll(payrollId, { status: "paid" });
+  return processedPayroll;
+}
+
+export async function getPayrollSettings(): Promise<PayrollSettings> {
+  const settings = await fetchData("payroll_settings");
+  if (!settings || settings.length === 0) {
+    // Return default settings if none exist
+    return {
+      id: "default-settings",
+      store_id: "default-store",
+      default_payment_cycle: "bi-weekly",
+      tax_rate: 0.20,
+      overtime_multiplier: 1.5,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+  return settings[0];
+}
+
+export async function updatePayrollSettings(settings: Partial<PayrollSettings>): Promise<PayrollSettings> {
+  const currentSettings = await getPayrollSettings();
+  const updatedSettings = await fetchData("payroll_settings", currentSettings.id, settings, "PUT");
+  return updatedSettings;
+}
+
+// Helper function to calculate payroll
+export async function calculatePayroll(employeeId: string, periodStart: string, periodEnd: string): Promise<Partial<Payroll>> {
+  const timesheets = await getTimesheets();
+  const settings = await getPayrollSettings();
+
+  // Filter timesheets for the employee and period
+  const employeeTimesheets = timesheets.filter(ts =>
+    ts.employee_id === employeeId &&
+    new Date(ts.clock_in) >= new Date(periodStart) &&
+    new Date(ts.clock_in) <= new Date(periodEnd) &&
+    ts.clock_out
+  );
+
+  // Calculate total hours
+  let totalHours = 0;
+  let overtimeHours = 0;
+
+  employeeTimesheets.forEach(ts => {
+    if (ts.duration_minutes) {
+      const hours = ts.duration_minutes / 60;
+      totalHours += hours;
+
+      // Calculate overtime (hours over 40 per week)
+      if (hours > 40) {
+        overtimeHours += hours - 40;
+        totalHours -= hours - 40; // Remove overtime from regular hours
+      }
+    }
+  });
+
+  // Get employee data for salary calculation
+  const employees = await getEmployees();
+  const employee = employees.find(e => e.id === employeeId);
+
+  if (!employee) {
+    throw new Error("Employee not found");
+  }
+
+  const hourlyRate = employee.salary / 2080; // Assuming 2080 hours per year (40 hrs/week * 52 weeks)
+  const regularPay = totalHours * hourlyRate;
+  const overtimePay = overtimeHours * hourlyRate * settings.overtime_multiplier;
+  const grossPay = regularPay + overtimePay;
+  const taxDeductions = grossPay * settings.tax_rate;
+  const netPay = grossPay - taxDeductions;
+
+  return {
+    employee_id: employeeId,
+    pay_period_start: periodStart,
+    pay_period_end: periodEnd,
+    payment_cycle: settings.default_payment_cycle,
+    gross_pay: grossPay,
+    tax_deductions: taxDeductions,
+    net_pay: netPay,
+    hours_worked: totalHours,
+    overtime_hours: overtimeHours,
+    overtime_rate: settings.overtime_multiplier,
+    status: "pending",
+    store_id: employee.store_id
+  };
+}
+
+// Add to your existing api.ts
+export async function getLowStockItems(): Promise<InventoryProduct[]> {
+  try {
+    const products = await fetchData("inventory_products");
+    return products.filter((product: InventoryProduct) =>
+      product.quantity_in_stock <= product.reorder_level
+    );
+  } catch (error) {
+    console.error("Error fetching low stock items:", error);
+    return [];
+  }
+}
+
+export async function getPendingOrders(): Promise<any[]> {
+  try {
+    const orders = await getPurchaseOrders();
+    return orders.filter((order: any) =>
+      ['draft', 'pending-approval', 'approved', 'ordered'].includes(order.status)
+    );
+  } catch (error) {
+    console.error("Error fetching pending orders:", error);
+    return [];
+  }
+}
+
+// src/lib/api.ts
+// Add these functions:
+
+export async function getPurchaseOrders(): Promise<any[]> {
+  const orders = await fetchData("purchase_orders");
+  return orders;
+}
+
+export async function getGoodsReceipts(): Promise<any[]> {
+  const receipts = await fetchData("goods_receipts");
+  return receipts;
+}
+
+export async function getSuppliers(): Promise<any[]> {
+  const suppliers = await fetchData("suppliers");
+  return suppliers;
+}
+
+export async function getSites(): Promise<any[]> {
+  const sites = await fetchData("sites");
+  return sites;
+}
+
+export async function createPurchaseOrder(orderData: any): Promise<any> {
+  const newOrder = await fetchData("purchase_orders", undefined, orderData, "POST");
+  return newOrder;
+}
+
+export async function updatePurchaseOrder(orderId: string, orderData: any): Promise<any> {
+  const updatedOrder = await fetchData("purchase_orders", orderId, orderData, "PUT");
+  return updatedOrder;
+}
+
+export async function createGoodsReceipt(receiptData: any): Promise<any> {
+  const newReceipt = await fetchData("goods_receipts", undefined, receiptData, "POST");
+
+  // Update inventory quantities
+  if (receiptData.received_items) {
+    for (const item of receiptData.received_items) {
+      if (item.condition === 'good') {
+        const product = await fetchData("inventory_products", item.inventory_product_id);
+        if (product) {
+          await fetchData(
+            "inventory_products",
+            item.inventory_product_id,
+            {
+              quantity_in_stock: product.quantity_in_stock + item.received_quantity,
+              last_restocked_at: new Date().toISOString()
+            },
+            "PUT"
+          );
+        }
+      }
+    }
+  }
+
+  return newReceipt;
 }

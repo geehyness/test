@@ -23,7 +23,7 @@ import {
   Supplier,
   Unit,
   Tax,
-  invCategory
+  invCategory, Payroll, PayrollSettings
 } from "@/lib/config/entities";
 
 // Define a type for the structure of your sample data
@@ -48,6 +48,8 @@ export interface SampleData {
   suppliers: Supplier[];
   units: Unit[];
   taxes: Tax[];
+  payrolls: Payroll[];
+  payroll_settings: PayrollSettings[];
 }
 
 
@@ -65,6 +67,7 @@ const managerRoleId = "ar-manager";
 const serverRoleId = "ar-server";
 const kitchenRoleId = "ar-kitchen";
 const cashierRoleId = "ar-cashier";
+const kioskRoleId = "kiosk-user";
 
 const managerJobId = "jt-manager";
 const waiterJobId = "jt-waiter";
@@ -161,7 +164,8 @@ export const sampleData: SampleData = {
       remember_token: "token123",
       created_at: "2025-07-01T09:00:00Z",
       updated_at: "2025-07-01T09:00:00Z",
-    }, {
+    },
+    {
       id: kioskUserId, // Use the kiosk user ID constant
       name: "Kiosk User",
       email: "kiosk@provision.com", // The requested email
@@ -212,6 +216,56 @@ export const sampleData: SampleData = {
       updated_at: "2025-07-01T09:05:00Z",
     },
   ],
+  payrolls: [
+    {
+      id: "payroll-001",
+      employee_id: "emp-2",
+      pay_period_start: "2025-07-01",
+      pay_period_end: "2025-07-14",
+      payment_cycle: "bi-weekly",
+      gross_pay: 1200.00,
+      tax_deductions: 240.00,
+      net_pay: 960.00,
+      status: "pending",
+      hours_worked: 80,
+      overtime_hours: 5,
+      overtime_rate: 1.5,
+      deductions: [],
+      created_at: "2025-07-15T00:00:00Z",
+      updated_at: "2025-07-15T00:00:00Z",
+      store_id: storeId
+    },
+    {
+      id: "payroll-002",
+      employee_id: "emp-3",
+      pay_period_start: "2025-07-01",
+      pay_period_end: "2025-07-14",
+      payment_cycle: "bi-weekly",
+      gross_pay: 1923.08, // $50,000 / 26 pay periods
+      tax_deductions: 384.62,
+      net_pay: 1538.46,
+      status: "pending",
+      hours_worked: 80,
+      overtime_hours: 0,
+      overtime_rate: 1.5,
+      deductions: [],
+      created_at: "2025-07-15T00:00:00Z",
+      updated_at: "2025-07-15T00:00:00Z",
+      store_id: storeId
+    }
+  ],
+
+  payroll_settings: [
+    {
+      id: "settings-001",
+      store_id: storeId,
+      default_payment_cycle: "bi-weekly",
+      tax_rate: 0.20,
+      overtime_multiplier: 1.5,
+      created_at: "2025-07-01T00:00:00Z",
+      updated_at: "2025-07-01T00:00:00Z"
+    }
+  ],
   access_roles: [
     {
       id: adminRoleId,
@@ -257,6 +311,15 @@ export const sampleData: SampleData = {
       landing_page: "/pos/dashboard",
       created_at: "2025-07-01T09:05:00Z",
       updated_at: "2025-07-01T09:05:00Z",
+    },
+    {
+      id: kioskRoleId, // This should be "kiosk-user" based on your constant
+      name: "Kiosk-User",
+      description: "Self-service kiosk access for customers to place orders.",
+      permissions: ["can_create_orders", "can_view_menu"],
+      landing_page: "/pos/kiosk",
+      created_at: "2025-07-01T09:20:00Z",
+      updated_at: "2025-07-01T09:20:00Z",
     },
   ],
   job_titles: [
@@ -369,18 +432,18 @@ export const sampleData: SampleData = {
     },
     {
       id: "emp-kiosk",
-      user_id: kioskUserId, // Link to kiosk user
-      job_title_id: cashierJobId, // Use an appropriate job title
+      user_id: kioskUserId,
+      job_title_id: cashierJobId,
       tenant_id: tenantId,
       store_id: storeId,
-      access_role_ids: [cashierRoleId], // Use appropriate role(s)
+      access_role_ids: [kioskRoleId],
       hire_date: "2025-07-01T00:00:00Z",
-      salary: 0, // Kiosk account might not have a salary
+      salary: 0,
       first_name: "Kiosk",
       last_name: "Account",
       created_at: "2025-07-01T09:00:00Z",
       updated_at: "2025-07-01T09:00:00Z",
-      main_access_role_id: cashierRoleId // Use appropriate main role
+      main_access_role_id: kioskRoleId // This should match the kiosk role ID
     },
   ],
   categories: [

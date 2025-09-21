@@ -46,6 +46,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Import the new shift management components
 import dynamic from 'next/dynamic';
+import PayrollManagement from "./PayrollManagement";
+import InventoryManagement from "./InventoryManagement";
 const ShiftManagement = dynamic(() => import('./ShiftManagement'), {
     ssr: false,
     loading: () => <Center minH="400px"><Spinner size="xl" /></Center>
@@ -167,6 +169,18 @@ export default function DynamicEntityManagementPage() {
     // ADDED: If the entity is timesheets, render the new timesheet management component
     if (entityName === 'timesheets') {
         return <TimesheetManagement />;
+    }
+
+    if (entityName === 'payrolls') {
+        return <PayrollManagement />;
+    }
+
+    if (entityName === 'inventory') {
+        return <InventoryManagement />; // Remove the incorrect props
+    }
+
+    if (entityName === 'purchase_orders') {
+        return <PurchaseOrderManagement />;
     }
 
     const refreshData = useCallback(async () => {
@@ -503,7 +517,7 @@ export default function DynamicEntityManagementPage() {
                 { accessorKey: 'name', header: 'Name', isSortable: true },
                 { accessorKey: 'category_name', header: 'Category', isSortable: true },
                 { accessorKey: 'description', header: 'Description', isSortable: true },
-                { accessorKey: 'price', header: 'Price', isSortable: true },
+                { accessorKey: 'price', header: 'Price (ZAR)', isSortable: true },
                 {
                     accessorKey: 'recipes', header: 'Ingredients', cell: (row: Food) => (
                         <VStack align="start" spacing={1}>
@@ -662,7 +676,7 @@ export default function DynamicEntityManagementPage() {
                 />
             </FormControl>
             <FormControl isRequired>
-                <FormLabel>Price</FormLabel>
+                <FormLabel>Price (ZAR)</FormLabel>
                 <NumberInput
                     value={selectedItem?.price || 0}
                     onChange={(_, value) => handleItemChange('price', value)}

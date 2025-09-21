@@ -149,6 +149,7 @@ export default function ShiftsPage() {
         }
     };
 
+    // In ShiftManagement.tsx - update the handleUpdateShift function
     const handleUpdateShift = async (shiftId: string, updates: Partial<Shift>) => {
         try {
             const originalShift = shifts.find(s => s.id === shiftId);
@@ -169,6 +170,9 @@ export default function ShiftsPage() {
                 ...updates,
                 start: updates.start?.toISOString() ?? originalShift.start.toISOString(),
                 end: updates.end?.toISOString() ?? originalShift.end.toISOString(),
+                // Preserve recurrence settings when moving to different days
+                recurs: originalShift.recurs,
+                recurringDay: originalShift.recurs ? moment(updates.start || originalShift.start).day() : undefined,
             };
 
             const updatedShift = await updateShift(shiftId, apiPayload);
@@ -240,10 +244,13 @@ export default function ShiftsPage() {
             </Flex>
             <Box p={5}>
                 <Flex direction={{ base: 'column', md: 'row' }} gap={6}>
-                    <Box flex="1" bg="white" p={6} rounded="md" shadow="sm">
+                    {/* Employee List - Fixed width to match sidebar */}
+                    <Box flex="0 0 240px" bg="white" p={6} rounded="md" shadow="sm">
                         <EmployeeList employees={storeEmployees || []} onEmployeeClick={handleSelectEmployee} />
                     </Box>
-                    <Box flex="3" bg="white" p={6} rounded="md" shadow="sm">
+
+                    {/* Calendar - Takes remaining space */}
+                    <Box flex="1" bg="white" p={6} rounded="md" shadow="sm" minWidth="0"> {/* minWidth="0" prevents flex overflow */}
                         <Heading as="h2" size="lg" mb={4}>Shift Calendar</Heading>
                         {isLoading ? (
                             <Center h="300px">

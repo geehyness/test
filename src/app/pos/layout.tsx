@@ -53,7 +53,8 @@ export default function RootLayout({
     'server': '/pos/server',
     'kitchen': '/pos/kitchen',
     'cashier': '/pos',
-    'default': '/pos',
+    'kiosk-user': '/pos/kiosk',
+    'default': '/pos'
   }), []);
 
   // Define pages where the sidebar should NOT be visible
@@ -89,6 +90,7 @@ export default function RootLayout({
       'server': ['/pos/server'],
       'kitchen': ['/pos/kitchen'],
       'cashier': ['/pos'],
+      'kiosk-user': ['/pos/kiosk'], // ADDED: Kiosk user can only access kiosk page
       'supply-chain': ['/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods'],
       'hr': ['/pos/management', '/pos/management/employees', '/pos/management/access_roles']
     };
@@ -162,146 +164,149 @@ export default function RootLayout({
 
   return (
     <>
-      <body>
-        <ChakraProvider>
-          {showMainContent ? (
-            <Flex direction="row" minH="100vh" bg="var(--light-gray-bg)">
-              {/* Conditional rendering for desktop sidebar */}
-              {!hideSidebar && (
-                <SidebarContent
-                  onClose={() => setSidebarOpen(false)}
-                  display={{ base: "none", md: "block" }}
-                />
-              )}
+      <ChakraProvider>
+        {showMainContent ? (
+          <Flex direction="row" minH="100vh" bg="var(--light-gray-bg)">
+            {/* Conditional rendering for desktop sidebar */}
+            {!hideSidebar && (
+              <SidebarContent
+                onClose={() => setSidebarOpen(false)}
+                display={{ base: "none", md: "block" }}
+              />
+            )}
 
-              {/* Conditional rendering for mobile sidebar */}
-              {sidebarOpen && !hideSidebar && (
+            {/* Conditional rendering for mobile sidebar */}
+            {sidebarOpen && !hideSidebar && (
+              <Box
+                as="nav"
+                ref={navbarRef}
+                pos="fixed"
+                top="0"
+                left="0"
+                h="100%"
+                zIndex="200"
+                transition="transform 0.3s ease-in-out"
+                transform={{
+                  base: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+                  md: "translateX(0)",
+                }}
+                bg="white"
+                borderRightWidth="1px"
+                display={{ base: "block", md: "none" }}
+              >
+                <SidebarContent onClose={() => setSidebarOpen(false)} />
+              </Box>
+            )}
+
+            <Box flex="1" ml={{ base: 0, md: !hideSidebar ? '250px' : 0 }}>
+              {/* Conditional rendering for POSHeader */}
+              {!hidePOSHeader && (
                 <Box
-                  as="nav"
-                  ref={navbarRef}
-                  pos="fixed"
+                  position="fixed"
                   top="0"
-                  left="0"
-                  h="100%"
-                  zIndex="200"
-                  transition="transform 0.3s ease-in-out"
-                  transform={{
-                    base: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-                    md: "translateX(0)",
-                  }}
-                  bg="white"
-                  borderRightWidth="1px"
-                  display={{ base: "block", md: "none" }}
+                  left={{ base: 0, md: !hideSidebar ? '250px' : 0 }}
+                  right="0"
+                  zIndex="100"
                 >
-                  <SidebarContent onClose={() => setSidebarOpen(false)} />
+                  <POSHeader onOpen={() => setSidebarOpen(true)} />
                 </Box>
               )}
 
-              <Box flex="1" ml={{ base: 0, md: !hideSidebar ? '250px' : 0 }}>
-                {/* Conditional rendering for POSHeader */}
-                {!hidePOSHeader && (
-                  <Box
-                    position="fixed"
-                    top="0"
-                    left={{ base: 0, md: !hideSidebar ? '250px' : 0 }}
-                    right="0"
-                    zIndex="100"
-                  >
-                    <POSHeader onOpen={() => setSidebarOpen(true)} />
-                  </Box>
-                )}
-
-                <Box
-                  as="main"
-                  flex="1"
-                  minH="calc(100vh - 60px)"
-                  pt={{
-                    base: !hidePOSHeader ? headerHeight : '60px',
-                    md: !hidePOSHeader ? headerHeight : 6
-                  }}
-                >
-                  <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
-                    {notifications.map((notification) => (
-                      <Alert
-                        key={notification.id}
-                        status={notification.type}
-                        variant="left-accent"
-                        rounded="md"
-                        shadow="md"
-                        width="full"
-                        maxWidth="600px"
-                      >
-                        <AlertIcon />
-                        <Box flex="1">
-                          <AlertTitle>{notification.type === 'info' ? 'New Order!' : 'Notification'}</AlertTitle>
-                          <AlertDescription display="block">{notification.message}</AlertDescription>
-                        </Box>
-                        <CloseButton
-                          position="absolute"
-                          right="8px"
-                          top="8px"
-                          onClick={() => dismissNotification(notification.id)}
-                        />
-                      </Alert>
-                    ))}
-                  </VStack>
+              <Box
+                as="main"
+                flex="1"
+                minH="calc(100vh - 60px)"
+                pt={{
+                  base: !hidePOSHeader ? headerHeight : '60px',
+                  md: !hidePOSHeader ? headerHeight : 6
+                }}
+              >
+                <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
+                  {notifications.map((notification) => (
+                    <Alert
+                      key={notification.id}
+                      status={notification.type}
+                      variant="left-accent"
+                      rounded="md"
+                      shadow="md"
+                      width="full"
+                      maxWidth="600px"
+                    >
+                      <AlertIcon />
+                      <Box flex="1">
+                        <AlertTitle>{notification.type === 'info' ? 'New Order!' : 'Notification'}</AlertTitle>
+                        <AlertDescription display="block">{notification.message}</AlertDescription>
+                      </Box>
+                      <CloseButton
+                        position="absolute"
+                        right="8px"
+                        top="8px"
+                        onClick={() => dismissNotification(notification.id)}
+                      />
+                    </Alert>
+                  ))}
+                </VStack>
+                <Box backgroundColor={'white'} textColor={"#333"} >
                   {children}
                 </Box>
               </Box>
-            </Flex>
-          ) : (
-            <Box
-              position="fixed"
-              top="0"
-              left="0"
-              right="0"
-              bottom="0"
-              zIndex="9999"
-              bg="rgba(255, 255, 255, 1)"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Spinner
-                size="xl"
-                thickness="4px"
-                speed="0.65s"
-                emptyColor="gray.200"
-                color="var(--primary-green)"
-              />
             </Box>
-          )}
+          </Flex>
+        ) : (
+          <Box
+            position="fixed"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            zIndex="9999"
+            bg="rgba(255, 255, 255, 1)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Spinner
+              size="xl"
+              thickness="4px"
+              speed="0.65s"
+              emptyColor="gray.200"
+              color="var(--primary-green)"
+            />
+          </Box>
+        )}
 
-          {isUnauthorized && (
-            <Box
-              position="fixed"
-              top="0"
-              left="0"
-              right="0"
-              bottom="0"
-              zIndex="9998"
-              bg="rgba(255, 255, 255, 1)"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <VStack spacing={4}>
-                <Heading as="h2" size="xl" color="red.500">
-                  Unauthorized Access
-                </Heading>
-                <Text fontSize="lg" color="gray.600">
-                  You do not have permission to view this page.
-                </Text>
-                <Link href={defaultRolePages[currentStaff?.mainAccessRole?.name?.toLowerCase() || 'default']} passHref>
-                  <ChakraLink color="blue.500">
-                    Go to my dashboard
-                  </ChakraLink>
-                </Link>
-              </VStack>
-            </Box>
-          )}
-        </ChakraProvider>
-      </body>
+        {isUnauthorized && (
+          <Box
+            position="fixed"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            zIndex="9998"
+            bg="rgba(255, 255, 255, 1)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <VStack spacing={4}>
+              <Heading as="h2" size="xl" color="red.500">
+                Unauthorized Access
+              </Heading>
+              <Text fontSize="lg" color="gray.600">
+                You do not have permission to view this page.
+              </Text>
+              <Link
+                href={defaultRolePages[currentStaff?.mainAccessRole?.name?.toLowerCase() as keyof typeof defaultRolePages] || defaultRolePages.default}
+                passHref
+              >
+                <ChakraLink color="blue.500">
+                  Go to my dashboard
+                </ChakraLink>
+              </Link>
+            </VStack>
+          </Box>
+        )}
+      </ChakraProvider>
     </>
   );
 }

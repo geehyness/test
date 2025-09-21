@@ -29,9 +29,18 @@ import {
     FaRegListAlt,
     FaClock,
     FaUsers,
+    FaDollarSign,
+    FaIdCard,
+    FaBook,
+    FaClipboardList,
+    FaStore,
+    FaCreditCard,
+    FaUserFriends,
+    FaCalendarAlt,
+    FaListAlt,
 } from "react-icons/fa";
 import { IconType } from "react-icons";
-import NextLink from 'next/link'; // ← Add this import
+import NextLink from 'next/link';
 import { usePOSStore } from "@/lib/usePOSStore";
 
 interface NavItemProps {
@@ -94,26 +103,26 @@ const managementSections = [
         icon: FaUserTie,
         roles: ['admin', 'manager', 'hr'],
         entities: [
-            { name: "Employees", path: "/pos/management/employees", roles: ['admin', 'manager', 'hr'] },
-            { name: "Shifts", path: "/pos/management/shifts", roles: ['admin', 'manager', 'hr'] },
-            { name: "Timesheets", path: "/pos/management/timesheets", roles: ['admin', 'manager', 'hr'] },
-            { name: "Payroll", path: "/pos/management/payrolls", roles: ['admin', 'manager'] },
+            { name: "Employees", path: "/pos/management/employees", icon: FaUserFriends, roles: ['admin', 'manager', 'hr'] },
+            { name: "Shifts", path: "/pos/management/shifts", icon: FaClock, roles: ['admin', 'manager', 'hr'] },
+            { name: "Timesheets", path: "/pos/management/timesheets", icon: FaClipboardList, roles: ['admin', 'manager', 'hr'] },
+            { name: "Payroll", path: "/pos/management/payrolls", icon: FaDollarSign, roles: ['admin', 'manager'] },
         ],
     },
     {
         name: "Company",
         icon: FaBuilding,
         roles: ['admin'],
-        entities: [{ name: "Company Info", path: "/pos/management/companies", roles: ['admin'] }],
+        entities: [{ name: "Company Info", path: "/pos/management/companies", icon: FaBuilding, roles: ['admin'] }],
     },
     {
         name: "Menu Management",
         icon: FaUtensils,
         roles: ['admin', 'manager', 'supply-chain'],
         entities: [
-            { name: "Foods", path: "/pos/management/foods", roles: ['admin', 'manager', 'supply-chain'] },
-            { name: "Categories", path: "/pos/management/categories", roles: ['admin', 'manager', 'supply-chain'] },
-            { name: "Recipes", path: "/pos/management/recipes", roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Foods", path: "/pos/management/foods", icon: FaUtensils, roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Categories", path: "/pos/management/categories", icon: FaListAlt, roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Recipes", path: "/pos/management/recipes", icon: FaBook, roles: ['admin', 'manager', 'supply-chain'] },
         ],
     },
     {
@@ -121,10 +130,10 @@ const managementSections = [
         icon: FaBoxOpen,
         roles: ['admin', 'manager', 'supply-chain'],
         entities: [
-            { name: "Inv. Products", path: "/pos/management/inventory_products", roles: ['admin', 'manager', 'supply-chain'] },
-            { name: "Inv. Categories", path: "/pos/management/inv_categories", roles: ['admin', 'manager', 'supply-chain'] },
-            { name: "Suppliers", path: "/pos/management/suppliers", roles: ['admin', 'manager', 'supply-chain'] },
-            { name: "Stock Adjustments", path: "/pos/management/stock_adjustments", roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Inventory Products", path: "/pos/management/inventory_products", icon: FaBoxOpen, roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Inventory Categories", path: "/pos/management/inv_categories", icon: FaListAlt, roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Suppliers", path: "/pos/management/suppliers", icon: FaUserTie, roles: ['admin', 'manager', 'supply-chain'] },
+            { name: "Stock Adjustments", path: "/pos/management/stock_adjustments", icon: FaClipboardList, roles: ['admin', 'manager', 'supply-chain'] },
         ],
     },
     {
@@ -132,9 +141,9 @@ const managementSections = [
         icon: FaUsers,
         roles: ['admin', 'manager'],
         entities: [
-            { name: "Customers", path: "/pos/management/customers", roles: ['admin', 'manager'] },
-            { name: "Reservations", path: "/pos/management/reservations", roles: ['admin', 'manager'] },
-            { name: "Tables", path: "/pos/management/tables", roles: ['admin', 'manager'] },
+            { name: "Customers", path: "/pos/management/customers", icon: FaUserFriends, roles: ['admin', 'manager'] },
+            { name: "Reservations", path: "/pos/management/reservations", icon: FaCalendarAlt, roles: ['admin', 'manager'] },
+            { name: "Tables", path: "/pos/management/tables", icon: FaListAlt, roles: ['admin', 'manager'] },
         ],
     },
     {
@@ -142,8 +151,8 @@ const managementSections = [
         icon: FaChartLine,
         roles: ['admin', 'manager'],
         entities: [
-            { name: "Access Reports", path: "/pos/admin/reports", roles: ['admin'] },
-            { name: "Sales Reports", path: "/pos/management/reports", roles: ['admin', 'manager'] },
+            { name: "Access Reports", path: "/pos/admin/reports", icon: FaChartLine, roles: ['admin'] },
+            { name: "Sales Reports", path: "/pos/management/reports", icon: FaChartLine, roles: ['admin', 'manager'] },
         ],
     },
     {
@@ -151,9 +160,9 @@ const managementSections = [
         icon: FaClock,
         roles: ['admin'],
         entities: [
-            { name: "Access Roles", path: "/pos/management/access_roles", roles: ['admin'] },
-            { name: "Payment Methods", path: "/pos/management/payment_methods", roles: ['admin'] },
-            { name: "Stores", path: "/pos/management/stores", roles: ['admin'] },
+            { name: "Access Roles", path: "/pos/management/access_roles", icon: FaIdCard, roles: ['admin'] },
+            { name: "Payment Methods", path: "/pos/management/payment_methods", icon: FaCreditCard, roles: ['admin'] },
+            { name: "Stores", path: "/pos/management/stores", icon: FaStore, roles: ['admin'] },
         ],
     },
 ];
@@ -198,110 +207,124 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
     return (
         <Box
             transition="3s ease"
-            bg={useColorModeValue("white", "gray.900")}
+            bg={"white"}
             borderRight="1px"
-            borderRightColor={useColorModeValue("gray.200", "gray.700")}
-            w={{ base: "full", md: 60 }}
+            borderRightColor={useColorModeValue("gray.200", "gray.200")}
+            w={{ base: "full", md: 200 }}
             pos="fixed"
             h="full"
             overflowY="auto"
-            pb={8}
             {...rest}
         >
-            <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-                <Text
-                    fontSize="2xl"
-                    fontFamily="monospace"
-                    fontWeight="bold"
-                    color="var(--primary-green)"
-                >
-                    Resto Admin
-                </Text>
-                <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
-            </Flex>
-
-            {/* User Info */}
-            {currentStaff && (
-                <Box px="4" py="2" mb="4">
-                    <Text fontSize="sm" fontWeight="bold" color="gray.600">
-                        {currentStaff.first_name} {currentStaff.last_name}
+            {/* Fixed Header */}
+            <Box position="sticky" top={0} bg={"white"} zIndex={10} borderBottom="1px" borderBottomColor={useColorModeValue("gray.200", "gray.200")}>
+                <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+                    <Text
+                        fontSize="2xl"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                        color="var(--primary-green)"
+                    >
+                        Resto Admin
                     </Text>
-                    <Text fontSize="xs" color="gray.500">
-                        {currentStaff.mainAccessRole?.name}
-                    </Text>
-                </Box>
-            )}
+                    <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
+                </Flex>
 
-            {/* Main Links */}
-            <VStack align="stretch" spacing={1} mt={4}>
-                <Text
-                    fontSize="xs"
-                    fontWeight="bold"
-                    textTransform="uppercase"
-                    color="gray.500"
-                    px={4}
-                    mt={2}
-                    mb={1}
-                >
-                    Point of Sale
-                </Text>
-                {mainLinks.map((link) => (
-                    <NavItem key={link.name} icon={link.icon} href={link.href}>
-                        {link.name}
-                    </NavItem>
-                ))}
-            </VStack>
-
-            {/* Management Links - Filtered by role */}
-            <VStack align="stretch" spacing={1} mt={4}>
-                {filteredSections.map((section) => (
-                    <Box key={section.name}>
-                        <Flex
-                            align="center"
-                            p="4"
-                            mx="4"
-                            borderRadius="lg"
-                            role="group"
-                            cursor="pointer"
-                            _hover={{
-                                bg: "gray.100",
-                            }}
-                            onClick={() => toggleSection(section.name)}
-                        >
-                            <Icon as={section.icon} mr={2} color="gray.500" />
-                            <Text
-                                fontSize="xs"
-                                fontWeight="bold"
-                                textTransform="uppercase"
-                                color="gray.500"
-                                flex="1"
-                            >
-                                {section.name}
-                            </Text>
-                            <Icon
-                                as={openSections[section.name] ? FiChevronUp : FiChevronDown}
-                                fontSize="16"
-                                color="gray.500"
-                            />
-                        </Flex>
-                        <Collapse in={openSections[section.name]} animateOpacity>
-                            <VStack align="stretch" spacing={1} pl={8} mt={2}>
-                                {section.entities
-                                    .filter(entity => entity.roles.includes(userRole))
-                                    .map((entity) => (
-                                        <NavItem
-                                            key={entity.name}
-                                            href={entity.path}
-                                            icon={FiSettings}
-                                        >
-                                            {entity.name}
-                                        </NavItem>
-                                    ))}
-                            </VStack>
-                        </Collapse>
+                {/* User Info */}
+                {currentStaff && (
+                    <Box px="4" py="2" mb="4">
+                        <Text fontSize="sm" fontWeight="bold" color="gray.600">
+                            {currentStaff.first_name} {currentStaff.last_name}
+                        </Text>
+                        <Text fontSize="xs" color="gray.500">
+                            {currentStaff.mainAccessRole?.name}
+                        </Text>
                     </Box>
-                ))}
-            </VStack>
+                )}
+            </Box>
+
+            {/* Scrollable Content */}
+            <Box overflowY="auto" pb={20}>
+                {/* Main Links */}
+                <VStack align="stretch" spacing={1} mt={4}>
+                    <Text
+                        fontSize="xs"
+                        fontWeight="bold"
+                        textTransform="uppercase"
+                        color="gray.500"
+                        px={4}
+                        mt={2}
+                        mb={1}
+                    >
+                        Point of Sale
+                    </Text>
+                    {mainLinks.map((link) => (
+                        <NavItem key={link.name} icon={link.icon} href={link.href}>
+                            {link.name}
+                        </NavItem>
+                    ))}
+                </VStack>
+
+                {/* Management Links - Filtered by role */}
+                <VStack align="stretch" spacing={1} mt={4}>
+                    {filteredSections.map((section) => (
+                        <Box key={section.name}>
+                            <Flex
+                                align="center"
+                                p="4"
+                                mx="4"
+                                borderRadius="lg"
+                                role="group"
+                                cursor="pointer"
+                                _hover={{
+                                    bg: "gray.100",
+                                }}
+                                onClick={() => toggleSection(section.name)}
+                            >
+                                <Icon as={section.icon} mr={2} color="gray.500" />
+                                <Text
+                                    fontSize="xs"
+                                    fontWeight="bold"
+                                    textTransform="uppercase"
+                                    color="gray.500"
+                                    flex="1"
+                                >
+                                    {section.name}
+                                </Text>
+                                <Icon
+                                    as={openSections[section.name] ? FiChevronUp : FiChevronDown}
+                                    fontSize="16"
+                                    color="gray.500"
+                                />
+                            </Flex>
+                            <Collapse in={openSections[section.name]} animateOpacity>
+                                <VStack align="stretch" spacing={1} pl={8} mt={2}>
+                                    {section.entities
+                                        .filter(entity => entity.roles.includes(userRole))
+                                        .map((entity) => (
+                                            <NavItem
+                                                key={entity.name}
+                                                href={entity.path}
+                                                icon={entity.icon || FiSettings}
+                                            >
+                                                <Text fontSize={"s"}>
+                                                    {entity.name}
+                                                </Text>
+                                            </NavItem>
+                                        ))}
+                                </VStack>
+                            </Collapse>
+                        </Box>
+                    ))}
+                </VStack>
+            </Box>
+
+            {/* Fixed Footer */}
+            <Box position="sticky" bottom={0} bg={"white"} zIndex={10} borderTop="1px" borderTopColor={useColorModeValue("gray.200", "gray.200")} p={4} pb={12}>
+                <Text fontSize="xs" color="gray.500" textAlign="center">
+                    © {new Date().getFullYear()} Resto Admin
+                </Text>
+            </Box>
         </Box>
     );
 };

@@ -1,3 +1,5 @@
+// src/app/pos/management/[entityName]/ShiftManagementComponents/EmployeeList.tsx
+
 "use client";
 
 import React from 'react';
@@ -12,7 +14,7 @@ interface EmployeeListProps {
 const EmployeeListItem: React.FC<{ employee: Employee, onClick: (employee: Employee) => void }> = ({ employee, onClick }) => {
     return (
         <Box
-            p={3}
+            p={2}
             borderWidth="1px"
             borderRadius="lg"
             cursor="pointer"
@@ -22,12 +24,15 @@ const EmployeeListItem: React.FC<{ employee: Employee, onClick: (employee: Emplo
             _hover={{ bg: "gray.50" }}
             onClick={() => onClick(employee)}
         >
-            <Text fontWeight="bold">{employee.name}</Text>
-            <Badge colorScheme={
-                employee.role === 'Cashier' ? 'blue' :
-                    employee.role === 'Waiter' ? 'green' :
-                        employee.role === 'Kitchen Staff' ? 'red' : 'gray'
-            }>
+            <Text fontWeight="bold" fontSize="sm">{employee.name}</Text>
+            <Badge
+                colorScheme={
+                    employee.role === 'Cashier' ? 'blue' :
+                        employee.role === 'Waiter' ? 'green' :
+                            employee.role === 'Kitchen Staff' ? 'red' : 'gray'
+                }
+                fontSize="xs"
+            >
                 {employee.role}
             </Badge>
         </Box>
@@ -38,11 +43,11 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmployeeClick 
     // Add null/undefined check
     if (!employees || !Array.isArray(employees)) {
         return (
-            <Box>
-                <Heading size="md" mb={4}>
+            <Box width="180px">
+                <Heading size="sm" mb={3}>
                     Employees
                 </Heading>
-                <Text>No employees available</Text>
+                <Text fontSize="sm">No employees available</Text>
             </Box>
         );
     }
@@ -55,14 +60,14 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmployeeClick 
     }, {});
 
     return (
-        <Box>
-            <Heading size="md" mb={4}>
+        <Box width="180px" minWidth="180px">
+            <Heading size="sm" mb={3}>
                 Employees
             </Heading>
-            <VStack align="stretch" spacing={4}>
+            <VStack align="stretch" spacing={3}>
                 {Object.keys(groups).map((role) => (
                     <Box key={role}>
-                        <Text fontWeight="bold" fontSize="md" mb={2}>{role}</Text>
+                        <Text fontWeight="bold" fontSize="sm" mb={1}>{role}</Text>
                         <Box>
                             {groups[role].map((emp) => (
                                 <EmployeeListItem

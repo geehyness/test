@@ -236,19 +236,6 @@ export interface TimesheetEntry {
   updated_at: string;
 }
 
-
-export interface Payroll {
-  payroll_id: string;
-  employee_id: string;
-  payment_cycle: string;
-  pay_period_start: string;
-  pay_period_end: string;
-  total_wages_due: string;
-  tax_deductions: string;
-  net_pay: string;
-  status: string;
-}
-
 export interface Company {
   company_id: string;
   name: string;
@@ -488,8 +475,84 @@ export interface InventoryProduct {
   updated_at?: string;
 }
 
+// Add these interfaces to your entities.ts file
+
+export interface Payroll {
+  id: string;
+  employee_id: string;
+  pay_period_start: string;
+  pay_period_end: string;
+  payment_cycle: "weekly" | "bi-weekly" | "monthly";
+  gross_pay: number;
+  tax_deductions: number;
+  net_pay: number;
+  status: "pending" | "processing" | "paid" | "failed";
+  hours_worked: number;
+  overtime_hours: number;
+  overtime_rate: number;
+  deductions: PayrollDeduction[];
+  created_at: string;
+  updated_at: string;
+  store_id: string;
+}
+
+export interface PayrollDeduction {
+  id: string;
+  payroll_id: string;
+  type: "tax" | "insurance" | "retirement" | "other";
+  description: string;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollSettings {
+  id: string;
+  store_id: string;
+  default_payment_cycle: "weekly" | "bi-weekly" | "monthly";
+  tax_rate: number;
+  overtime_multiplier: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export const entities: { [key: string]: EntityConfig } = {
   // Core POS Entities
+  payrolls: {
+    label: "Payrolls",
+    endpoint: "/api/payrolls",
+    fields: [
+      "id",
+      "employee_id",
+      "pay_period_start",
+      "pay_period_end",
+      "payment_cycle",
+      "gross_pay",
+      "tax_deductions",
+      "net_pay",
+      "status",
+      "hours_worked",
+      "overtime_hours",
+      "overtime_rate",
+      "created_at",
+      "updated_at",
+      "store_id"
+    ]
+  },
+
+  payroll_settings: {
+    label: "Payroll Settings",
+    endpoint: "/api/payroll_settings",
+    fields: [
+      "id",
+      "store_id",
+      "default_payment_cycle",
+      "tax_rate",
+      "overtime_multiplier",
+      "created_at",
+      "updated_at"
+    ]
+  },
   inventory_products: {
     label: "Inventory Products",
     endpoint: "/api/inventory_products",
@@ -716,7 +779,7 @@ export const entities: { [key: string]: EntityConfig } = {
     endpoint: "/api/timesheets",
     fields: ["id", "employee_id", "clock_in", "clock_out", "duration_minutes"],
   },
-  payrolls: {
+  payroll: {
     label: "Payrolls",
     endpoint: "/api/payrolls",
     fields: [
@@ -958,5 +1021,55 @@ export const entities: { [key: string]: EntityConfig } = {
         ],
       },
     ],
+  },
+  purchase_orders: {
+    label: "Purchase Orders",
+    endpoint: "purchase_orders",
+    fields: [
+      "id",
+      "po_number",
+      "supplier_id",
+      "site_id",
+      "status",
+      "order_date",
+      "expected_delivery_date",
+      "total_amount",
+      "ordered_by",
+      "notes",
+      "items",
+      "created_at",
+      "updated_at"
+    ]
+  },
+
+  goods_receipts: {
+    label: "Goods Receipts",
+    endpoint: "goods_receipts",
+    fields: [
+      "id",
+      "receipt_number",
+      "purchase_order_id",
+      "receipt_date",
+      "received_by",
+      "receiving_bin_id",
+      "notes",
+      "status",
+      "received_items",
+      "created_at",
+      "updated_at"
+    ]
+  },
+
+  sites: {
+    label: "Sites",
+    endpoint: "sites",
+    fields: [
+      "id",
+      "name",
+      "address",
+      "type",
+      "created_at",
+      "updated_at"
+    ]
   }
 };
