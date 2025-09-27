@@ -19,6 +19,7 @@ class Food(MongoModel):
     allergens: Optional[List[str]] = []
     tenant_id: str
     recipes: Optional[List[RecipeItem]] = []
+    store_id: Optional[str] = None
 
 class StoreFood(MongoModel):
     food_id: str
@@ -78,6 +79,9 @@ class Store(MongoModel):
     phone: str
     email: str
     tenant_id: str
+    location: Optional[str] = None
+    manager_id: Optional[str] = None
+    kiosk_user_id: Optional[str] = None
 
 class PurchaseOrderItem(MongoModel):
     inventory_product_id: str
@@ -121,3 +125,84 @@ class User(MongoModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     password: str
+    email_verified_at: Optional[datetime] = None
+    remember_token: Optional[str] = None
+
+class Payment(MongoModel):
+    order_id: str
+    payment_method_id: str
+    amount: float
+    payment_date: datetime
+    transaction_id: Optional[str] = None
+    status: str
+
+class Tax(MongoModel):
+    name: str
+    percentage: float
+    is_active: bool = True
+
+class PaymentMethod(MongoModel):
+    name: str
+    description: str
+    is_active: bool = True
+
+class Brand(MongoModel):
+    name: str
+    description: Optional[str] = None
+
+class ContactMessage(MongoModel):
+    name: str
+    email: str
+    subject: str
+    message: str
+
+class Report(MongoModel):
+    user_id: str
+    user_name: str
+    user_role: str
+    attempted_path: str
+    attempts: int
+    last_attempt_at: datetime
+
+class Reservation(MongoModel):
+    customer_id: str
+    table_id: Optional[str] = None
+    date_time: datetime
+    number_of_guests: int
+    status: str
+    notes: Optional[str] = None
+    store_id: str
+
+class Domain(MongoModel):
+    tenant_id: str
+    domain: str
+    is_primary: bool = False
+
+class Job(MongoModel):
+    queue: str
+    payload: str
+    attempts: int
+    reserved_at: Optional[int] = None
+    available_at: int
+    created_at: int
+
+class FailedJob(MongoModel):
+    uuid: str
+    connection: str
+    queue: str
+    payload: str
+    exception: str
+    failed_at: datetime
+
+class PasswordReset(MongoModel):
+    email: str
+    token: str
+    created_at: datetime
+
+class Tenant(MongoModel):
+    name: str
+    email: str
+    password: str
+    remember_token: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None

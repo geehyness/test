@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.database import get_collection
 from app.models.hr import Employee
+from app.models.core import User
 from bson import ObjectId
 import bcrypt
 import jwt
@@ -18,14 +19,41 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
 
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    users_collection = get_collection("users")
     employees_collection = get_collection("employees")
-    employee = await employees_collection.find_one({"email": form_data.username})
     
-    if not employee or not bcrypt.checkpw(form_data.password.encode(), employee["password"].encode()):
-        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    # Find user by email
+    user = await users_collection.find_one({"email": form_data.username})
     
-    access_token = create_access_token(data={"sub": employee["email"], "id": str(employee["_id"])})
-    return {"access_token": access_token, "token_type": "bearer"}
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+    
+    # Check password (in real app, use proper hashing)
+    # For demo, using simple comparison
+    if form_data.password != user.get("password", ""):
+        raise HTTPException(status_code=400, detail="Invalid email or password")
+    
+    # Find employee linked to this user
+    employee = await employees_collection.find_one({"user_id": str(user["_id"])})
+    
+    if not employee:
+        raise HTTPException(status_code=400, detail="No employee found for this user account")
+    
+    # Create access token
+    access_token = create_access_token(data={
+        "sub": user["email"], 
+        "id": str(user["_id"]),
+        "employee_id": str(employee["_id"]),
+        "store_id": employee.get("store_id", "")
+    })
+    
+    # Return employee data with store_id
+    employee_data = Employee.from_mongo(employee)
+    return {
+        "access_token": access_token, 
+        "token_type": "bearer",
+        "employee": employee_data.model_dump()
+    }
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
@@ -51,9 +79,18 @@ async def get_current_employee(token: str = Depends(oauth2_scheme)):
     except jwt.JWTError:
         raise credentials_exception
     
+    users_collection = get_collection("users")
+    user = await users_collection.find_one({"email": email})
+    if user is None:
+        raise credentials_exception
+    
     employees_collection = get_collection("employees")
-    employee = await employees_collection.find_one({"email": email})
+    employee = await employees_collection.find_one({"user_id": str(user["_id"])})
     if employee is None:
         raise credentials_exception
     
     return Employee.from_mongo(employee)
+
+@router.get("/employees/me")
+async def read_employees_me(current_employee: Employee = Depends(get_current_employee)):
+    return current_employee

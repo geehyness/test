@@ -17,6 +17,7 @@ class InventoryProduct(MongoModel):
     inv_category_id: Optional[str] = None
     location_in_warehouse: Optional[str] = None
     last_restocked_at: Optional[datetime] = None
+    store_id: Optional[str] = None
 
 class Supplier(MongoModel):
     name: str
@@ -42,3 +43,8 @@ class StockAdjustment(MongoModel):
     quantity_change: float
     reason: str
     adjustment_date: datetime
+
+class InvCategory(MongoModel):
+    name: str
+    description: Optional[str] = None
+    store_id: Optional[str] = None

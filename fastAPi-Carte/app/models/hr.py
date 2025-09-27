@@ -71,7 +71,7 @@ class Shift(MongoModel):
     color: Optional[str] = None
     active: Optional[bool] = True
     recurring: Optional[bool] = False
-    
+
 class TimesheetEntry(MongoModel):
     employee_id: str
     clock_in: datetime
@@ -103,3 +103,19 @@ class Payroll(MongoModel):
     hours_worked: float
     overtime_hours: float
     deductions: Optional[List[PayrollDeduction]] = []
+    store_id: str
+    overtime_rate: Optional[float] = 1.5
+
+class Company(MongoModel):
+    name: str
+    country: str
+    tax_details: dict
+    metrics: dict
+
+class Timesheet(MongoModel):
+    timesheet_id: str
+    employee_id: str
+    start_date: str
+    end_date: str
+    daily_hours: dict
+    total_weekly_hours: str

@@ -1,12 +1,11 @@
+# app/database.py
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-
 MONGO_DETAILS = os.getenv("MONGODB_URL", "mongodb+srv://carte-test:13XbNEclGmOht55U@cluster0.zh2bega.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-
 
 client = AsyncIOMotorClient(MONGO_DETAILS)
 database = client.pos_system
@@ -21,4 +20,3 @@ def document_helper(document) -> dict:
         document["id"] = str(document["_id"])
         del document["_id"]
     return document
-    
