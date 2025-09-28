@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 router = APIRouter(prefix="/api", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here-change-in-production")
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
@@ -22,16 +22,29 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     users_collection = get_collection("users")
     employees_collection = get_collection("employees")
     
-    # Find user by email
-    user = await users_collection.find_one({"email": form_data.username})
+    # Find user by email or username
+    user = await users_collection.find_one({
+        "$or": [
+            {"email": form_data.username},
+            {"username": form_data.username}
+        ]
+    })
     
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid email or password")
+        raise HTTPException(status_code=400, detail="Invalid credentials")
     
-    # Check password (in real app, use proper hashing)
-    # For demo, using simple comparison
-    if form_data.password != user.get("password", ""):
-        raise HTTPException(status_code=400, detail="Invalid email or password")
+    # FIXED: Use proper bcrypt comparison
+    try:
+        # Check if password matches (using bcrypt)
+        password_valid = bcrypt.checkpw(
+            form_data.password.encode('utf-8'), 
+            user["password"].encode('utf-8')
+        )
+    except Exception:
+        password_valid = False
+    
+    if not password_valid:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
     
     # Find employee linked to this user
     employee = await employees_collection.find_one({"user_id": str(user["_id"])})
@@ -42,7 +55,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     # Create access token
     access_token = create_access_token(data={
         "sub": user["email"], 
-        "id": str(user["_id"]),
+        "user_id": str(user["_id"]),
         "employee_id": str(employee["_id"]),
         "store_id": employee.get("store_id", "")
     })
@@ -73,19 +86,16 @@ async def get_current_employee(token: str = Depends(oauth2_scheme)):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        # FIX: Use employee_id instead of user_id for employee lookup
+        employee_id: str = payload.get("employee_id")
+        if employee_id is None:
             raise credentials_exception
     except jwt.JWTError:
         raise credentials_exception
     
-    users_collection = get_collection("users")
-    user = await users_collection.find_one({"email": email})
-    if user is None:
-        raise credentials_exception
-    
     employees_collection = get_collection("employees")
-    employee = await employees_collection.find_one({"user_id": str(user["_id"])})
+    # FIX: Search employee collection by employee's own ID
+    employee = await employees_collection.find_one({"_id": ObjectId(employee_id)})
     if employee is None:
         raise credentials_exception
     

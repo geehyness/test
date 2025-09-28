@@ -4,6 +4,8 @@ from pydantic import Field, EmailStr
 from datetime import datetime
 from .base import MongoModel, PyObjectId
 
+
+# ADD: Recipe model for embedded recipes
 class RecipeItem(MongoModel):
     inventory_product_id: str
     quantity_used: float
@@ -18,16 +20,10 @@ class Food(MongoModel):
     preparation_time: Optional[int] = None
     allergens: Optional[List[str]] = []
     tenant_id: str
-    recipes: Optional[List[RecipeItem]] = []
+    recipes: Optional[List[RecipeItem]] = []  # Now embedded
     store_id: Optional[str] = None
 
-class StoreFood(MongoModel):
-    food_id: str
-    store_id: str
-    is_available: bool = True
-
 class OrderItem(MongoModel):
-    order_id: str
     food_id: str
     quantity: int
     price: float
@@ -43,7 +39,7 @@ class Order(MongoModel):
     total_amount: float
     status: str
     notes: str
-    items: List[OrderItem] = []
+    items: List[OrderItem] = []  # Now embedded
     subtotal_amount: float
     tax_amount: float
     discount_amount: float
@@ -51,6 +47,12 @@ class Order(MongoModel):
     order_type: Optional[str] = None
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
+    stock_warnings: Optional[List[str]] = None  # Add this field
+
+class StoreFood(MongoModel):
+    food_id: str
+    store_id: str
+    is_available: bool = True
 
 class Category(MongoModel):
     name: str

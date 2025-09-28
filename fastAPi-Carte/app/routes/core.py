@@ -2,36 +2,21 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from app.database import get_collection
-from app.models.core import Food, Order, Category, Customer, Table, Store, PurchaseOrder, GoodsReceipt, Reservation, Payment, Tax, PaymentMethod, Brand, ContactMessage, Report, Domain, Job, FailedJob, PasswordReset, Tenant, User
+from app.models.core import Food, Order, Category, Customer, Table, Store, PurchaseOrder, GoodsReceipt, Reservation
 from app.models.inventory import InventoryProduct
-from app.models.hr import Employee
 from bson import ObjectId
 from datetime import datetime
 import math
 
 router = APIRouter(prefix="/api", tags=["core"])
 
-# Helper function to apply store filter
-async def apply_store_filter(collection_name: str, store_id: Optional[str] = None):
-    collection = get_collection(collection_name)
-    if store_id:
-        return collection.find({"store_id": store_id})
-    else:
-        return collection.find()
-
-# Foods endpoints
+# Foods endpoints - SIMPLIFIED: Use embedded recipes
 @router.get("/foods", response_model=List[Food])
 async def get_foods(store_id: Optional[str] = Query(None)):
     foods_collection = get_collection("foods")
     query = {"store_id": store_id} if store_id else {}
     foods = []
     async for food in foods_collection.find(query):
-        # Get recipes for this food
-        recipes_collection = get_collection("recipes")
-        food_recipes = []
-        async for recipe in recipes_collection.find({"food_id": str(food["_id"])}):
-            food_recipes.append(recipe)
-        food["recipes"] = food_recipes
         foods.append(Food.from_mongo(food))
     return foods
 
@@ -40,12 +25,6 @@ async def get_food(food_id: str):
     foods_collection = get_collection("foods")
     food = await foods_collection.find_one({"_id": ObjectId(food_id)})
     if food:
-        # Get recipes for this food
-        recipes_collection = get_collection("recipes")
-        food_recipes = []
-        async for recipe in recipes_collection.find({"food_id": food_id}):
-            food_recipes.append(recipe)
-        food["recipes"] = food_recipes
         return Food.from_mongo(food)
     raise HTTPException(status_code=404, detail="Food not found")
 
@@ -57,17 +36,6 @@ async def create_food(food: Food):
     food_dict["updated_at"] = datetime.utcnow()
     
     result = await foods_collection.insert_one(food_dict)
-    
-    # Save recipes if provided
-    if food.recipes:
-        recipes_collection = get_collection("recipes")
-        for recipe in food.recipes:
-            recipe_dict = recipe.to_mongo()
-            recipe_dict["food_id"] = str(result.inserted_id)
-            recipe_dict["created_at"] = datetime.utcnow()
-            recipe_dict["updated_at"] = datetime.utcnow()
-            await recipes_collection.insert_one(recipe_dict)
-    
     new_food = await foods_collection.find_one({"_id": result.inserted_id})
     return Food.from_mongo(new_food)
 
@@ -83,19 +51,6 @@ async def update_food(food_id: str, food: Food):
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Food not found")
     
-    # Update recipes if provided
-    if food.recipes:
-        recipes_collection = get_collection("recipes")
-        # Delete existing recipes
-        await recipes_collection.delete_many({"food_id": food_id})
-        # Insert new recipes
-        for recipe in food.recipes:
-            recipe_dict = recipe.to_mongo()
-            recipe_dict["food_id"] = food_id
-            recipe_dict["created_at"] = datetime.utcnow()
-            recipe_dict["updated_at"] = datetime.utcnow()
-            await recipes_collection.insert_one(recipe_dict)
-    
     updated_food = await foods_collection.find_one({"_id": ObjectId(food_id)})
     return Food.from_mongo(updated_food)
 
@@ -105,14 +60,9 @@ async def delete_food(food_id: str):
     result = await foods_collection.delete_one({"_id": ObjectId(food_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Food not found")
-    
-    # Delete associated recipes
-    recipes_collection = get_collection("recipes")
-    await recipes_collection.delete_many({"food_id": food_id})
-    
     return {"message": "Food deleted successfully"}
 
-# Orders endpoints with inventory deduction logic
+# Orders endpoints - SIMPLIFIED: Use embedded items
 @router.get("/orders", response_model=List[Order])
 async def get_orders(store_id: Optional[str] = Query(None), status: Optional[str] = Query(None)):
     orders_collection = get_collection("orders")
@@ -124,19 +74,12 @@ async def get_orders(store_id: Optional[str] = Query(None), status: Optional[str
         
     orders = []
     async for order in orders_collection.find(query):
-        # Get order items
-        order_items_collection = get_collection("order_items")
-        order_items = []
-        async for item in order_items_collection.find({"order_id": str(order["_id"])}):
-            order_items.append(item)
-        order["items"] = order_items
         orders.append(Order.from_mongo(order))
     return orders
 
 @router.post("/orders", response_model=Order)
 async def create_order(order: Order):
     orders_collection = get_collection("orders")
-    order_items_collection = get_collection("order_items")
     inventory_collection = get_collection("inventory_products")
     
     order_dict = order.to_mongo()
@@ -150,7 +93,7 @@ async def create_order(order: Order):
         foods_collection = get_collection("foods")
         food = await foods_collection.find_one({"_id": ObjectId(item.food_id)})
         
-        if food and "recipes" in food:
+        if food and food.get("recipes"):
             for recipe in food["recipes"]:
                 inventory_product = await inventory_collection.find_one(
                     {"_id": ObjectId(recipe["inventory_product_id"])}
@@ -171,15 +114,6 @@ async def create_order(order: Order):
                     )
     
     result = await orders_collection.insert_one(order_dict)
-    
-    # Save order items
-    for item in order.items:
-        item_dict = item.to_mongo()
-        item_dict["order_id"] = str(result.inserted_id)
-        item_dict["created_at"] = datetime.utcnow()
-        item_dict["updated_at"] = datetime.utcnow()
-        await order_items_collection.insert_one(item_dict)
-    
     new_order = await orders_collection.find_one({"_id": result.inserted_id})
     order_response = Order.from_mongo(new_order)
     
@@ -192,8 +126,6 @@ async def create_order(order: Order):
 @router.put("/orders/{order_id}", response_model=Order)
 async def update_order(order_id: str, order: Order):
     orders_collection = get_collection("orders")
-    order_items_collection = get_collection("order_items")
-    
     order_dict = order.to_mongo(exclude_unset=True)
     order_dict["updated_at"] = datetime.utcnow()
     
@@ -202,18 +134,6 @@ async def update_order(order_id: str, order: Order):
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Order not found")
-    
-    # Update order items if provided
-    if order.items:
-        # Delete existing items
-        await order_items_collection.delete_many({"order_id": order_id})
-        # Insert new items
-        for item in order.items:
-            item_dict = item.to_mongo()
-            item_dict["order_id"] = order_id
-            item_dict["created_at"] = datetime.utcnow()
-            item_dict["updated_at"] = datetime.utcnow()
-            await order_items_collection.insert_one(item_dict)
     
     updated_order = await orders_collection.find_one({"_id": ObjectId(order_id)})
     return Order.from_mongo(updated_order)
@@ -336,7 +256,7 @@ async def update_purchase_order(po_id: str, po: PurchaseOrder):
     updated_po = await po_collection.find_one({"_id": ObjectId(po_id)})
     return PurchaseOrder.from_mongo(updated_po)
 
-# Goods Receipts endpoints with inventory update logic
+# Goods Receipts endpoints
 @router.get("/goods_receipts", response_model=List[GoodsReceipt])
 async def get_goods_receipts():
     gr_collection = get_collection("goods_receipts")
@@ -357,7 +277,6 @@ async def create_goods_receipt(gr: GoodsReceipt):
             if not product:
                 raise HTTPException(status_code=404, detail=f"Inventory Product with id {item.inventory_product_id} not found.")
             
-            # Use the quantity from the goods receipt item
             current_stock = product.get("quantity_in_stock", 0)
             new_stock = current_stock + item.received_quantity
             
@@ -375,7 +294,7 @@ async def create_goods_receipt(gr: GoodsReceipt):
     new_gr = await gr_collection.find_one({"_id": result.inserted_id})
     return GoodsReceipt.from_mongo(new_gr)
 
-# Additional endpoints for other entities
+# Reservations endpoints
 @router.get("/reservations", response_model=List[Reservation])
 async def get_reservations(store_id: Optional[str] = Query(None)):
     reservations_collection = get_collection("reservations")
