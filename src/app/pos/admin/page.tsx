@@ -206,7 +206,7 @@ export default function AdminDashboardPage() {
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
                 <StatCard
                     label="Total Revenue"
-                    value={`$${stats.totalRevenue.toFixed(2)}`}
+                    value={`R ${stats.totalRevenue.toFixed(2)}`}
                     helpText={`from ${stats.totalOrders} paid orders`}
                 />
                 <StatCard
@@ -216,7 +216,7 @@ export default function AdminDashboardPage() {
                 />
                 <StatCard
                     label="Average Order Value"
-                    value={`$${stats.averageOrderValue.toFixed(2)}`}
+                    value={`R ${stats.averageOrderValue.toFixed(2)}`}
                     helpText="Average amount spent per order"
                 />
                 <StatCard

@@ -45,14 +45,11 @@ export default function POSLoginPage() {
     }
 
     try {
+      console.log('Attempting login with:', { email, password });
       const employee = await loginEmployee(email, password);
+      console.log('Login successful, employee:', employee);
 
-      // Await the state update from Zustand before proceeding
       await loginStaff(employee);
-
-      // The redirection is now handled by the POSLayout component,
-      // which listens for the currentStaff state change.
-      // We no longer need to get the state here or push to a specific route.
 
     } catch (error) {
       console.error('Login failed:', error);

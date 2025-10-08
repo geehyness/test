@@ -1,4 +1,3 @@
-// src/app/lib/api.ts
 import useSWR from "swr";
 import { useToast } from "@chakra-ui/react";
 import {
@@ -21,15 +20,42 @@ import {
   PayrollSettings,
 } from "./config/entities";
 
-const BASE_URL = "https://carte-fastapi.vercel.app/api";
+const BASE_URL = "http://127.0.0.1:8000/api";
 
-// Generic fetcher function for useSWR
+// Interface for the new standard response format
+interface StandardResponse<T = any> {
+  code: number;
+  message: string;
+  data?: T;
+}
+
+// Generic fetcher function for useSWR with auth headers - UPDATED
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  console.log(`[API] 🔄 Fetching: ${url}`);
+  const response = await fetch(url, { headers });
+
   if (!response.ok) {
     throw new Error(`API error: ${response.statusText}`);
   }
-  return response.json();
+
+  const responseData: StandardResponse = await response.json();
+  console.log(`[API] 🔄 Fetcher received:`, responseData);
+
+  // Check if the response has an error code but successful HTTP status
+  if (responseData.code >= 400) {
+    throw new Error(responseData.message || `API error: ${responseData.code}`);
+  }
+
+  return responseData.data;
 };
 
 export async function fetchData(
@@ -38,40 +64,96 @@ export async function fetchData(
   data?: Record<string, any>,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
 ): Promise<any | null> {
-  let url = `${BASE_URL}/${resource}`;
-  if (id) {
-    url += `/${id}`;
+
+  // 1. Build the URL
+  let cleanResource = resource.replace(/^\/|\/$/g, '')
+    .replace(/^api\//i, '');
+  const url = id
+    ? `${BASE_URL}/${cleanResource}/${id}`
+    : `${BASE_URL}/${cleanResource}`;
+
+  console.log(`[API] 🚀 Starting ${method} request to: ${url}`);
+  if (data) {
+    console.log(`[API] 📦 Payload for ${method}:`, data);
+  }
+
+  // 2. Prepare Headers and Authorization
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+    console.log(`[API] 🔑 Authorization token added.`);
   }
 
   const options: RequestInit = {
-    method: method,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    method,
+    headers,
   };
 
-  if (data && (method === "POST" || method === "PUT")) {
+  // 3. Add Body for POST/PUT methods
+  if ((method === "POST" || method === "PUT") && data) {
     options.body = JSON.stringify(data);
   }
 
-  try {
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || `API error: ${response.statusText}`);
+  // 4. Execute the Fetch Request
+  const response = await fetch(url, options);
+
+  // 5. Handle Errors - UPDATED for new error format
+  if (!response.ok) {
+    let errorMessage = `API error: ${response.status} ${response.statusText}`;
+    let responseText = '';
+
+    console.error(`[API] ❌ Request failed with status: ${response.status} (${response.statusText})`);
+
+    try {
+      responseText = await response.text();
+      const errorJson: StandardResponse = responseText ? JSON.parse(responseText) : null;
+
+      console.error(`[API] 📄 Raw error response body:`, responseText);
+
+      // Check for the new standard error structure
+      if (errorJson && errorJson.message) {
+        errorMessage = errorJson.message;
+        // Include details if available
+        if (errorJson.hasOwnProperty('details') && errorJson.details) {
+          errorMessage += ` - ${JSON.stringify(errorJson.details)}`;
+        }
+      } else if (responseText) {
+        errorMessage = responseText;
+      }
+
+    } catch (e) {
+      console.error(`[API] ⚠️ Failed to parse error response:`, e);
+      errorMessage = responseText || errorMessage;
     }
-    return await response.json();
-  } catch (error) {
-    console.error("Fetch failed:", error);
-    throw error;
+
+    console.error(`[API] 🛑 Throwing formatted error: ${errorMessage}`);
+    throw new Error(errorMessage);
   }
+
+  // 6. Return Data on Success - UPDATED to extract data from standard response
+
+  // Handle 204 No Content
+  if (response.status === 204) {
+    console.log(`[API] ✅ Request successful (204 No Content).`);
+    return null;
+  }
+
+  // Return parsed JSON for 200, 201, 202, etc.
+  const finalResponse: StandardResponse = await response.json();
+  console.log(`[API] ✅ Request successful (${response.status}). Full response:`, finalResponse);
+
+  // Return the data part of the standard response
+  return finalResponse.data;
 }
 
-// Authentication
+// Authentication - UPDATED for new response format
 export async function loginEmployee(email: string, password: string): Promise<Employee & { store_id: string }> {
-  // Directly call the live API login endpoint
   const url = `${BASE_URL}/login`;
-  console.log('loginEmployee: Starting login process to live API...');
+  console.log('loginEmployee: Starting login process...');
 
   const response = await fetch(url, {
     method: "POST",
@@ -85,34 +167,43 @@ export async function loginEmployee(email: string, password: string): Promise<Em
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || "Invalid email or password.");
+    const responseText = await response.text();
+    let errorMessage = "Invalid email or password.";
+
+    try {
+      const errorData: StandardResponse = JSON.parse(responseText);
+      errorMessage = errorData.message || errorMessage;
+      console.error('Login API error:', errorData);
+    } catch (e) {
+      errorMessage = responseText || `Login failed: ${response.statusText}`;
+      console.error('Login API error:', errorMessage);
+    }
+
+    throw new Error(errorMessage);
   }
 
-  const { access_token } = await response.json();
+  const loginResponse: StandardResponse<{ access_token: string; employee: Employee }> = await response.json();
+  console.log('Login response:', loginResponse);
 
-  // Fetch the employee and their store_id using the new token
-  const employeeUrl = `${BASE_URL}/employees/me`;
-  const employeeResponse = await fetch(employeeUrl, {
-    headers: {
-      "Authorization": `Bearer ${access_token}`,
-    },
-  });
+  const { access_token, employee } = loginResponse.data!;
 
-  if (!employeeResponse.ok) {
-    throw new Error("Failed to fetch employee data after login.");
+  if (!employee) {
+    throw new Error("Employee data not found in login response.");
   }
 
-  const employeeData = await employeeResponse.json();
+  localStorage.setItem('access_token', access_token);
 
-  return { ...employeeData, store_id: employeeData.store_id };
+  return {
+    ...employee,
+    store_id: employee.store_id
+  };
 }
 
-// Core POS functions
+// Core POS functions - THESE SHOULD NOW WORK CORRECTLY
 export const useFoods = () => {
   const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/foods`, fetcher);
   return {
-    menuItems: data,
+    menuItems: data, // This now contains the actual array of foods
     isLoading,
     isError: error,
     refreshMenuItems: mutate,
@@ -122,7 +213,7 @@ export const useFoods = () => {
 export const useCategories = () => {
   const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/categories`, fetcher);
   return {
-    categories: data,
+    categories: data, // This now contains the actual array of categories
     isLoading,
     isError: error,
     refreshCategories: mutate,
@@ -132,7 +223,7 @@ export const useCategories = () => {
 export const useTables = () => {
   const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/tables`, fetcher);
   return {
-    tables: data,
+    tables: data, // This now contains the actual array of tables
     isLoading,
     isError: error,
     refreshTables: mutate,
@@ -171,7 +262,7 @@ export const useCreateOrder = () => {
 export const useOrders = () => {
   const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/orders`, fetcher);
   return {
-    orders: data,
+    orders: data, // This now contains the actual array of orders
     isLoading,
     isError: error,
     refreshOrders: mutate,
@@ -210,89 +301,97 @@ export const useUpdateOrder = () => {
 export const useInventoryProducts = () => {
   const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/inventory_products`, fetcher);
   return {
-    inventoryProducts: data,
+    inventoryProducts: data, // This now contains the actual array of inventory products
     isLoading,
     isError: error,
     refreshInventoryProducts: mutate,
   };
 };
 
-// HR functions
+// HR functions - UPDATED to handle new response format
 export async function getEmployees(): Promise<any[]> {
-  return await fetchData("employees");
+  const response = await fetchData("employees");
+  return response; // This is now the actual array
 }
 
 export async function getShifts(): Promise<any[]> {
-  return await fetchData("shifts");
+  const response = await fetchData("shifts");
+  return response; // This is now the actual array
 }
 
 export async function createShift(newShift: any): Promise<any> {
-  return await fetchData("shifts", undefined, newShift, "POST");
+  const response = await fetchData("shifts", undefined, newShift, "POST");
+  return response; // This is now the created shift object
 }
 
 export async function updateShift(shiftId: string, updates: any): Promise<any> {
-  return await fetchData("shifts", shiftId, updates, "PUT");
+  const response = await fetchData("shifts", shiftId, updates, "PUT");
+  return response; // This is now the updated shift object
 }
 
 export async function updateShiftStatus(shiftId: string, status: boolean): Promise<any> {
-  const updatedShift = await fetchData(`shifts`, shiftId, { active: status }, "PUT");
-  return updatedShift;
+  const response = await fetchData(`shifts/${shiftId}/status`, undefined, { active: status }, "PUT");
+  return response; // This is now the updated shift object
 }
 
 export async function getTimesheets(): Promise<any[]> {
-  return await fetchData("timesheet_entries");
+  const response = await fetchData("timesheet_entries");
+  return response; // This is now the actual array
 }
 
 export async function clockIn(employeeId: string, storeId: string): Promise<any> {
-  return await fetchData("timesheet_entries", undefined, {
+  const response = await fetchData("timesheet_entries/clock-in", undefined, {
     employee_id: employeeId,
-    clock_in: new Date().toISOString(),
     store_id: storeId
   }, "POST");
+  return response; // This is now the created timesheet entry
 }
 
 export async function clockOut(timesheetId: string): Promise<any> {
-  const clockOutTime = new Date().toISOString();
-  return await fetchData("timesheet_entries", timesheetId, {
-    clock_out: clockOutTime
-  }, "PUT");
+  const response = await fetchData(`timesheet_entries/${timesheetId}/clock-out`, undefined, {}, "POST");
+  return response; // This is now the updated timesheet entry
 }
 
 // Inventory functions
 export async function getPurchaseOrders(): Promise<any[]> {
-  return await fetchData("purchase_orders");
+  const response = await fetchData("purchase_orders");
+  return response; // This is now the actual array
 }
 
 export async function createPurchaseOrder(orderData: any): Promise<any> {
-  return await fetchData("purchase_orders", undefined, orderData, "POST");
+  const response = await fetchData("purchase_orders", undefined, orderData, "POST");
+  return response; // This is now the created purchase order
 }
 
 export async function updatePurchaseOrder(orderId: string, orderData: any): Promise<any> {
-  return await fetchData("purchase_orders", orderId, orderData, "PUT");
+  const response = await fetchData("purchase_orders", orderId, orderData, "PUT");
+  return response; // This is now the updated purchase order
 }
 
 export async function getGoodsReceipts(): Promise<any[]> {
-  return await fetchData("goods_receipts");
+  const response = await fetchData("goods_receipts");
+  return response; // This is now the actual array
 }
 
 export async function createGoodsReceipt(receiptData: any): Promise<any> {
-  return await fetchData("goods_receipts", undefined, receiptData, "POST");
+  const response = await fetchData("goods_receipts", undefined, receiptData, "POST");
+  return response; // This is now the created goods receipt
 }
 
 export async function getSuppliers(): Promise<any[]> {
-  return await fetchData("suppliers");
+  const response = await fetchData("suppliers");
+  return response; // This is now the actual array
 }
 
 // Additional functions (payroll, low stock, etc.)
 export async function getPayrolls(): Promise<any[]> {
-  return await fetchData("payroll");
+  const response = await fetchData("payroll");
+  return response; // This is now the actual array
 }
 
 export async function getLowStockItems(): Promise<any[]> {
-  const products = await fetchData("inventory_products");
-  return products.filter((product: any) =>
-    product.quantity_in_stock <= product.reorder_level
-  );
+  const response = await fetchData("inventory/low-stock");
+  return response; // This is now the actual array of low stock items
 }
 
 export async function deleteItem(resource: string, id: string): Promise<{ message: string }> {
@@ -307,7 +406,7 @@ export const useFood = (foodId: string | undefined) => {
     fetcher
   );
   return {
-    food: data,
+    food: data, // This now contains the actual food object
     isLoading,
     isError: error,
     refreshFood: mutate,
@@ -395,16 +494,201 @@ export const useDeleteFood = () => {
 };
 
 export async function getAccessRoles(): Promise<any[]> {
-  const roles = await fetchData("access_roles");
-  return roles;
+  const response = await fetchData("access_roles");
+  return response; // This is now the actual array
 }
 
 export async function getJobTitles(): Promise<any[]> {
-  const titles = await fetchData("job_titles");
-  return titles;
+  const response = await fetchData("job_titles");
+  return response; // This is now the actual array
 }
 
 export async function getPayrollSettings(): Promise<any> {
-  const settings = await fetchData("payroll_settings");
-  return settings[0];
+  const response = await fetchData("payroll_settings");
+  return response; // This is now the settings object (not an array anymore)
+}
+
+// Add a test function to verify connection
+export async function testConnection(): Promise<boolean> {
+  try {
+    const response = await fetch(`${BASE_URL}/health`);
+    const data: StandardResponse = await response.json();
+    console.log('Health check:', data);
+    return data.code === 200;
+  } catch (error) {
+    console.error('Connection test failed:', error);
+    return false;
+  }
+}
+
+// Department functions
+export async function getDepartments(): Promise<any[]> {
+  const response = await fetchData("departments");
+  return response; // This is now the actual array
+}
+
+// In api.ts - Update the getUsers function
+export async function getUsers(): Promise<any[]> {
+  const response = await fetchData("users");
+  // Transform the data to match your frontend expectations
+  return response.map((user: any) => ({
+    ...user,
+    // Create name field from first_name and last_name
+    name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+    // Ensure all required fields are present
+    email_verified_at: user.email_verified_at || null,
+    remember_token: user.remember_token || null,
+  }));
+}
+
+// Also update the useUsers hook
+export const useUsers = () => {
+  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/users`, async (url) => {
+    const users = await fetcher(url);
+    return users.map((user: any) => ({
+      ...user,
+      name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
+    }));
+  });
+
+  return {
+    users: data,
+    isLoading,
+    isError: error,
+    refreshUsers: mutate,
+  };
+};
+
+export const useDepartments = () => {
+  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/departments`, fetcher);
+  return {
+    departments: data, // This now contains the actual array of departments
+    isLoading,
+    isError: error,
+    refreshDepartments: mutate,
+  };
+};
+
+export const useAccessRoles = () => {
+  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/access_roles`, fetcher);
+  return {
+    accessRoles: data, // This now contains the actual array of access roles
+    isLoading,
+    isError: error,
+    refreshAccessRoles: mutate,
+  };
+};
+
+export const useJobTitles = () => {
+  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/job_titles`, fetcher);
+  return {
+    jobTitles: data, // This now contains the actual array of job titles
+    isLoading,
+    isError: error,
+    refreshJobTitles: mutate,
+  };
+};
+
+// Enhanced fetchData with better error handling
+export async function enhancedFetchData(
+  resource: string,
+  id?: string,
+  data?: Record<string, any>,
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
+): Promise<any | null> {
+  try {
+    return await fetchData(resource, id, data, method);
+  } catch (error: any) {
+    console.error(`API Error for ${resource}:`, error);
+    throw error;
+  }
+}
+
+export async function calculatePayroll(employeeId: string, periodStart: string, periodEnd: string): Promise<any> {
+  const response = await fetchData("payroll/calculate", undefined, {
+    employee_id: employeeId,
+    period_start: periodStart,
+    period_end: periodEnd
+  }, "POST");
+  return response;
+}
+
+export async function processPayroll(payrollId: string): Promise<any> {
+  const response = await fetchData(`payroll/${payrollId}/process`, undefined, {}, "POST");
+  return response;
+}
+
+export async function createPayroll(payrollData: any): Promise<any> {
+  const response = await fetchData("payroll", undefined, payrollData, "POST");
+  return response;
+}
+
+export async function updatePayrollSettings(settings: any): Promise<any> {
+  const response = await fetchData("payroll_settings", undefined, settings, "POST");
+  return response;
+}
+
+// Inventory functions
+export async function getInventoryProducts(): Promise<any[]> {
+  const response = await fetchData("inventory_products");
+  return response;
+}
+
+
+
+
+
+
+
+// Add these functions to your api.ts file
+
+// Sites functions
+export async function getSites(): Promise<any[]> {
+  const response = await fetchData("sites");
+  return response;
+}
+
+export async function createSite(siteData: any): Promise<any> {
+  const response = await fetchData("sites", undefined, siteData, "POST");
+  return response;
+}
+
+export async function updateSite(siteId: string, siteData: any): Promise<any> {
+  const response = await fetchData("sites", siteId, siteData, "PUT");
+  return response;
+}
+
+export async function deleteSite(siteId: string): Promise<any> {
+  const response = await fetchData("sites", siteId, undefined, "DELETE");
+  return response;
+}
+
+export async function deletePurchaseOrder(orderId: string): Promise<any> {
+  const response = await fetchData("purchase_orders", orderId, undefined, "DELETE");
+  return response;
+}
+
+export async function updateGoodsReceipt(receiptId: string, receiptData: any): Promise<any> {
+  const response = await fetchData("goods_receipts", receiptId, receiptData, "PUT");
+  return response;
+}
+
+export async function deleteGoodsReceipt(receiptId: string): Promise<any> {
+  const response = await fetchData("goods_receipts", receiptId, undefined, "DELETE");
+  return response;
+}
+
+export async function createInventoryProduct(productData: any): Promise<any> {
+  const response = await fetchData("inventory_products", undefined, productData, "POST");
+  return response;
+}
+
+export async function updateInventoryProduct(productId: string, productData: any): Promise<any> {
+  const response = await fetchData("inventory_products", productId, productData, "PUT");
+  return response;
+}
+
+export async function deleteInventoryProduct(productId: string): Promise<any> {
+  const response = await fetchData("inventory_products", productId, undefined, "DELETE");
+  return response;
 }

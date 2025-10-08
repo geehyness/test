@@ -1,0 +1,258 @@
+2025-10-07 22:56:42.240 | INFO     | api.main             | main.py:38 | ✅ Connected to MongoDB!
+2025-10-07 22:58:13.105 | INFO     | api.main             | main.py:47 | ✅ MongoDB connection closed.
+2025-10-07 22:58:16.772 | INFO     | api.main             | main.py:38 | ✅ Connected to MongoDB!
+2025-10-07 22:58:29.959 | INFO     | api.main             | main.py:47 | ✅ MongoDB connection closed.
+2025-10-07 22:58:34.301 | INFO     | api.main             | main.py:38 | ✅ Connected to MongoDB!
+2025-10-07 22:59:02.331 | INFO     | api.main             | main.py:47 | ✅ MongoDB connection closed.
+2025-10-08 07:22:34.607 | INFO     | api.main             | main.py:40 | ✅ Connected to MongoDB!
+2025-10-08 07:22:34.673 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:35.025 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:35.376 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:35.727 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:36.078 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:36.429 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:36.781 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:37.132 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:37.483 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:37.833 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:38.184 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:38.535 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:38.886 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:39.237 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:39.588 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:39.939 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:40.290 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:40.641 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:40.992 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:41.343 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:41.694 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:42.045 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:42.396 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:42.746 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:43.097 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:43.448 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:43.799 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:44.150 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:44.501 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:44.852 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:45.202 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:45.553 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:45.904 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:46.255 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:46.606 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:46.957 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:47.308 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:47.660 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:48.011 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:48.362 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:48.713 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:49.064 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:49.415 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:49.766 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:50.117 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:50.468 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:50.820 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:51.171 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:51.522 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:51.873 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:52.224 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:52.393 | INFO     | api.middleware       | logging_middleware.py:24 | REQUEST [1e9ba95a] | POST /api/orders | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-08 07:22:52.482 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: foods
+2025-10-08 07:22:52.552 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: foods
+2025-10-08 07:22:52.576 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:52.612 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: foods
+2025-10-08 07:22:52.689 | INFO     | api.database         | db_logger.py:27 | DB INSERT | Collection: orders
+2025-10-08 07:22:52.752 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: orders
+2025-10-08 07:22:52.756 | ERROR    | api.response         | response_helpers.py:112 | GENERIC EXCEPTION | Type: AttributeError | Message: from_mongo
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/routes/core.py", line 182, in create_order
+    data=OrderResponse.from_mongo(order_response),
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/pydantic/_internal/_model_construction.py", line 271, in __getattr__
+    raise AttributeError(item)
+AttributeError: from_mongo
+2025-10-08 07:22:52.757 | WARNING  | api.response         | response_helpers.py:81 | ERROR RESPONSE | Code: 500 | Message: from_mongo
+2025-10-08 07:22:52.758 | INFO     | api.middleware       | logging_middleware.py:44 | RESPONSE [1e9ba95a] | Status: 200 | Time: 0.365s
+2025-10-08 07:22:52.927 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:53.280 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:53.631 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:53.982 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:54.333 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:54.683 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:55.035 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:55.386 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:55.736 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:56.087 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:56.438 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:56.789 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:57.140 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:57.491 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:57.842 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:58.194 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:58.545 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:58.896 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:59.247 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:59.598 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:22:59.949 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:00.300 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:00.651 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:01.002 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:01.353 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:01.704 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:02.055 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:02.406 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:02.757 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:03.108 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:03.459 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:03.810 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:04.161 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:04.512 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:04.863 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:05.214 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:05.565 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:05.916 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:06.267 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:06.619 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:06.970 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:07.321 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:07.672 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:08.023 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:08.375 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:08.726 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:09.077 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:09.428 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:09.779 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:10.130 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:10.481 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:10.831 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:11.182 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:11.533 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:11.884 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:12.235 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:12.585 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:12.936 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:13.287 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:13.638 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:13.989 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:14.340 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:14.691 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:15.042 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:15.393 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:15.744 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:16.095 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:16.446 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:16.797 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:17.147 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:17.498 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:17.849 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:18.200 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:18.551 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:18.902 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:19.253 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:19.605 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:19.956 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:20.307 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:20.658 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:21.009 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:21.360 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:21.711 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:22.062 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:22.414 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:22.765 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:23.116 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:23.467 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:23.818 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:24.169 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:24.520 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:24.871 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:25.221 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:25.572 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:25.923 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:26.274 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:26.625 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:26.976 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:27.327 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:27.678 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:28.028 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:28.379 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:28.730 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:29.081 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:29.432 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:29.782 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:30.134 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:30.485 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:30.836 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:31.187 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:31.538 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:31.889 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:32.240 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:32.591 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:32.942 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:33.293 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:33.644 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:33.995 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:34.347 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:34.698 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:35.048 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:35.399 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:35.750 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:36.101 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:36.452 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:36.803 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:37.154 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:37.506 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:37.857 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:38.208 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:38.559 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:38.910 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:39.261 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:39.612 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:39.963 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:40.314 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:40.665 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:41.016 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:41.368 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:41.719 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:42.070 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:42.421 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:42.772 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:43.123 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:43.474 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:43.825 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:44.176 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:44.527 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:44.878 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:45.089 | INFO     | api.main             | main.py:49 | ✅ MongoDB connection closed.
+2025-10-08 07:23:55.652 | INFO     | api.main             | main.py:40 | ✅ Connected to MongoDB!
+2025-10-08 07:23:55.715 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:56.020 | INFO     | api.middleware       | logging_middleware.py:24 | REQUEST [d93380cc] | POST /api/orders | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-08 07:23:56.067 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:56.100 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: foods
+2025-10-08 07:23:56.176 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: foods
+2025-10-08 07:23:56.258 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: foods
+2025-10-08 07:23:56.377 | INFO     | api.database         | db_logger.py:27 | DB INSERT | Collection: orders
+2025-10-08 07:23:56.427 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:56.456 | INFO     | api.database         | db_logger.py:27 | DB FIND | Collection: orders
+2025-10-08 07:23:56.491 | ERROR    | api.response         | response_helpers.py:112 | GENERIC EXCEPTION | Type: AttributeError | Message: from_mongo
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/routes/core.py", line 182, in create_order
+    data=OrderResponse.from_mongo(order_response),
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/pydantic/_internal/_model_construction.py", line 271, in __getattr__
+    raise AttributeError(item)
+AttributeError: from_mongo
+2025-10-08 07:23:56.498 | WARNING  | api.response         | response_helpers.py:81 | ERROR RESPONSE | Code: 500 | Message: from_mongo
+2025-10-08 07:23:56.506 | INFO     | api.middleware       | logging_middleware.py:44 | RESPONSE [d93380cc] | Status: 200 | Time: 0.481s
+2025-10-08 07:23:56.783 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:57.134 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:57.485 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:57.837 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:58.191 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:58.542 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:58.893 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:59.245 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:59.597 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:23:59.949 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:24:00.300 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:24:00.651 | INFO     | watchfiles.main      | main.py:308 | 1 change detected
+2025-10-08 07:24:00.890 | INFO     | api.main             | main.py:49 | ✅ MongoDB connection closed.

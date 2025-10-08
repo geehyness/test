@@ -215,11 +215,13 @@ export default function POSDashboardPage() {
   // Modified updateOrder function to only use the store's action
   const updateOrder = async (orderId: string, updatedOrder: Partial<Order>) => {
     try {
-      await fetchData("orders", orderId, updatedOrder, "PUT");
-      console.log(
-        `LOG: API call to update order #${orderId} with data:`,
-        updatedOrder
-      );
+      const response = await fetchData("orders", orderId, updatedOrder, "PUT");
+      console.log(`LOG: API call to update order #${orderId} with data:`, updatedOrder);
+
+      // ✅ FIX: Check if response is valid
+      if (!response || response.code !== 200) {
+        throw new Error(response?.message || "Failed to update order");
+      }
 
       // Now, only use the store's action to update state
       updateOrderInStore(orderId, updatedOrder);
@@ -232,9 +234,7 @@ export default function POSDashboardPage() {
         duration: 3000,
         isClosable: true,
       });
-      console.log(
-        `LOG: Order #${orderId} status updated to: ${updatedOrder.status}`
-      );
+      console.log(`LOG: Order #${orderId} status updated to: ${updatedOrder.status}`);
     } catch (error: any) {
       toast({
         title: "Error updating order.",
@@ -402,8 +402,7 @@ export default function POSDashboardPage() {
       if ((currentOrder.items ?? []).length === 0) {
         toast({
           title: "Order Empty",
-          description:
-            "Please add items to the order before sending to kitchen.",
+          description: "Please add items to the order before sending to kitchen.",
           status: "warning",
           duration: 3000,
           isClosable: true,
@@ -415,15 +414,12 @@ export default function POSDashboardPage() {
       if (!currentOrder.table_id && currentOrder.order_type !== "takeaway") {
         toast({
           title: "Table Not Selected",
-          description:
-            "Please select a table or mark as takeaway before sending to kitchen.",
+          description: "Please select a table or mark as takeaway before sending to kitchen.",
           status: "info",
           duration: 3000,
           isClosable: true,
         });
-        console.warn(
-          "WARNING: Attempted to send order to kitchen without table selection."
-        );
+        console.warn("WARNING: Attempted to send order to kitchen without table selection.");
         return;
       }
 
@@ -446,22 +442,28 @@ export default function POSDashboardPage() {
         })),
       } as Order;
 
+      let response;
       if (!currentOrder.id) {
-        const newOrder = await fetchData(
-          "orders",
-          undefined,
-          orderToSubmit,
-          "POST"
-        );
+        response = await fetchData("orders", undefined, orderToSubmit, "POST");
+
+        // ✅ FIX: Check if response is valid before using it
+        if (!response || response.code !== 200) {
+          throw new Error(response?.message || "Failed to create order");
+        }
+
+        const newOrder = response.data;
         addOrder(newOrder);
         console.log("LOG: New order sent to kitchen via API:", newOrder);
       } else {
-        await fetchData("orders", currentOrder.id, orderToSubmit, "PUT");
+        response = await fetchData("orders", currentOrder.id, orderToSubmit, "PUT");
+
+        // ✅ FIX: Check if response is valid before using it
+        if (!response || response.code !== 200) {
+          throw new Error(response?.message || "Failed to update order");
+        }
+
         updateOrderInStore(currentOrder.id, orderToSubmit);
-        console.log(
-          "LOG: Existing order sent to kitchen via API:",
-          orderToSubmit
-        );
+        console.log("LOG: Existing order sent to kitchen via API:", orderToSubmit);
       }
 
       clearCurrentOrder();
@@ -479,8 +481,7 @@ export default function POSDashboardPage() {
       console.error("ERROR: Send to kitchen error:", err);
       toast({
         title: "Failed to Send Order",
-        description:
-          err.message || "There was an error sending the order to the kitchen.",
+        description: err.message || "There was an error sending the order to the kitchen.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -864,7 +865,7 @@ export default function POSDashboardPage() {
                         spacing={4}
                         w="full"
                       >
-                        {activeOrders.map((order) => (
+                        {activeOrders.filter(order => order).map((order) => ( // ✅ FIX APPLIED HERE
                           <Box
                             key={order.id}
                             p={4}
