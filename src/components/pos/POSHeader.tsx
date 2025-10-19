@@ -15,7 +15,7 @@ import {
   Text,
   VStack,
   useColorModeValue,
-  Image as ChakraImage
+  Image as ChakraImage,
 } from "@chakra-ui/react";
 import { FiChevronDown, FiMenu } from "react-icons/fi";
 import { usePOSStore } from "../../lib/usePOSStore";
@@ -66,14 +66,18 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
       />
 
       {/* Main content area */}
-      <Flex flex="1" alignItems="center" justifyContent={{ base: "center", md: "flex-start" }}>
+      <Flex
+        flex="1"
+        alignItems="center"
+        justifyContent={{ base: "center", md: "flex-start" }}
+      >
         <ChakraImage
           src="/c2.png"
           alt="Carte Logo"
           width="auto"
           height="20px"
           objectFit="contain"
-        // Removed mx="auto" and mt={4} as the parent Flex will handle alignment
+          // Removed mx="auto" and mt={4} as the parent Flex will handle alignment
         />
         <Flex
           alignItems="center"
@@ -87,7 +91,10 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
         </Flex>
       </Flex>
 
-      <HStack spacing={{ base: "0", md: "6" }} display={{ base: "flex", md: "flex" }}>
+      <HStack
+        spacing={{ base: "0", md: "6" }}
+        display={{ base: "flex", md: "flex" }}
+      >
         <Menu>
           <MenuButton
             py={2}
@@ -95,12 +102,7 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
             _focus={{ boxShadow: "none" }}
           >
             <HStack>
-              <Avatar
-                size={"sm"}
-                src={
-                  "https://images.unsplash.com/photo-1619946794135-5bc917a0f0dc?ixid=MXwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHw%3D&ixlib=rb-1.2.1&auto=format&fit=crop&w=359&q=80"
-                }
-              />
+              <Avatar size={"sm"} src={"/pic.png"} />
               <VStack
                 display={{ base: "none", md: "flex" }}
                 alignItems="flex-start"

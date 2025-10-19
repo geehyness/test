@@ -1,4 +1,4 @@
-# app/database.py - UPDATED WITH LOGGING
+# app/database.py - FIXED VERSION
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
@@ -9,11 +9,8 @@ load_dotenv()
 
 logger = get_logger("api.database")
 
-# FIX: Remove the hardcoded fallback string that caused the SRV error.
-# The connection string MUST now be loaded from the MONGODB_URL in your .env file.
 MONGO_DETAILS = os.getenv("MONGODB_URL")
 
-# Fail fast if the environment variable wasn't loaded
 if not MONGO_DETAILS:
     raise Exception("MONGODB_URL environment variable is missing or empty. Please check your .env file.")
 
@@ -31,7 +28,7 @@ def document_helper(document) -> dict:
         del document["_id"]
     return document
 
-# Wrapper class for logged collection operations
+# Wrapper class for logged collection operations - FIXED VERSION
 class LoggedCollection:
     def __init__(self, collection, collection_name):
         self.collection = collection

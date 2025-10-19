@@ -26,14 +26,22 @@ router = APIRouter(prefix="/api", tags=["core"])
 # --- Generic CRUD Helper Functions ---
 
 async def _create_item(collection_name: str, item_model, response_model):
-    """Generic function to create a new item."""
+    """Generic function to create a new item with proper response handling"""
     try:
         collection = get_collection(collection_name)
         item_dict = to_mongo_dict(item_model)
         result = await collection.insert_one(item_dict)
         new_item = await collection.find_one({"_id": result.inserted_id})
+        
+        # Handle different model types with to_response_dict method
+        if hasattr(item_model, 'to_response_dict'):
+            item_instance = item_model.__class__.from_mongo(new_item)
+            response_data = item_instance.to_response_dict()
+        else:
+            response_data = item_model.from_mongo(new_item)
+            
         return success_response(
-            data=item_model.from_mongo(new_item),
+            data=response_data,
             message=f"{collection_name[:-1].capitalize()} created successfully",
             code=201
         )
@@ -41,18 +49,24 @@ async def _create_item(collection_name: str, item_model, response_model):
         return handle_generic_exception(e)
 
 async def _get_all_items(collection_name: str, item_model, query: dict = None):
-    """Generic function to retrieve a list of items."""
+    """Generic function to retrieve a list of items with proper response handling"""
     try:
         collection = get_collection(collection_name)
+        items_data = await collection.find(query or {})
         items = []
-        async for item in collection.find(query or {}):
-            items.append(item_model.from_mongo(item))
+        for item in items_data:
+            # Handle models with to_response_dict method
+            item_instance = item_model.from_mongo(item)
+            if hasattr(item_instance, 'to_response_dict'):
+                items.append(item_instance.to_response_dict())
+            else:
+                items.append(item_instance)
         return success_response(data=items)
     except Exception as e:
         return handle_generic_exception(e)
 
 async def _get_item_by_id(collection_name: str, item_id: str, item_model):
-    """Generic function to retrieve a single item by ID."""
+    """Generic function to retrieve a single item by ID with proper response handling"""
     try:
         collection = get_collection(collection_name)
         item = await collection.find_one({"_id": ObjectId(item_id)})
@@ -60,11 +74,16 @@ async def _get_item_by_id(collection_name: str, item_id: str, item_model):
         return error_response(message=f"Invalid ID format for {collection_name}", code=400)
         
     if item:
-        return success_response(data=item_model.from_mongo(item))
+        # Handle models with to_response_dict method
+        item_instance = item_model.from_mongo(item)
+        if hasattr(item_instance, 'to_response_dict'):
+            return success_response(data=item_instance.to_response_dict())
+        else:
+            return success_response(data=item_instance)
     return error_response(message=f"{collection_name[:-1].capitalize()} not found", code=404)
 
 async def _update_item(collection_name: str, item_id: str, item_model, response_model):
-    """Generic function to update an item."""
+    """Generic function to update an item with proper response handling"""
     try:
         collection = get_collection(collection_name)
         item_dict = to_mongo_update_dict(item_model, exclude_unset=True)
@@ -76,8 +95,16 @@ async def _update_item(collection_name: str, item_id: str, item_model, response_
             return error_response(message=f"{collection_name[:-1].capitalize()} not found", code=404)
             
         updated_item = await collection.find_one({"_id": ObjectId(item_id)})
+        
+        # Handle models with to_response_dict method
+        item_instance = item_model.__class__.from_mongo(updated_item)
+        if hasattr(item_instance, 'to_response_dict'):
+            response_data = item_instance.to_response_dict()
+        else:
+            response_data = item_instance
+            
         return success_response(
-            data=item_model.from_mongo(updated_item),
+            data=response_data,
             message=f"{collection_name[:-1].capitalize()} updated successfully"
         )
     except Exception as e:
@@ -179,7 +206,7 @@ async def create_order(order: Order):
             order_response.stock_warnings = stock_warnings
         
         return success_response(
-            data=OrderResponse.from_mongo(order_response),
+            data=OrderResponse.model_validate(order_response.model_dump()),
             message="Order created successfully",
             code=201
         )
@@ -572,7 +599,8 @@ async def get_low_stock_items():
     try:
         products_collection = get_collection("inventory_products")
         low_stock_items = []
-        async for product in products_collection.find():
+        products = await products_collection.find()
+        for product in products:
             if product.get("quantity_in_stock", 0) <= product.get("reorder_level", 0):
                 low_stock_items.append(InventoryProduct.from_mongo(product))
         return success_response(data=low_stock_items)
@@ -586,7 +614,8 @@ async def get_pending_purchase_orders():
         po_collection = get_collection("purchase_orders")
         pending_statuses = ['draft', 'pending-approval', 'approved', 'ordered']
         pending_orders = []
-        async for po in po_collection.find({"status": {"$in": pending_statuses}}):
+        pos = await po_collection.find({"status": {"$in": pending_statuses}})
+        for po in pos:
             pending_orders.append(PurchaseOrder.from_mongo(po))
         return success_response(data=pending_orders)
     except Exception as e:
@@ -597,7 +626,8 @@ async def get_pending_purchase_orders():
 async def get_order_item(order_item_id: str):
     try:
         orders_collection = get_collection("orders")
-        async for order in orders_collection.find():
+        orders = await orders_collection.find()
+        for order in orders:
             for item in order.get("items", []):
                 if str(item.get("id")) == order_item_id:
                     return success_response(data=item)
@@ -612,7 +642,8 @@ async def get_store_foods(store_id: Optional[str] = Query(None)):
         foods_collection = get_collection("foods")
         query = {"store_id": store_id} if store_id else {}
         store_foods = []
-        async for food in foods_collection.find(query):
+        foods = await foods_collection.find(query)
+        for food in foods:
             store_foods.append({
                 "food_id": str(food["_id"]),
                 "store_id": food.get("store_id", ""),
@@ -628,7 +659,8 @@ async def get_recipes(food_id: Optional[str] = Query(None)):
     try:
         foods_collection = get_collection("foods")
         recipes = []
-        async for food in foods_collection.find():
+        foods = await foods_collection.find()
+        for food in foods:
             if food.get("recipes"):
                 for recipe in food["recipes"]:
                     if not food_id or str(food["_id"]) == food_id:
@@ -655,24 +687,12 @@ async def get_users():
     try:
         users_collection = get_collection("users")
         users = []
-        async for user in users_collection.find():
+        user_docs = await users_collection.find()
+        for user in user_docs:
             # Convert to User model first
             user_model = User.from_mongo(user)
-            
-            # Convert to UserResponse with computed name
             user_dict = user_model.to_dict()
             user_dict.pop('password', None)  # Remove password
-            
-            # Compute name if not present
-            if not user_dict.get('name'):
-                if user_dict.get('first_name') and user_dict.get('last_name'):
-                    user_dict['name'] = f"{user_dict['first_name']} {user_dict['last_name']}".strip()
-                elif user_dict.get('first_name'):
-                    user_dict['name'] = user_dict['first_name']
-                elif user_dict.get('last_name'):
-                    user_dict['name'] = user_dict['last_name']
-                else:
-                    user_dict['name'] = user_dict.get('username') or user_dict.get('email', '').split('@')[0]
             
             users.append(user_dict)
         
@@ -691,17 +711,6 @@ async def get_user(user_id: str):
             user_model = User.from_mongo(user)
             user_dict = user_model.to_dict()
             user_dict.pop('password', None)  # Remove password
-            
-            # Compute name if not present
-            if not user_dict.get('name'):
-                if user_dict.get('first_name') and user_dict.get('last_name'):
-                    user_dict['name'] = f"{user_dict['first_name']} {user_dict['last_name']}".strip()
-                elif user_dict.get('first_name'):
-                    user_dict['name'] = user_dict['first_name']
-                elif user_dict.get('last_name'):
-                    user_dict['name'] = user_dict['last_name']
-                else:
-                    user_dict['name'] = user_dict.get('username') or user_dict.get('email', '').split('@')[0]
             
             return success_response(data=user_dict)
         return error_response(message="User not found", code=404)

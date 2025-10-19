@@ -1,18 +1,79 @@
 # app/routes/hr.py - COMPLETELY UPDATED
-from fastapi import APIRouter, HTTPException, Query, status
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Query, status, Body
+from typing import List, Optional, Any  # Add Any to the imports
 from app.database import get_collection
 from app.models.hr import Employee, Shift, TimesheetEntry, Payroll, AccessRole, JobTitle, PayrollSettings, Timesheet, Department
 from app.models.response import (
     StandardResponse, EmployeeResponse, ShiftResponse, TimesheetEntryResponse, PayrollResponse, 
     AccessRoleResponse, JobTitleResponse, PayrollSettingsResponse, TimesheetResponse,
-    DepartmentResponse
+    DepartmentResponse, PayrollPreviewResponse
 )
 from app.utils.response_helpers import success_response, error_response, handle_http_exception, handle_generic_exception
 from app.utils.mongo_helpers import to_mongo_dict, to_mongo_update_dict
 from bson import ObjectId
 from datetime import datetime, timedelta
 import asyncio
+
+
+RECURRENCE_WEEKS = 52 # Create shifts for one year
+
+async def _process_shift_recurrence(shift_data: dict, original_shift_id: ObjectId):
+    """
+    Helper to process recurring shifts by creating future shift instances.
+    """
+    if not shift_data.get("recurring"):
+        return
+
+    # Use the original shift's ID as the series ID to link all instances
+    recurring_series_id = str(original_shift_id)
+    
+    # Extract and parse dates
+    try:
+        # Note: The 'start' and 'end' from MongoDB will be ISO-formatted strings
+        start_dt = datetime.fromisoformat(shift_data["start"])
+        end_dt = datetime.fromisoformat(shift_data["end"])
+    except:
+        # Failsafe for incorrect date format
+        return
+
+    duration = end_dt - start_dt
+    shifts_collection = get_collection("shifts")
+    
+    # Generate future shifts (starting from the week *after* the original shift)
+    for i in range(1, RECURRENCE_WEEKS + 1):
+        new_start_dt = start_dt + timedelta(weeks=i)
+        new_end_dt = new_start_dt + duration
+        
+        # Check against an optional recurrence_end_date
+        recurrence_end_date_str = shift_data.get("recurrence_end_date")
+        if recurrence_end_date_str:
+             try:
+                recurrence_end_date = datetime.fromisoformat(recurrence_end_date_str)
+                # Stop if the new shift starts after the recurrence end date
+                if new_start_dt.date() > recurrence_end_date.date():
+                    break
+             except:
+                pass # Continue if end date is invalid
+        
+        # Create new shift data
+        new_shift_data = shift_data.copy()
+        new_shift_data["start"] = new_start_dt.isoformat()
+        new_shift_data["end"] = new_end_dt.isoformat()
+        
+        # Link to the series
+        new_shift_data["recurring"] = True
+        new_shift_data["recurring_series_id"] = recurring_series_id
+        new_shift_data.pop("_id", None)
+        new_shift_data.pop("id", None)
+        
+        # Create a new Shift model instance and get the dict for MongoDB insertion
+        new_shift_instance = Shift(**new_shift_data)
+        new_shift_mongo_dict = to_mongo_dict(new_shift_instance)
+        
+        # Insert the new recurring shift
+        await shifts_collection.insert_one(new_shift_mongo_dict)
+
+
 
 router = APIRouter(prefix="/api", tags=["hr"])
 
@@ -26,7 +87,9 @@ async def get_departments(store_id: Optional[str] = Query(None)):
         departments_collection = get_collection("departments")
         query = {"store_id": store_id} if store_id else {}
         departments = []
-        async for department in departments_collection.find(query):
+        # FIXED: Use await and iterate
+        dept_docs = await departments_collection.find(query)
+        for department in dept_docs:
             departments.append(Department.from_mongo(department))
         return success_response(data=departments)
     except Exception as e:
@@ -107,7 +170,9 @@ async def get_employees(store_id: Optional[str] = Query(None)):
         employees_collection = get_collection("employees")
         query = {"store_id": store_id} if store_id else {}
         employees = []
-        async for employee in employees_collection.find(query):
+        # FIXED: Use await and iterate
+        employee_docs = await employees_collection.find(query)
+        for employee in employee_docs:
             employees.append(Employee.from_mongo(employee))
         return success_response(data=employees)
     except Exception as e:
@@ -187,7 +252,9 @@ async def get_access_roles():
     try:
         access_roles_collection = get_collection("access_roles")
         roles = []
-        async for role in access_roles_collection.find():
+        # FIXED: Use await and iterate
+        role_docs = await access_roles_collection.find()
+        for role in role_docs:
             roles.append(AccessRole.from_mongo(role))
         return success_response(data=roles)
     except Exception as e:
@@ -268,7 +335,9 @@ async def get_job_titles(store_id: Optional[str] = Query(None)):
         job_titles_collection = get_collection("job_titles")
         query = {"store_id": store_id} if store_id else {}
         titles = []
-        async for title in job_titles_collection.find(query):
+        # FIXED: Use await and iterate
+        title_docs = await job_titles_collection.find(query)
+        for title in title_docs:
             titles.append(JobTitle.from_mongo(title))
         return success_response(data=titles)
     except Exception as e:
@@ -354,7 +423,9 @@ async def get_shifts(employee_id: Optional[str] = Query(None), active: Optional[
             query["active"] = active
             
         shifts = []
-        async for shift in shifts_collection.find(query):
+        # FIXED: Use await and iterate
+        shift_docs = await shifts_collection.find(query)
+        for shift in shift_docs:
             shifts.append(Shift.from_mongo(shift))
         return success_response(data=shifts)
     except Exception as e:
@@ -372,44 +443,199 @@ async def get_shift(shift_id: str):
     except Exception:
         return error_response(message="Invalid ID format for shift", code=400)
 
+async def _create_item(collection_name: str, item: Any, response_model: Any):
+    """Generic helper to create items in collections."""
+    try:
+        collection = get_collection(collection_name)
+        item_dict = to_mongo_dict(item)
+        
+        print(f"🔍 [Backend] Inserting into {collection_name}: {item_dict}")
+        
+        result = await collection.insert_one(item_dict)
+        new_item = await collection.find_one({"_id": result.inserted_id})
+        
+        print(f"🔍 [Backend] Inserted item: {new_item}")
+        
+        # For shifts, we need special handling for recurrence
+        if collection_name == "shifts" and new_item.get("recurring"):
+            shift_id = result.inserted_id
+            
+            # Set recurring_series_id for the original shift
+            await collection.update_one(
+                {"_id": shift_id},
+                {"$set": {"recurring_series_id": str(shift_id)}}
+            )
+            
+            # Fetch updated document
+            new_item = await collection.find_one({"_id": shift_id})
+            
+            # Process recurrence for future shifts
+            await _process_shift_recurrence(new_item, shift_id)
+            
+            # Fetch final document
+            new_item = await collection.find_one({"_id": shift_id})
+        
+        return success_response(
+            data=response_model.from_mongo(new_item),
+            message=f"{collection_name[:-1].title()} created successfully",
+            code=201
+        )
+    except Exception as e:
+        print(f"❌ [Backend] Error in _create_item: {str(e)}")
+        return handle_generic_exception(e)
+
+async def _delete_item(collection_name: str, item_id: str):
+    """Generic helper to delete items from collections."""
+    try:
+        collection = get_collection(collection_name)
+        result = await collection.delete_one({"_id": ObjectId(item_id)})
+        if result.deleted_count == 0:
+            return error_response(message=f"{collection_name[:-1].title()} not found", code=404)
+        return success_response(
+            data=None,
+            message=f"{collection_name[:-1].title()} deleted successfully"
+        )
+    except Exception:
+        return error_response(message=f"Invalid ID format for {collection_name[:-1]}", code=400)
+
+async def _delete_item(collection_name: str, item_id: str):
+    """Generic helper to delete items from collections."""
+    try:
+        collection = get_collection(collection_name)
+        result = await collection.delete_one({"_id": ObjectId(item_id)})
+        if result.deleted_count == 0:
+            return error_response(message=f"{collection_name[:-1].title()} not found", code=404)
+        return success_response(
+            data=None,
+            message=f"{collection_name[:-1].title()} deleted successfully"
+        )
+    except Exception:
+        return error_response(message=f"Invalid ID format for {collection_name[:-1]}", code=400)
+
 @router.post("/shifts", response_model=StandardResponse[ShiftResponse])
 async def create_shift(shift: Shift):
-    """Create a new shift."""
+    """Create a new shift, including recurrence logic."""
     try:
+        # 1. Standard creation
         shifts_collection = get_collection("shifts")
         shift_dict = to_mongo_dict(shift)
         
+        print(f"🔍 [Backend] Inserting shift: {shift_dict}")
+        
         result = await shifts_collection.insert_one(shift_dict)
-        new_shift = await shifts_collection.find_one({"_id": result.inserted_id})
+        new_shift_doc = await shifts_collection.find_one({"_id": result.inserted_id})
+        
+        # Convert to Shift model for response
+        new_shift = Shift.from_mongo(new_shift_doc)
+        
+        print(f"🔍 [Backend] Created shift: {new_shift}")
+        
+        # 2. Update original shift with its own id as recurring_series_id and process recurrence
+        if new_shift.recurring:
+            original_shift_id = result.inserted_id
+            
+            # Set the series ID on the original shift
+            await shifts_collection.update_one(
+                {"_id": original_shift_id},
+                {"$set": {"recurring_series_id": str(original_shift_id)}}
+            )
+            
+            # Fetch the updated doc with the correct 'created_at' and 'updated_at' for recurrence
+            updated_doc = await shifts_collection.find_one({"_id": original_shift_id})
+            
+            # Process recurrence
+            await _process_shift_recurrence(updated_doc, original_shift_id)
+            
+            # Re-fetch the shift to get the updated data
+            new_shift_doc = await shifts_collection.find_one({"_id": result.inserted_id})
+            new_shift = Shift.from_mongo(new_shift_doc)
+
+        # Return the shift data in the standard response format
         return success_response(
-            data=Shift.from_mongo(new_shift),
+            data=new_shift,
             message="Shift created successfully",
             code=201
         )
     except Exception as e:
+        print(f"❌ [Backend] Error creating shift: {str(e)}")
         return handle_generic_exception(e)
 
+# app/routes/hr.py
+
+# PUT /api/shifts/{shift_id} - Update a shift
 @router.put("/shifts/{shift_id}", response_model=StandardResponse[ShiftResponse])
 async def update_shift(shift_id: str, shift: Shift):
-    """Update an existing shift by ID."""
+    """Update an existing shift, and handle recurrence updates."""
     try:
         shifts_collection = get_collection("shifts")
-        shift_dict = to_mongo_update_dict(shift, exclude_unset=True)
         
+        # Check if shift exists
+        old_shift_doc = await shifts_collection.find_one({"_id": ObjectId(shift_id)})
+        if not old_shift_doc:
+            return error_response(message="Shift not found", code=404)
+            
+        old_shift = Shift.from_mongo(old_shift_doc)
+        update_data = to_mongo_update_dict(shift)
+
+        print(f"🔍 [Backend] Updating shift {shift_id} with data: {update_data}")
+
+        # 1. Perform the update on the specific shift instance
         result = await shifts_collection.update_one(
-            {"_id": ObjectId(shift_id)}, {"$set": shift_dict}
+            {"_id": ObjectId(shift_id)},
+            {"$set": update_data}
         )
+
         if result.modified_count == 0 and result.matched_count == 0:
             return error_response(message="Shift not found", code=404)
+
+        # 2. Handle Recurrence Logic Changes
+        updated_doc = await shifts_collection.find_one({"_id": ObjectId(shift_id)})
+        series_id = updated_doc.get("recurring_series_id") or shift_id
         
-        updated_shift = await shifts_collection.find_one({"_id": ObjectId(shift_id)})
+        # A. If recurrence is kept or newly added, re-process future shifts
+        if updated_doc.get("recurring"):
+            # Ensure the recurring_series_id is set if it was a new recurrence
+            if not updated_doc.get("recurring_series_id"):
+                 await shifts_collection.update_one(
+                    {"_id": ObjectId(shift_id)},
+                    {"$set": {"recurring_series_id": shift_id}}
+                )
+                 updated_doc = await shifts_collection.find_one({"_id": ObjectId(shift_id)})
+                 series_id = shift_id
+
+            # Delete all *future* recurring shifts in the series
+            await shifts_collection.delete_many({
+                "recurring_series_id": series_id,
+                "start": {"$gt": old_shift_doc.get("start")} 
+            })
+            
+            # Re-create future shifts based on the new, updated shift data
+            await _process_shift_recurrence(updated_doc, ObjectId(series_id))
+            
+        # B. If recurrence was removed
+        elif old_shift.recurring and not updated_doc.get("recurring"):
+            # Delete all future recurring shifts in the series
+            await shifts_collection.delete_many({
+                "recurring_series_id": series_id,
+                "start": {"$gt": old_shift_doc.get("start")}
+            })
+            
+        # 3. Retrieve and return the FINAL updated shift
+        final_doc = await shifts_collection.find_one({"_id": ObjectId(shift_id)})
+        
+        if not final_doc:
+            return error_response(message="Shift not found after update", code=404)
+            
+        # Convert to Shift model and return in standard response
+        final_shift = Shift.from_mongo(final_doc)
+        
         return success_response(
-            data=Shift.from_mongo(updated_shift),
+            data=final_shift,
             message="Shift updated successfully"
         )
-    except Exception:
-        return error_response(message="Invalid ID format for shift", code=400)
-
+    except Exception as e:
+        print(f"❌ [Backend] Error updating shift: {str(e)}")
+        return handle_generic_exception(e)
 @router.put("/shifts/{shift_id}/status", response_model=StandardResponse[ShiftResponse])
 async def update_shift_status(shift_id: str, active: bool):
     """Update the active status of a shift by ID."""
@@ -430,20 +656,32 @@ async def update_shift_status(shift_id: str, active: bool):
     except Exception:
         return error_response(message="Invalid ID format for shift", code=400)
 
+# app/routes/hr.py
+
+# DELETE /api/shifts/{shift_id} - Delete a shift
 @router.delete("/shifts/{shift_id}", response_model=StandardResponse[dict])
-async def delete_shift(shift_id: str):
-    """Delete a shift by ID."""
-    try:
-        shifts_collection = get_collection("shifts")
-        result = await shifts_collection.delete_one({"_id": ObjectId(shift_id)})
-        if result.deleted_count == 0:
-            return error_response(message="Shift not found", code=404)
-        return success_response(
-            data=None,
-            message="Shift deleted successfully"
-        )
-    except Exception:
-        return error_response(message="Invalid ID format for shift", code=400)
+async def delete_shift(shift_id: str, delete_all: bool = Query(False, description="If true, deletes all future shifts in the recurring series.")):
+    """Delete a single shift (and optionally its future recurring instances)."""
+    
+    shifts_collection = get_collection("shifts")
+    shift_doc = await shifts_collection.find_one({"_id": ObjectId(shift_id)})
+    
+    if not shift_doc:
+        return error_response(message="Shift not found", code=404)
+        
+    is_recurring = shift_doc.get("recurring", False)
+    series_id = shift_doc.get("recurring_series_id")
+    
+    # If it's a recurring shift and the user specifies delete_all (or is deleting the original shift), delete the series
+    if is_recurring and delete_all:
+        print(f"Deleting all future recurring shifts for series: {series_id or shift_id}")
+        await shifts_collection.delete_many({
+            "recurring_series_id": series_id,
+            "start": {"$gt": shift_doc.get("start")}
+        })
+    
+    # Delete the specific shift instance
+    return await _delete_item("shifts", shift_id)
 
 # -----------------
 # Timesheet Entries endpoints
@@ -473,7 +711,9 @@ async def get_timesheet_entries(
                 return error_response(message="Invalid date format. Use ISO 8601 format.", code=400)
         
         entries = []
-        async for entry in ts_collection.find(query):
+        # FIXED: Use await and iterate
+        entry_docs = await ts_collection.find(query)
+        for entry in entry_docs:
             entries.append(TimesheetEntry.from_mongo(entry))
         return success_response(data=entries)
     except Exception as e:
@@ -660,7 +900,9 @@ async def get_payroll_entries(
             query["status"] = status
             
         entries = []
-        async for entry in payroll_collection.find(query):
+        # FIXED: Use await and iterate
+        entry_docs = await payroll_collection.find(query)
+        for entry in entry_docs:
             entries.append(Payroll.from_mongo(entry))
         return success_response(data=entries)
     except Exception as e:
@@ -778,11 +1020,17 @@ async def get_payroll_settings(store_id: Optional[str] = Query(None)):
         
         settings = await settings_collection.find_one(query)
         if not settings:
+            # Create default settings with ALL fields
             default_settings = PayrollSettings(
                 store_id=store_id or "default",
                 default_payment_cycle="bi-weekly",
                 tax_rate=0.20,
-                overtime_multiplier=1.5
+                overtime_multiplier=1.5,
+                overtime_threshold=40,
+                pay_day=15,
+                auto_process=False,
+                include_benefits=False,
+                benefits_rate=0.05
             )
             return success_response(data=default_settings)
         return success_response(data=PayrollSettings.from_mongo(settings))
@@ -795,6 +1043,10 @@ async def create_payroll_settings(settings: PayrollSettings):
     try:
         settings_collection = get_collection("payroll_settings")
         settings_dict = to_mongo_dict(settings)
+        
+        # Ensure all fields are present with defaults
+        complete_settings = PayrollSettings(**settings.model_dump())
+        settings_dict = to_mongo_dict(complete_settings)
         
         # Delete existing settings for the same store to enforce one-per-store
         await settings_collection.delete_many({"store_id": settings.store_id})
@@ -814,7 +1066,18 @@ async def update_payroll_settings(settings_id: str, settings: PayrollSettings):
     """Update existing payroll settings by ID."""
     try:
         settings_collection = get_collection("payroll_settings")
-        settings_dict = to_mongo_update_dict(settings, exclude_unset=True)
+        
+        # Ensure we have all fields by merging with existing settings
+        existing_settings = await settings_collection.find_one({"_id": ObjectId(settings_id)})
+        if existing_settings:
+            existing_obj = PayrollSettings.from_mongo(existing_settings)
+            # Update only the fields that are provided
+            update_data = settings.model_dump(exclude_unset=True)
+            updated_settings = existing_obj.model_copy(update=update_data)
+        else:
+            updated_settings = settings
+            
+        settings_dict = to_mongo_update_dict(updated_settings, exclude_unset=False)
         
         result = await settings_collection.update_one(
             {"_id": ObjectId(settings_id)}, {"$set": settings_dict}
@@ -822,114 +1085,256 @@ async def update_payroll_settings(settings_id: str, settings: PayrollSettings):
         if result.modified_count == 0 and result.matched_count == 0:
             return error_response(message="Payroll settings not found", code=404)
         
-        updated_settings = await settings_collection.find_one({"_id": ObjectId(settings_id)})
+        updated_settings_doc = await settings_collection.find_one({"_id": ObjectId(settings_id)})
         return success_response(
-            data=PayrollSettings.from_mongo(updated_settings),
+            data=PayrollSettings.from_mongo(updated_settings_doc),
             message="Payroll settings updated successfully"
         )
     except Exception:
         return error_response(message="Invalid ID format for payroll settings", code=400)
 
-# -----------------
-# Payroll calculation endpoint
-# -----------------
-@router.post("/payroll/calculate", response_model=StandardResponse[PayrollResponse])
-async def calculate_payroll(employee_id: str, period_start: str, period_end: str):
-    """Calculates payroll for a specific employee and time period."""
+@router.post("/payroll/calculate", response_model=StandardResponse[PayrollPreviewResponse])
+async def calculate_payroll(
+    store_id: str = Body(..., embed=True),
+    employee_id: str = Body(..., embed=True),
+    period_start: str = Body(..., embed=True),
+    period_end: str = Body(..., embed=True)
+):
+    """
+    Calculates a payroll preview for a given employee and period using actual data.
+    """
     try:
-        # Get employee data
-        employees_collection = get_collection("employees")
-        employee_doc = await employees_collection.find_one({"_id": ObjectId(employee_id)})
+        # --- 1. Fetch Necessary Data ---
+        employee_collection = get_collection("employees")
+        timesheet_collection = get_collection("timesheet_entries")
+        payroll_settings_collection = get_collection("payroll_settings")
         
-        if not employee_doc:
+        # Fetch employee data
+        employee = await employee_collection.find_one({"_id": ObjectId(employee_id)})
+        if not employee:
             return error_response(message="Employee not found", code=404)
         
-        # Get timesheet entries for the period
-        ts_collection = get_collection("timesheet_entries")
-        timesheets = []
+        # Fetch payroll settings with ALL fields
+        settings_doc = await payroll_settings_collection.find_one({"store_id": store_id})
+        if not settings_doc:
+            # Fallback to default settings if store-specific settings not found
+            settings_doc = await payroll_settings_collection.find_one({"store_id": "default"})
+            if not settings_doc:
+                # Create default settings with ALL fields
+                default_settings = PayrollSettings(
+                    store_id="default",
+                    default_payment_cycle="bi-weekly",
+                    tax_rate=0.20,
+                    overtime_multiplier=1.5,
+                    overtime_threshold=40,
+                    pay_day=15,
+                    auto_process=False,
+                    include_benefits=False,
+                    benefits_rate=0.05
+                )
+                settings_dict = to_mongo_dict(default_settings)
+                await payroll_settings_collection.insert_one(settings_dict)
+                settings_doc = settings_dict
         
-        # Parse date strings to datetime objects for query
+        settings = PayrollSettings.from_mongo(settings_doc)
+        
+        # --- 2. Fetch and Process Timesheet Data ---
         try:
             start_dt = datetime.fromisoformat(period_start.replace('Z', '+00:00'))
             end_dt = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
-            
-            query_start = start_dt.isoformat()
-            query_end = end_dt.isoformat()
-            
         except ValueError:
             return error_response(message="Invalid date format. Use ISO 8601 format.", code=400)
         
-        async for ts in ts_collection.find({
+        # Query timesheet entries for the specified period and employee
+        timesheet_query = {
             "employee_id": employee_id,
-            "clock_in": {"$gte": query_start, "$lte": query_end},
-            "clock_out": {"$ne": None}
-        }):
-            timesheets.append(ts)
+            "clock_in": {
+                "$gte": start_dt.isoformat(),
+                "$lte": end_dt.isoformat()
+            },
+            "clock_out": {"$ne": None}  # Only include completed shifts
+        }
         
-        # Get payroll settings
-        store_id = employee_doc.get("store_id", "default")
-        settings_collection = get_collection("payroll_settings")
-        settings_data = await settings_collection.find_one({"store_id": store_id})
+        # FIXED: Use await and iterate properly
+        entry_docs = await timesheet_collection.find(timesheet_query)
+        timesheet_entries = []
+        for entry in entry_docs:
+            timesheet_entries.append(TimesheetEntry.from_mongo(entry))
         
-        # Use actual settings or default values
-        if settings_data:
-            settings = PayrollSettings.from_mongo(settings_data)
-        else:
-            settings = PayrollSettings(
-                store_id=store_id,
-                default_payment_cycle="bi-weekly",
-                tax_rate=0.20,
-                overtime_multiplier=1.5
-            )
+        if not timesheet_entries:
+            return error_response(message="No timesheet entries found for the specified period", code=404)
         
-        # Calculate hours
+        # --- 3. Calculate Hours Worked ---
         total_minutes = 0
+        regular_minutes = 0
+        overtime_minutes = 0
         
-        for ts in timesheets:
-            if ts.get("duration_minutes"):
-                total_minutes += ts["duration_minutes"]
+        # Group hours by week for proper overtime calculation
+        weekly_hours = {}
         
+        for entry in timesheet_entries:
+            if entry.clock_in and entry.clock_out:
+                try:
+                    clock_in = datetime.fromisoformat(entry.clock_in.replace('Z', '+00:00'))
+                    clock_out = datetime.fromisoformat(entry.clock_out.replace('Z', '+00:00'))
+                    
+                    # Calculate duration in minutes
+                    duration_minutes = int((clock_out - clock_in).total_seconds() / 60)
+                    total_minutes += duration_minutes
+                    
+                    # Group by week for overtime calculation
+                    week_key = clock_in.isocalendar()[:2]  # (year, week)
+                    weekly_hours[week_key] = weekly_hours.get(week_key, 0) + (duration_minutes / 60)
+                    
+                except (ValueError, TypeError) as e:
+                    # Skip entries with invalid date formats
+                    continue
+        
+        # Calculate overtime based on weekly thresholds FROM SETTINGS
+        for week_key, week_hours in weekly_hours.items():
+            if week_hours > settings.overtime_threshold:
+                overtime_minutes += (week_hours - settings.overtime_threshold) * 60
+                regular_minutes += settings.overtime_threshold * 60
+            else:
+                regular_minutes += week_hours * 60
+        
+        # Convert minutes to hours
         total_hours = total_minutes / 60
+        overtime_hours = overtime_minutes / 60
+        regular_hours = regular_minutes / 60
         
-        # Simple overtime calculation
+        # --- 4. Calculate Hourly Rate from Salary USING SETTINGS PAYMENT CYCLE ---
+        annual_salary = employee.get("salary", 0)
+        if annual_salary <= 0:
+            return error_response(message="Employee salary not set or invalid", code=400)
+        
+        # Calculate hourly rate based on payment cycle FROM SETTINGS
         if settings.default_payment_cycle == "monthly":
-            OVERTIME_THRESHOLD_HOURS = 160
+            # Assuming 12 months, 160 hours per month
+            hourly_rate = annual_salary / (12 * 160) if annual_salary > 0 else 0
         elif settings.default_payment_cycle == "bi-weekly":
-            OVERTIME_THRESHOLD_HOURS = 80
-        else:
-            OVERTIME_THRESHOLD_HOURS = 40
+            # 26 pay periods per year, 80 hours per period
+            hourly_rate = annual_salary / (26 * 80) if annual_salary > 0 else 0
+        else:  # weekly
+            # 52 weeks per year, 40 hours per week
+            hourly_rate = annual_salary / (52 * 40) if annual_salary > 0 else 0
         
-        overtime_hours = max(0, total_hours - OVERTIME_THRESHOLD_HOURS)
-        regular_hours = total_hours - overtime_hours
-        
-        # Calculate pay
-        hourly_rate = employee_doc.get("salary", 0) / 2080  
-        
+        # --- 5. Calculate Payroll USING ALL SETTINGS ---
+        # Regular pay calculation
         regular_pay = regular_hours * hourly_rate
-        overtime_pay = overtime_hours * hourly_rate * settings.overtime_multiplier
-        gross_pay = regular_pay + overtime_pay
-        tax_deductions = gross_pay * settings.tax_rate
-        net_pay = gross_pay - tax_deductions
         
-        payroll_data = Payroll(
-            employee_id=employee_id,
-            pay_period_start=period_start,
-            pay_period_end=period_end,
-            payment_cycle=settings.default_payment_cycle,
-            gross_pay=round(gross_pay, 2),
-            tax_deductions=round(tax_deductions, 2),
-            net_pay=round(net_pay, 2),
-            hours_worked=round(total_hours, 2),
-            overtime_hours=round(overtime_hours, 2),
-            overtime_rate=settings.overtime_multiplier,
-            status="pending",
-            store_id=store_id
+        # Overtime pay calculation USING SETTINGS MULTIPLIER
+        overtime_pay = overtime_hours * hourly_rate * settings.overtime_multiplier
+        
+        # Gross pay
+        gross_pay = regular_pay + overtime_pay
+        
+        # Initial deductions (tax only)
+        tax_deductions = gross_pay * settings.tax_rate
+        additional_deductions = 0
+        
+        # Apply benefits deduction if enabled in settings
+        if settings.include_benefits:
+            additional_deductions = gross_pay * settings.benefits_rate
+        
+        total_deductions = tax_deductions + additional_deductions
+        net_pay = gross_pay - total_deductions
+        
+        # --- 6. Construct Payroll Preview Data ---
+        payroll_data = {
+            "id": None,  # Preview only - no database ID
+            "employee_id": employee_id,
+            "employee_name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip(),
+            "pay_period_start": period_start,
+            "pay_period_end": period_end,
+            "payment_cycle": settings.default_payment_cycle,  # FROM SETTINGS
+            "hourly_rate": round(hourly_rate, 2),
+            "gross_pay": round(gross_pay, 2),
+            "tax_deductions": round(tax_deductions, 2),
+            "additional_deductions": round(additional_deductions, 2),
+            "total_deductions": round(total_deductions, 2),
+            "net_pay": round(net_pay, 2),
+            "status": "preview",
+            "hours_worked": round(total_hours, 2),
+            "regular_hours": round(regular_hours, 2),
+            "overtime_hours": round(overtime_hours, 2),
+            "overtime_rate": settings.overtime_multiplier,  # FROM SETTINGS
+            "overtime_threshold": settings.overtime_threshold,  # FROM SETTINGS
+            "tax_rate": settings.tax_rate,  # FROM SETTINGS
+            "deductions": [
+                {
+                    "id": None,
+                    "payroll_id": "temp-preview",
+                    "type": "tax",
+                    "description": "Federal/State Tax Withholding",
+                    "amount": round(tax_deductions, 2),
+                    "rate": settings.tax_rate  # FROM SETTINGS
+                }
+            ],
+            "store_id": store_id,
+            "calculation_date": datetime.utcnow().isoformat(),
+            "entries_processed": len(timesheet_entries),
+            "weeks_processed": len(weekly_hours),
+            "settings_used": {  # DEBUG INFO - shows which settings were applied
+                "payment_cycle": settings.default_payment_cycle,
+                "overtime_threshold": settings.overtime_threshold,
+                "overtime_multiplier": settings.overtime_multiplier,
+                "tax_rate": settings.tax_rate,
+                "include_benefits": settings.include_benefits,
+                "benefits_rate": settings.benefits_rate if settings.include_benefits else 0
+            }
+        }
+        
+        # Add benefits deduction if enabled
+        if settings.include_benefits and additional_deductions > 0:
+            payroll_data["deductions"].append({
+                "id": None,
+                "payroll_id": "temp-preview",
+                "type": "benefits",
+                "description": "Benefits Deduction",
+                "amount": round(additional_deductions, 2),
+                "rate": settings.benefits_rate  # FROM SETTINGS
+            })
+        
+        # --- 7. Return Success ---
+        return success_response(
+            data=payroll_data,
+            message=f"Payroll calculated successfully for {payroll_data['employee_name']} using current settings"
         )
         
-        return success_response(data=payroll_data)
-    except Exception:
-        return error_response(message="Invalid ID format for employee", code=400)
-
+    except Exception as e:
+        return handle_generic_exception(e)
+        
+# Update this helper function in app/routes/hr.py
+async def get_or_create_payroll_settings(store_id: str) -> PayrollSettings:
+    """Get payroll settings for a store, create default if not exists."""
+    payroll_settings_collection = get_collection("payroll_settings")
+    
+    settings_doc = await payroll_settings_collection.find_one({"store_id": store_id})
+    if settings_doc:
+        return PayrollSettings.from_mongo(settings_doc)
+    
+    # Try default settings
+    settings_doc = await payroll_settings_collection.find_one({"store_id": "default"})
+    if settings_doc:
+        return PayrollSettings.from_mongo(settings_doc)
+    
+    # Create default settings with ALL new fields
+    default_settings = PayrollSettings(
+        store_id="default",
+        default_payment_cycle="bi-weekly",
+        tax_rate=0.20,
+        overtime_multiplier=1.5,
+        overtime_threshold=40,
+        pay_day=15,
+        auto_process=False,
+        include_benefits=False,
+        benefits_rate=0.05
+    )
+    settings_dict = to_mongo_dict(default_settings)
+    await payroll_settings_collection.insert_one(settings_dict)
+    return default_settings
+    
 # -----------------
 # Timesheets management endpoint
 # -----------------

@@ -41,6 +41,19 @@ class ErrorResponse(BaseModel):
     message: str
     details: Optional[Dict[str, Any]] = None
 
+# Recipe Item Response
+class RecipeItemResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
+    
+    id: str
+    food_id: str
+    inventory_product_id: str
+    quantity_used: float
+    unit_of_measure: str
+
 # Core POS Entities
 class FoodResponse(BaseModel):
     model_config = ConfigDict(
@@ -57,11 +70,10 @@ class FoodResponse(BaseModel):
     preparation_time: Optional[int] = None
     allergens: Optional[List[str]] = []
     tenant_id: str
-    recipes: Optional[List[Dict]] = []
+    # CHANGED: Use RecipeItemResponse instead of List[Dict]
+    recipes: Optional[List[RecipeItemResponse]] = []
     store_id: Optional[str] = None
     is_available: Optional[bool] = True
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class StoreFoodResponse(BaseModel):
     model_config = ConfigDict(
@@ -72,20 +84,6 @@ class StoreFoodResponse(BaseModel):
     food_id: str
     store_id: str
     is_available: bool = True
-
-class RecipeItemResponse(BaseModel):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
-    )
-    
-    id: str
-    food_id: str
-    inventory_product_id: str
-    quantity_used: float
-    unit_of_measure: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class OrderItemResponse(BaseModel):
     model_config = ConfigDict(
@@ -102,8 +100,6 @@ class OrderItemResponse(BaseModel):
     notes: Optional[str] = None
     name: str
     price_at_sale: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class OrderResponse(BaseModel):
     model_config = ConfigDict(
@@ -127,8 +123,6 @@ class OrderResponse(BaseModel):
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
     stock_warnings: Optional[List[str]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(
@@ -140,8 +134,6 @@ class CategoryResponse(BaseModel):
     name: str
     description: Optional[str] = None
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class InvCategoryResponse(BaseModel):
     model_config = ConfigDict(
@@ -153,8 +145,6 @@ class InvCategoryResponse(BaseModel):
     name: str
     description: Optional[str] = None
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class CustomerResponse(BaseModel):
     model_config = ConfigDict(
@@ -169,8 +159,6 @@ class CustomerResponse(BaseModel):
     phone_number: Optional[str] = None
     loyalty_points: Optional[int] = 0
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class TableResponse(BaseModel):
     model_config = ConfigDict(
@@ -185,8 +173,6 @@ class TableResponse(BaseModel):
     status: str
     current_order_id: Optional[str] = None
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class AccessRoleResponse(BaseModel):
     model_config = ConfigDict(
@@ -199,10 +185,8 @@ class AccessRoleResponse(BaseModel):
     description: str
     permissions: List[str]
     landing_page: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
-# HR Entities
+# HR Entities - Add response models for nested objects
 class PersonalDetailsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -250,19 +234,20 @@ class EmployeeStatusResponse(BaseModel):
 class DepartmentResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders={ObjectId: str, datetime: lambda v: v.isoformat() if v else None}
     )
     
     id: str
     name: str
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None  # Changed from str to datetime
+    updated_at: Optional[datetime] = None  # Changed from str to datetime
+
 
 class EmployeeResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders={ObjectId: str, datetime: lambda v: v.isoformat() if v else None}
     )
     
     id: str
@@ -272,7 +257,20 @@ class EmployeeResponse(BaseModel):
     tenant_id: str
     store_id: str
     main_access_role_id: str
-    hire_date: str
+class EmployeeResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str, datetime: lambda v: v.isoformat() if v else None}
+    )
+    
+    id: str
+    user_id: str
+    job_title_id: str
+    access_role_ids: List[str]
+    tenant_id: str
+    store_id: str
+    main_access_role_id: str
+    hire_date: datetime  # CHANGED from str to datetime  <--- THIS TOO
     salary: float
     first_name: str
     last_name: Optional[str] = None
@@ -286,8 +284,23 @@ class EmployeeResponse(BaseModel):
     contact_details: Optional[ContactDetailsResponse] = None
     employment_details: Optional[EmploymentDetailsResponse] = None
     status: Optional[EmployeeStatusResponse] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    salary: float
+    first_name: str
+    last_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    employee_id: Optional[str] = None
+    full_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    suffix: Optional[str] = None
+    profile_photo_url: Optional[str] = None
+    personal_details: Optional[PersonalDetailsResponse] = None
+    contact_details: Optional[ContactDetailsResponse] = None
+    employment_details: Optional[EmploymentDetailsResponse] = None
+    status: Optional[EmployeeStatusResponse] = None
+    created_at: Optional[datetime] = None  # Changed from str to datetime
+    updated_at: Optional[datetime] = None  # Changed from str to datetime
 
 class ReservationResponse(BaseModel):
     model_config = ConfigDict(
@@ -303,9 +316,8 @@ class ReservationResponse(BaseModel):
     status: str
     notes: Optional[str] = None
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
+# Update ShiftResponse
 class ShiftResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -314,15 +326,16 @@ class ShiftResponse(BaseModel):
     
     id: str
     employee_id: str
-    start: str
-    end: str
+    start: datetime  # Changed from str to datetime
+    end: datetime    # Changed from str to datetime
     title: Optional[str] = None
     employee_name: Optional[str] = None
     color: Optional[str] = None
     active: Optional[bool] = True
     recurring: Optional[bool] = False
-    updated_at: Optional[str] = None
-    created_at: Optional[str] = None
+    updated_at: Optional[datetime] = None  # Changed from str to datetime
+    created_at: Optional[datetime] = None  # Changed from str to datetime
+
 
 class TimesheetResponse(BaseModel):
     model_config = ConfigDict(
@@ -337,6 +350,7 @@ class TimesheetResponse(BaseModel):
     daily_hours: Dict[str, str]
     total_weekly_hours: str
 
+# Update TimesheetEntryResponse
 class TimesheetEntryResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -345,11 +359,11 @@ class TimesheetEntryResponse(BaseModel):
     
     id: str
     employee_id: str
-    clock_in: str
-    clock_out: Optional[str] = None
+    clock_in: datetime  # Changed from str to datetime
+    clock_out: Optional[datetime] = None  # Changed from str to datetime
     duration_minutes: Optional[int] = 0
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None  # Changed from str to datetime
+    updated_at: Optional[datetime] = None  # Changed from str to datetime
 
 class TaxDetailsResponse(BaseModel):
     model_config = ConfigDict(
@@ -410,11 +424,73 @@ class StoreResponse(BaseModel):
     phone: str
     email: str
     tenant_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
     location: Optional[str] = None
     manager_id: Optional[str] = None
     kiosk_user_id: Optional[str] = None
+
+# Payroll Deduction Response
+class PayrollDeductionResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
+    
+    id: str
+    payroll_id: str
+    type: str
+    description: str
+    amount: float
+
+class PayrollResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
+    
+    id: str
+    employee_id: str
+    pay_period_start: str
+    pay_period_end: str
+    payment_cycle: str
+    gross_pay: float
+    tax_deductions: float
+    net_pay: float
+    status: str
+    hours_worked: float
+    overtime_hours: float
+    overtime_rate: float
+    # CHANGED: Use PayrollDeductionResponse for nested objects
+    deductions: Optional[List[PayrollDeductionResponse]] = []
+    store_id: str
+
+class PayrollSettingsResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
+    
+    id: str
+    store_id: str
+    default_payment_cycle: str
+    tax_rate: float
+    overtime_multiplier: float
+    overtime_threshold: float  # ADD THIS
+    pay_day: Optional[int] = None  # ADD THIS
+    auto_process: bool = False  # ADD THIS
+    include_benefits: bool = False  # ADD THIS
+    benefits_rate: float = 0.05  # ADD THIS
+
+# 1. Deduction Preview
+class PayrollDeductionPreviewResponse(PayrollDeductionResponse):
+    """Schema for a Payroll Deduction *before* it is saved."""
+    id: Optional[str] = None # Allows id to be None during calculation
+
+# 2. Main Payroll Preview
+class PayrollPreviewResponse(PayrollResponse):
+    """Schema for a Payroll *preview* from the /calculate endpoint."""
+    id: Optional[str] = None # Allows id to be None during calculation
+    # Ensure nested deductions also use the Preview schema
+    deductions: Optional[List[PayrollDeductionPreviewResponse]] = []
 
 # Other Entities
 class TenantResponse(BaseModel):
@@ -428,8 +504,6 @@ class TenantResponse(BaseModel):
     email: str
     password: Optional[str] = None
     remember_token: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
 
@@ -443,8 +517,6 @@ class DomainResponse(BaseModel):
     tenant_id: str
     domain: str
     is_primary: bool = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class JobResponse(BaseModel):
     model_config = ConfigDict(
@@ -491,12 +563,11 @@ class UserResponse(BaseModel):
     )
     
     id: str
-    name: str
     email: str
     username: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    email_verified_at: Optional[str] = None
+    email_verified_at: Optional[datetime] = None
     remember_token: Optional[str] = None
     cashAccounts: Optional[List[Any]] = []
     cardAccounts: Optional[List[Any]] = []
@@ -505,8 +576,6 @@ class UserResponse(BaseModel):
     phonepeAccounts: Optional[List[Any]] = []
     amazonpayAccounts: Optional[List[Any]] = []
     locations: Optional[List[Any]] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class PaymentResponse(BaseModel):
     model_config = ConfigDict(
@@ -521,8 +590,6 @@ class PaymentResponse(BaseModel):
     payment_date: str
     transaction_id: Optional[str] = None
     status: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class StockResponse(BaseModel):
     model_config = ConfigDict(
@@ -537,8 +604,6 @@ class StockResponse(BaseModel):
     supplier_id: str
     last_restock_date: str
     expiration_date: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class StockAdjustmentResponse(BaseModel):
     model_config = ConfigDict(
@@ -551,8 +616,6 @@ class StockAdjustmentResponse(BaseModel):
     quantity_change: int
     reason: str
     adjustment_date: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class TaxResponse(BaseModel):
     model_config = ConfigDict(
@@ -564,20 +627,18 @@ class TaxResponse(BaseModel):
     name: str
     percentage: float
     is_active: bool = True
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class JobTitleResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders={ObjectId: str, datetime: lambda v: v.isoformat() if v else None}
     )
     
     id: str
     title: str
     description: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None  # Changed from str to datetime
+    updated_at: Optional[datetime] = None  # Changed from str to datetime
 
 class PaymentMethodResponse(BaseModel):
     model_config = ConfigDict(
@@ -589,8 +650,6 @@ class PaymentMethodResponse(BaseModel):
     name: str
     description: str
     is_active: bool = True
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class BrandResponse(BaseModel):
     model_config = ConfigDict(
@@ -601,8 +660,6 @@ class BrandResponse(BaseModel):
     id: str
     name: str
     description: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class UnitResponse(BaseModel):
     model_config = ConfigDict(
@@ -613,8 +670,6 @@ class UnitResponse(BaseModel):
     id: str
     name: str
     symbol: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class SupplierResponse(BaseModel):
     model_config = ConfigDict(
@@ -628,8 +683,6 @@ class SupplierResponse(BaseModel):
     phone: str
     email: str
     address: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class ContactMessageResponse(BaseModel):
     model_config = ConfigDict(
@@ -642,8 +695,6 @@ class ContactMessageResponse(BaseModel):
     email: str
     subject: str
     message: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class InventoryProductResponse(BaseModel):
     model_config = ConfigDict(
@@ -664,8 +715,6 @@ class InventoryProductResponse(BaseModel):
     inv_category_id: Optional[str] = None
     location_in_warehouse: Optional[str] = None
     last_restocked_at: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 # Payroll Entities
 class PayrollDeductionResponse(BaseModel):
@@ -679,8 +728,6 @@ class PayrollDeductionResponse(BaseModel):
     type: str
     description: str
     amount: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class PayrollResponse(BaseModel):
     model_config = ConfigDict(
@@ -701,23 +748,7 @@ class PayrollResponse(BaseModel):
     overtime_hours: float
     overtime_rate: float
     deductions: Optional[List[PayrollDeductionResponse]] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
     store_id: str
-
-class PayrollSettingsResponse(BaseModel):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
-    )
-    
-    id: str
-    store_id: str
-    default_payment_cycle: str
-    tax_rate: float
-    overtime_multiplier: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 # Purchase Order and Goods Receipt
 class PurchaseOrderItemResponse(BaseModel):
@@ -750,8 +781,6 @@ class PurchaseOrderResponse(BaseModel):
     ordered_by: str
     notes: Optional[str] = None
     items: List[PurchaseOrderItemResponse] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class GoodsReceiptItemResponse(BaseModel):
     model_config = ConfigDict(
@@ -782,8 +811,6 @@ class GoodsReceiptResponse(BaseModel):
     receiving_bin_id: Optional[str] = None
     status: Optional[str] = None
     received_items: Optional[List[Dict]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class SiteResponse(BaseModel):
     model_config = ConfigDict(
@@ -795,8 +822,6 @@ class SiteResponse(BaseModel):
     name: str
     address: str
     type: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 # Generic response for success messages
 class SuccessResponse(BaseModel):

@@ -11,7 +11,6 @@ export interface EntityConfig {
 
 // --- Core POS Entities ---
 
-// Updated Food Interface to include recipes
 export interface Food {
   id: string;
   name: string;
@@ -21,10 +20,12 @@ export interface Food {
   image_url?: string;
   preparation_time?: number;
   allergens?: string[];
-  created_at?: string;
-  updated_at?: string;
   tenant_id: string;
   recipes?: RecipeItem[];
+  store_id?: string;
+  is_available?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface StoreFood {
@@ -128,14 +129,15 @@ export interface AccessRole {
 }
 
 // Updated Employee Interface with HR details
+// In your entities.ts file, update the Employee interface:
 export interface Employee {
   id: string;
   user_id: string;
   job_title_id: string;
-  access_role_ids: string[];
+  access_role_ids: string[]; // This is the field the backend expects
   tenant_id: string;
   store_id: string;
-  main_access_role_id: string;
+  main_access_role_id: string; // Keep this for form handling
   hire_date: string;
   salary: number;
   first_name: string;
@@ -154,6 +156,9 @@ export interface Employee {
   contact_details?: ContactDetails;
   employment_details?: EmploymentDetails;
   status?: EmployeeStatus;
+
+  // Add this for frontend form handling
+  other_access_roles?: string[]; // Keep for form state
 }
 
 export interface PersonalDetails {
@@ -203,8 +208,8 @@ export interface Reservation {
 export interface Shift {
   id: string;
   employee_id: string;
-  start: string; // ISO string
-  end: string; // ISO string
+  start: Date; // ISO string
+  end: Date; // ISO string
   title?: string;
   employee_name?: string;
   color?: string;
@@ -213,8 +218,23 @@ export interface Shift {
   recurring?: boolean;
   updated_at?: string;
   created_at?: string;
+  isDraft?: boolean;
 }
 
+// New interfaces for enhanced draft management
+export interface DraftShift extends Omit<Shift, "id"> {
+  id: string; // Can be draft IDs
+  isDraft: boolean;
+  published?: boolean;
+  original_shift_id?: string; // For tracking which published shift this draft modifies
+  marked_for_deletion?: boolean; // For tracking shifts to delete
+}
+
+export interface LocalStorageShifts {
+  draftShifts: DraftShift[];
+  lastSaved: string;
+  version: string;
+}
 
 export interface Timesheet {
   timesheet_id: string;
@@ -333,7 +353,7 @@ export interface PasswordReset {
 
 export interface User {
   id: string;
-  name: string;
+  // name?: string;
   email: string;
   email_verified_at: string | null;
   password: string;
@@ -512,6 +532,11 @@ export interface PayrollSettings {
   default_payment_cycle: "weekly" | "bi-weekly" | "monthly";
   tax_rate: number;
   overtime_multiplier: number;
+  overtime_threshold: number;
+  pay_day?: number;
+  auto_process: boolean;
+  include_benefits: boolean;
+  benefits_rate: number;
   created_at: string;
   updated_at: string;
 }
@@ -536,8 +561,8 @@ export const entities: { [key: string]: EntityConfig } = {
       "overtime_rate",
       "created_at",
       "updated_at",
-      "store_id"
-    ]
+      "store_id",
+    ],
   },
 
   payroll_settings: {
@@ -549,9 +574,14 @@ export const entities: { [key: string]: EntityConfig } = {
       "default_payment_cycle",
       "tax_rate",
       "overtime_multiplier",
+      "overtime_threshold", // NEW
+      "pay_day", // NEW
+      "auto_process", // NEW
+      "include_benefits", // NEW
+      "benefits_rate", // NEW
       "created_at",
-      "updated_at"
-    ]
+      "updated_at",
+    ],
   },
   inventory_products: {
     label: "Inventory Products",
@@ -572,7 +602,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "created_at",
       "updated_at",
       "store_id",
-    ]
+    ],
   },
   orders: {
     label: "Orders",
@@ -608,8 +638,8 @@ export const entities: { [key: string]: EntityConfig } = {
       "attempted_path",
       "attempts",
       "last_attempt_at",
-      "created_at"
-    ]
+      "created_at",
+    ],
   },
   order_items: {
     label: "Order Items",
@@ -644,32 +674,50 @@ export const entities: { [key: string]: EntityConfig } = {
       "created_at",
       "updated_at",
       "tenant_id",
-      "recipes"
+      "recipes",
     ],
   },
   store_foods: {
     label: "Store Foods",
     endpoint: "/api/store_foods",
-    fields: [
-      "food_id",
-      "store_id",
-      "is_available",
-    ],
+    fields: ["food_id", "store_id", "is_available"],
   },
   recipes: {
     label: "Recipes",
     endpoint: "/api/recipes",
-    fields: ["id", "food_id", "inventory_product_id", "quantity_used", "unit_of_measure", "created_at", "updated_at"],
+    fields: [
+      "id",
+      "food_id",
+      "inventory_product_id",
+      "quantity_used",
+      "unit_of_measure",
+      "created_at",
+      "updated_at",
+    ],
   },
   categories: {
     label: "Categories",
     endpoint: "/api/categories",
-    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"],
+    fields: [
+      "id",
+      "name",
+      "description",
+      "created_at",
+      "updated_at",
+      "store_id",
+    ],
   },
   inv_categories: {
     label: "Inv. Categories",
     endpoint: "/api/inv_categories",
-    fields: ["id", "name", "description", "created_at", "updated_at", "store_id"],
+    fields: [
+      "id",
+      "name",
+      "description",
+      "created_at",
+      "updated_at",
+      "store_id",
+    ],
   },
   customers: {
     label: "Customers",
@@ -726,13 +774,21 @@ export const entities: { [key: string]: EntityConfig } = {
       "personal_details",
       "contact_details",
       "employment_details",
-      "status"
+      "status",
     ],
   },
   access_roles: {
     label: "Access Roles",
     endpoint: "/api/access_roles",
-    fields: ["id", "name", "description", "permissions", "landing_page", "created_at", "updated_at"],
+    fields: [
+      "id",
+      "name",
+      "description",
+      "permissions",
+      "landing_page",
+      "created_at",
+      "updated_at",
+    ],
   },
   reservations: {
     label: "Reservations",
@@ -772,7 +828,14 @@ export const entities: { [key: string]: EntityConfig } = {
   timesheetsManagement: {
     label: "Timesheets Management",
     endpoint: "/api/timesheets_management",
-    fields: ["timesheet_id", "employee_id", "start_date", "end_date", "daily_hours", "total_weekly_hours"],
+    fields: [
+      "timesheet_id",
+      "employee_id",
+      "start_date",
+      "end_date",
+      "daily_hours",
+      "total_weekly_hours",
+    ],
   },
   timesheets: {
     label: "Timesheets",
@@ -791,19 +854,13 @@ export const entities: { [key: string]: EntityConfig } = {
       "total_wages_due",
       "tax_deductions",
       "net_pay",
-      "status"
+      "status",
     ],
   },
   companies: {
     label: "Companies",
     endpoint: "/api/companies",
-    fields: [
-      "company_id",
-      "name",
-      "country",
-      "tax_details",
-      "metrics"
-    ],
+    fields: ["company_id", "name", "country", "tax_details", "metrics"],
   },
 
   // Other Entities
@@ -825,17 +882,40 @@ export const entities: { [key: string]: EntityConfig } = {
   domains: {
     label: "Domains",
     endpoint: "/api/domains",
-    fields: ["id", "tenant_id", "domain", "is_primary", "created_at", "updated_at"],
+    fields: [
+      "id",
+      "tenant_id",
+      "domain",
+      "is_primary",
+      "created_at",
+      "updated_at",
+    ],
   },
   jobs: {
     label: "Jobs",
     endpoint: "/api/jobs",
-    fields: ["id", "queue", "payload", "attempts", "reserved_at", "available_at", "created_at"],
+    fields: [
+      "id",
+      "queue",
+      "payload",
+      "attempts",
+      "reserved_at",
+      "available_at",
+      "created_at",
+    ],
   },
   failed_jobs: {
     label: "Failed Jobs",
     endpoint: "/api/failed_jobs",
-    fields: ["id", "uuid", "connection", "queue", "payload", "exception", "failed_at"],
+    fields: [
+      "id",
+      "uuid",
+      "connection",
+      "queue",
+      "payload",
+      "exception",
+      "failed_at",
+    ],
   },
   password_resets: {
     label: "Password Resets",
@@ -903,8 +983,8 @@ export const entities: { [key: string]: EntityConfig } = {
       "quantity_used",
       "unit_of_measure",
       "created_at",
-      "updated_at"
-    ]
+      "updated_at",
+    ],
   },
   stock_adjustments: {
     label: "Stock Adjustments",
@@ -922,7 +1002,14 @@ export const entities: { [key: string]: EntityConfig } = {
   taxes: {
     label: "Taxes",
     endpoint: "/api/taxes",
-    fields: ["id", "name", "percentage", "is_active", "created_at", "updated_at"],
+    fields: [
+      "id",
+      "name",
+      "percentage",
+      "is_active",
+      "created_at",
+      "updated_at",
+    ],
   },
   stores: {
     label: "Stores",
@@ -937,7 +1024,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "created_at",
       "updated_at",
       "location",
-      "manager_id"
+      "manager_id",
     ],
   },
   job_titles: {
@@ -1038,8 +1125,8 @@ export const entities: { [key: string]: EntityConfig } = {
       "notes",
       "items",
       "created_at",
-      "updated_at"
-    ]
+      "updated_at",
+    ],
   },
 
   goods_receipts: {
@@ -1056,20 +1143,13 @@ export const entities: { [key: string]: EntityConfig } = {
       "status",
       "received_items",
       "created_at",
-      "updated_at"
-    ]
+      "updated_at",
+    ],
   },
 
   sites: {
     label: "Sites",
     endpoint: "sites",
-    fields: [
-      "id",
-      "name",
-      "address",
-      "type",
-      "created_at",
-      "updated_at"
-    ]
-  }
+    fields: ["id", "name", "address", "type", "created_at", "updated_at"],
+  },
 };

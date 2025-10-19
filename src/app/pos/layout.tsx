@@ -1,11 +1,11 @@
 // src/app/layout.tsx
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import '@/app/globals.css';
-import SidebarContent from '@/components/pos/SidebarContent';
-import { POSHeader } from '@/components/pos/POSHeader';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import "@/app/globals.css";
+import SidebarContent from "@/components/pos/SidebarContent";
+import { POSHeader } from "@/components/pos/POSHeader";
 import {
   ChakraProvider,
   Box,
@@ -22,13 +22,13 @@ import {
   Text,
   Link as ChakraLink,
 } from "@chakra-ui/react";
-import Link from 'next/link';
-import { usePOSStore } from '@/lib/usePOSStore';
+import Link from "next/link";
+import { usePOSStore } from "@/lib/usePOSStore";
 
 interface AppNotification {
   id: string;
   message: string;
-  type: 'success' | 'info' | 'warning' | 'error';
+  type: "success" | "info" | "warning" | "error";
 }
 
 export default function RootLayout({
@@ -36,7 +36,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [isLargerThanMd] = useMediaQuery('(min-width: 768px)');
+  const [isLargerThanMd] = useMediaQuery("(min-width: 768px)");
   const [sidebarOpen, setSidebarOpen] = useState(isLargerThanMd);
   const navbarRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -47,76 +47,125 @@ export default function RootLayout({
   const [isUnauthorized, setIsUnauthorized] = useState(false);
 
   // Default role pages for redirects
-  const defaultRolePages: Record<string, string> = useMemo(() => ({
-    'admin': '/pos/admin',
-    'manager': '/pos/management',
-    'server': '/pos/server',
-    'kitchen': '/pos/kitchen',
-    'cashier': '/pos',
-    'kiosk-user': '/pos/kiosk',
-    'default': '/pos'
-  }), []);
+  const defaultRolePages: Record<string, string> = useMemo(
+    () => ({
+      admin: "/pos/admin",
+      manager: "/pos/management",
+      server: "/pos/server",
+      kitchen: "/pos/kitchen",
+      cashier: "/pos",
+      "kiosk-user": "/pos/kiosk",
+      default: "/pos",
+    }),
+    []
+  );
 
   // Define pages where the sidebar should NOT be visible
   const hideSidebar =
-    pathname.startsWith('/pos/login') ||
-    pathname.startsWith('/pos/kitchen') ||
-    pathname.startsWith('/pos/server') ||
-    pathname.startsWith('/pos/kiosk') || // ADDED: Hide sidebar for kiosk
-    pathname === '/pos';
+    pathname.startsWith("/pos/login") ||
+    pathname.startsWith("/pos/kitchen") ||
+    pathname.startsWith("/pos/server") ||
+    pathname.startsWith("/pos/kiosk") ||
+    pathname === "/pos";
 
   // Define pages where the POSHeader should NOT be visible
   const hidePOSHeader =
-    pathname.startsWith('/pos/login') ||
-    pathname.startsWith('/pos/kiosk'); // ADDED: Hide header for kiosk
+    pathname.startsWith("/pos/login") || pathname.startsWith("/pos/kiosk");
 
   // Role-based access control
   useEffect(() => {
     if (!_hasHydrated) {
-      console.log('RootLayout: Waiting for state hydration...');
+      console.log("RootLayout: Waiting for state hydration...");
       return;
     }
 
-    // ADD: Skip auth check for kiosk page
-    if (pathname.startsWith('/pos/kiosk')) {
-      console.log('RootLayout: Kiosk page detected, skipping auth check');
+    // Skip auth check for kiosk page
+    if (pathname.startsWith("/pos/kiosk")) {
+      console.log("RootLayout: Kiosk page detected, skipping auth check");
       setIsAuthChecked(true);
       return;
     }
 
     const rolePaths: Record<string, string[]> = {
-      'admin': ['/pos', '/pos/management', '/pos/kitchen', '/pos/server', '/pos/admin', '/pos/admin/reports', '/pos/management/employees', '/pos/management/users', '/pos/management/access_roles', '/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/reports', '/pos/management/shifts'],
-      'manager': ['/pos/management', '/pos/kitchen', '/pos/server', '/pos/management/foods', '/pos/management/categories', '/pos/management/tables', '/pos/management/employees'],
-      'server': ['/pos/server'],
-      'kitchen': ['/pos/kitchen'],
-      'cashier': ['/pos'],
-      'kiosk-user': ['/pos/kiosk'], // ADDED: Kiosk user can only access kiosk page
-      'supply-chain': ['/pos/management/inventory_products', '/pos/management/inventory', '/pos/management/suppliers', '/pos/management/foods'],
-      'hr': ['/pos/management', '/pos/management/employees', '/pos/management/access_roles']
+      admin: [
+        "/pos",
+        "/pos/management",
+        "/pos/kitchen",
+        "/pos/server",
+        "/pos/admin",
+        "/pos/admin/reports",
+        "/pos/management/employees",
+        "/pos/management/users",
+        "/pos/management/access_roles",
+        "/pos/management/inventory_products",
+        "/pos/management/inventory",
+        "/pos/management/suppliers",
+        "/pos/management/foods",
+        "/pos/management/categories",
+        "/pos/management/tables",
+        "/pos/management/reports",
+        "/pos/management/shifts",
+      ],
+      manager: [
+        "/pos/management",
+        "/pos/kitchen",
+        "/pos/server",
+        "/pos/management/foods",
+        "/pos/management/categories",
+        "/pos/management/tables",
+        "/pos/management/employees",
+      ],
+      server: ["/pos/server"],
+      kitchen: ["/pos/kitchen"],
+      cashier: ["/pos"],
+      "kiosk-user": ["/pos/kiosk"],
+      "supply-chain": [
+        "/pos/management/inventory_products",
+        "/pos/management/inventory",
+        "/pos/management/suppliers",
+        "/pos/management/foods",
+      ],
+      hr: [
+        "/pos/management",
+        "/pos/management/employees",
+        "/pos/management/access_roles",
+      ],
     };
 
-    if (!currentStaff && pathname !== '/pos/login') {
-      console.log('RootLayout: No staff logged in, redirecting to /pos/login.');
-      router.replace('/pos/login');
+    if (!currentStaff && pathname !== "/pos/login") {
+      console.log("RootLayout: No staff logged in, redirecting to /pos/login.");
+      router.replace("/pos/login");
       setIsAuthChecked(true);
       return;
     }
 
-    if (currentStaff && pathname === '/pos/login') {
-      console.log('RootLayout: Staff logged in on /pos/login, redirecting to default page.');
-      const roleName = currentStaff.mainAccessRole?.name?.toLowerCase() || 'default';
-      const defaultPage = defaultRolePages[roleName] || defaultRolePages['default'];
+    if (currentStaff && pathname === "/pos/login") {
+      console.log(
+        "RootLayout: Staff logged in on /pos/login, redirecting to default page."
+      );
+      const roleName =
+        currentStaff.mainAccessRole?.name?.toLowerCase() || "default";
+      const defaultPage =
+        defaultRolePages[roleName] || defaultRolePages["default"];
       router.replace(defaultPage);
       setIsAuthChecked(false);
       return;
     }
 
-    if (currentStaff && pathname !== '/pos/login') {
-      const roleName = currentStaff.mainAccessRole?.name?.toLowerCase() || 'default';
+    if (currentStaff && pathname !== "/pos/login") {
+      const roleName =
+        currentStaff.mainAccessRole?.name?.toLowerCase() || "default";
       const allowedPaths = rolePaths[roleName] || [];
 
-      if (!allowedPaths.some(allowedPath => pathname.startsWith(allowedPath))) {
-        console.log('RootLayout: Unauthorized access attempt for', pathname, 'by role', roleName);
+      if (
+        !allowedPaths.some((allowedPath) => pathname.startsWith(allowedPath))
+      ) {
+        console.log(
+          "RootLayout: Unauthorized access attempt for",
+          pathname,
+          "by role",
+          roleName
+        );
         logAccessAttempt(
           currentStaff.id,
           `${currentStaff.first_name} ${currentStaff.last_name}`,
@@ -128,11 +177,18 @@ export default function RootLayout({
         return;
       }
 
-      console.log('RootLayout: Authentication check passed for', pathname);
+      console.log("RootLayout: Authentication check passed for", pathname);
       setIsUnauthorized(false);
       setIsAuthChecked(true);
     }
-  }, [currentStaff, pathname, router, logAccessAttempt, _hasHydrated, defaultRolePages]);
+  }, [
+    currentStaff,
+    pathname,
+    router,
+    logAccessAttempt,
+    _hasHydrated,
+    defaultRolePages,
+  ]);
 
   useEffect(() => {
     if (isLargerThanMd) {
@@ -143,13 +199,19 @@ export default function RootLayout({
   // Handle click outside of the sidebar on mobile
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
-      if (!isLargerThanMd && sidebarOpen && event.target instanceof Node && navbarRef.current && !navbarRef.current.contains(event.target)) {
+      if (
+        !isLargerThanMd &&
+        sidebarOpen &&
+        event.target instanceof Node &&
+        navbarRef.current &&
+        !navbarRef.current.contains(event.target)
+      ) {
         setSidebarOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener("mousedown", handleOutsideClick);
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener("mousedown", handleOutsideClick);
     };
   }, [sidebarOpen, isLargerThanMd]);
 
@@ -157,71 +219,99 @@ export default function RootLayout({
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  const shouldPadLeft = !hideSidebar;
-  const headerHeight = "90px";
-
-  const showMainContent = _hasHydrated && (currentStaff || pathname === '/pos/login' || pathname.startsWith('/pos/kiosk'));
+  const showMainContent =
+    _hasHydrated &&
+    (currentStaff ||
+      pathname === "/pos/login" ||
+      pathname.startsWith("/pos/kiosk"));
 
   return (
     <>
       <ChakraProvider>
         {showMainContent ? (
-          <Flex direction="row" minH="100vh" bg="var(--light-gray-bg)">
-            {/* Conditional rendering for desktop sidebar */}
+          <Box minH="100vh" bg="white" position="relative">
+            {/* Sidebar - Fixed on left with no padding */}
             {!hideSidebar && (
-              <SidebarContent
-                onClose={() => setSidebarOpen(false)}
-                display={{ base: "none", md: "block" }}
-              />
+              <>
+                {/* Desktop Sidebar */}
+                <Box
+                  position="fixed"
+                  left="0"
+                  top="0"
+                  h="100vh"
+                  w="280px" // Updated from 200px to 280px
+                  bg="white"
+                  borderRight="1px"
+                  borderRightColor="gray.200"
+                  zIndex="100"
+                  display={{ base: "none", md: "block" }}
+                >
+                  <SidebarContent onClose={() => setSidebarOpen(false)} />
+                </Box>
+
+                {/* Mobile Sidebar */}
+                {sidebarOpen && (
+                  <Box
+                    as="nav"
+                    ref={navbarRef}
+                    position="fixed"
+                    top="0"
+                    left="0"
+                    h="100vh"
+                    w="100%"
+                    zIndex="200"
+                    bg="white"
+                    display={{ base: "block", md: "none" }}
+                  >
+                    <SidebarContent onClose={() => setSidebarOpen(false)} />
+                  </Box>
+                )}
+              </>
             )}
 
-            {/* Conditional rendering for mobile sidebar */}
-            {sidebarOpen && !hideSidebar && (
-              <Box
-                as="nav"
-                ref={navbarRef}
-                pos="fixed"
-                top="0"
-                left="0"
-                h="100%"
-                zIndex="200"
-                transition="transform 0.3s ease-in-out"
-                transform={{
-                  base: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-                  md: "translateX(0)",
-                }}
-                bg="white"
-                borderRightWidth="1px"
-                display={{ base: "block", md: "none" }}
-              >
-                <SidebarContent onClose={() => setSidebarOpen(false)} />
-              </Box>
-            )}
-
-            <Box flex="1" ml={{ base: 0, md: !hideSidebar ? '250px' : 0 }}>
-              {/* Conditional rendering for POSHeader */}
+            {/* Main Content Area - Starts where sidebar ends */}
+            <Box
+              ml={{ base: 0, md: !hideSidebar ? "280px" : 0 }} // Updated from 200px to 280px
+              minH="100vh"
+              bg="white"
+              position="relative"
+            >
+              {/* Top Bar - Only show in mobile view */}
               {!hidePOSHeader && (
                 <Box
                   position="fixed"
                   top="0"
-                  left={{ base: 0, md: !hideSidebar ? '250px' : 0 }}
+                  left={{ base: 0, md: !hideSidebar ? "280px" : 0 }}
                   right="0"
-                  zIndex="100"
+                  height="80px"
+                  bg="white"
+                  borderBottom="1px"
+                  borderBottomColor="gray.200"
+                  zIndex="90"
+                  display={{ base: "block", md: "none" }} // Only show on mobile
                 >
                   <POSHeader onOpen={() => setSidebarOpen(true)} />
                 </Box>
               )}
 
+              {/* Page Content - Remove right padding and ensure full width */}
               <Box
-                as="main"
-                flex="1"
-                minH="calc(100vh - 60px)"
-                pt={{
-                  base: !hidePOSHeader ? headerHeight : '60px',
-                  md: !hidePOSHeader ? headerHeight : 6
-                }}
+                pt={{ base: !hidePOSHeader ? "80px" : "0", md: "0" }} // Only add padding on mobile                minH="100vh"
+                bg="white"
+                width="100%" // Ensure full width
+                maxWidth="100%" // Prevent any max-width constraints
+                px={0} // Remove horizontal padding
+                mx={0} // Remove margins
               >
-                <VStack spacing={3} position="sticky" top="10px" zIndex={30} width="full">
+                {/* Notifications */}
+                <VStack
+                  spacing={3}
+                  position="sticky"
+                  top="90px"
+                  zIndex={30}
+                  width="full"
+                  px={4}
+                >
                   {notifications.map((notification) => (
                     <Alert
                       key={notification.id}
@@ -234,8 +324,14 @@ export default function RootLayout({
                     >
                       <AlertIcon />
                       <Box flex="1">
-                        <AlertTitle>{notification.type === 'info' ? 'New Order!' : 'Notification'}</AlertTitle>
-                        <AlertDescription display="block">{notification.message}</AlertDescription>
+                        <AlertTitle>
+                          {notification.type === "info"
+                            ? "New Order!"
+                            : "Notification"}
+                        </AlertTitle>
+                        <AlertDescription display="block">
+                          {notification.message}
+                        </AlertDescription>
                       </Box>
                       <CloseButton
                         position="absolute"
@@ -246,12 +342,14 @@ export default function RootLayout({
                     </Alert>
                   ))}
                 </VStack>
-                <Box backgroundColor={'white'} textColor={"#333"} >
+
+                {/* Page Content - Remove all padding */}
+                <Box width="100%" px={0} mx={0}>
                   {children}
                 </Box>
               </Box>
             </Box>
-          </Flex>
+          </Box>
         ) : (
           <Box
             position="fixed"
@@ -260,7 +358,7 @@ export default function RootLayout({
             right="0"
             bottom="0"
             zIndex="9999"
-            bg="rgba(255, 255, 255, 1)"
+            bg="white"
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -283,7 +381,7 @@ export default function RootLayout({
             right="0"
             bottom="0"
             zIndex="9998"
-            bg="rgba(255, 255, 255, 1)"
+            bg="white"
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -296,12 +394,14 @@ export default function RootLayout({
                 You do not have permission to view this page.
               </Text>
               <Link
-                href={defaultRolePages[currentStaff?.mainAccessRole?.name?.toLowerCase() as keyof typeof defaultRolePages] || defaultRolePages.default}
+                href={
+                  defaultRolePages[
+                    currentStaff?.mainAccessRole?.name?.toLowerCase() as keyof typeof defaultRolePages
+                  ] || defaultRolePages.default
+                }
                 passHref
               >
-                <ChakraLink color="blue.500">
-                  Go to my dashboard
-                </ChakraLink>
+                <ChakraLink color="blue.500">Go to my dashboard</ChakraLink>
               </Link>
             </VStack>
           </Box>

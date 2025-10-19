@@ -19,7 +19,7 @@ def success_response(
         f"SUCCESS RESPONSE | Code: {code} | Message: {message}",
         extra={
             "response_code": code,
-            "message": message,
+            "response_message": message,  # Changed from "message" to "response_message"
             "data_type": type(data).__name__,
             "data_count": len(transformed_data) if isinstance(transformed_data, list) else 1 if transformed_data else 0
         }
@@ -82,7 +82,7 @@ def error_response(
         f"ERROR RESPONSE | Code: {code} | Message: {message}",
         extra={
             "error_code": code,
-            "error_message": message,
+            "error_message": message,  # Changed from "message" to "error_message"
             "error_details": details
         }
     )

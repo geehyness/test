@@ -29,13 +29,174 @@ interface StandardResponse<T = any> {
   data?: T;
 }
 
+// Session Context Helper
+export interface SessionContext {
+  store_id: string;
+  tenant_id: string;
+  employee_id?: string;
+  store_name?: string;
+}
+
+export function getCurrentSessionContext(): SessionContext {
+  if (typeof window === "undefined") {
+    return {
+      store_id: "default-store",
+      tenant_id: "tenant-231",
+    };
+  }
+
+  try {
+    const stored = sessionStorage.getItem("pos-storage");
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const state = parsed.state;
+
+      return {
+        store_id: state.currentStaff?.storeId || "default-store",
+        tenant_id: "tenant-231",
+        employee_id: state.currentStaff?.id,
+        store_name: state.currentStaff?.storeName,
+      };
+    }
+  } catch (error) {
+    console.error("Error reading session storage:", error);
+  }
+
+  return {
+    store_id: "default-store",
+    tenant_id: "tenant-231",
+  };
+}
+
+// Enhanced fetchData with automatic session context
+export async function fetchDataWithContext(
+  resource: string,
+  id?: string,
+  data?: Record<string, any>,
+  method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
+): Promise<any | null> {
+  const session = getCurrentSessionContext();
+
+  // Build the URL
+  let cleanResource = resource.replace(/^\/|\/$/g, "").replace(/^api\//i, "");
+  const url = id
+    ? `${BASE_URL}/${cleanResource}/${id}`
+    : `${BASE_URL}/${cleanResource}`;
+
+  console.log(`[API] 🚀 Starting ${method} request to: ${url}`);
+  if (data) {
+    console.log(`[API] 📦 Payload for ${method}:`, data);
+  }
+
+  // Prepare Headers and Authorization
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+    console.log(`[API] 🔑 Authorization token added.`);
+  }
+
+  const options: RequestInit = {
+    method,
+    headers,
+  };
+
+  // Add Body for POST/PUT methods
+  if ((method === "POST" || method === "PUT") && data) {
+    options.body = JSON.stringify(data);
+  }
+
+  console.log(`[API] 🔧 Request options:`, options);
+
+  try {
+    const response = await fetch(url, options);
+
+    console.log(
+      `[API] 📡 Response status: ${response.status} ${response.statusText}`
+    );
+
+    // Handle Errors
+    if (!response.ok) {
+      let errorMessage = `API error: ${response.status} ${response.statusText}`;
+      let responseText = "";
+
+      console.error(
+        `[API] ❌ Request failed with status: ${response.status} (${response.statusText})`
+      );
+
+      try {
+        responseText = await response.text();
+        const errorJson: StandardResponse = responseText
+          ? JSON.parse(responseText)
+          : null;
+
+        console.error(`[API] 📄 Raw error response body:`, responseText);
+
+        // Check for the new standard error structure
+        if (errorJson && errorJson.message) {
+          errorMessage = errorJson.message;
+          // Include details if available
+          if (errorJson.hasOwnProperty("details") && errorJson.details) {
+            errorMessage += ` - ${JSON.stringify(errorJson.details)}`;
+          }
+        } else if (responseText) {
+          errorMessage = responseText;
+        }
+      } catch (e) {
+        console.error(`[API] ⚠️ Failed to parse error response:`, e);
+        errorMessage = responseText || errorMessage;
+      }
+
+      console.error(`[API] 🛑 Throwing formatted error: ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      console.log(`[API] ✅ Request successful (204 No Content).`);
+      return null;
+    }
+
+    // Return parsed JSON for 200, 201, 202, etc.
+    const responseText = await response.text();
+    console.log(`[API] 📄 Raw response body:`, responseText);
+
+    if (!responseText) {
+      console.log(
+        `[API] ✅ Request successful (${response.status}) with empty body.`
+      );
+      return null;
+    }
+
+    const finalResponse: StandardResponse = JSON.parse(responseText);
+    console.log(
+      `[API] ✅ Request successful (${response.status}). Full response:`,
+      finalResponse
+    );
+
+    // Return the data part of the standard response
+    return finalResponse.data;
+  } catch (error: any) {
+    console.error(`[API] 🛑 Fetch error for ${method} ${url}:`, error);
+    if (error.name === "TypeError" && error.message.includes("fetch")) {
+      throw new Error("Network error - cannot connect to backend server");
+    }
+    throw error;
+  }
+}
+
 // Generic fetcher function for useSWR with auth headers - UPDATED
 const fetcher = async (url: string) => {
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -55,6 +216,7 @@ const fetcher = async (url: string) => {
     throw new Error(responseData.message || `API error: ${responseData.code}`);
   }
 
+  // Extract data from StandardResponse
   return responseData.data;
 };
 
@@ -64,10 +226,8 @@ export async function fetchData(
   data?: Record<string, any>,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
 ): Promise<any | null> {
-
   // 1. Build the URL
-  let cleanResource = resource.replace(/^\/|\/$/g, '')
-    .replace(/^api\//i, '');
+  let cleanResource = resource.replace(/^\/|\/$/g, "").replace(/^api\//i, "");
   const url = id
     ? `${BASE_URL}/${cleanResource}/${id}`
     : `${BASE_URL}/${cleanResource}`;
@@ -82,7 +242,8 @@ export async function fetchData(
     "Content-Type": "application/json",
   };
 
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
     console.log(`[API] 🔑 Authorization token added.`);
@@ -104,13 +265,17 @@ export async function fetchData(
   // 5. Handle Errors - UPDATED for new error format
   if (!response.ok) {
     let errorMessage = `API error: ${response.status} ${response.statusText}`;
-    let responseText = '';
+    let responseText = "";
 
-    console.error(`[API] ❌ Request failed with status: ${response.status} (${response.statusText})`);
+    console.error(
+      `[API] ❌ Request failed with status: ${response.status} (${response.statusText})`
+    );
 
     try {
       responseText = await response.text();
-      const errorJson: StandardResponse = responseText ? JSON.parse(responseText) : null;
+      const errorJson: StandardResponse = responseText
+        ? JSON.parse(responseText)
+        : null;
 
       console.error(`[API] 📄 Raw error response body:`, responseText);
 
@@ -118,13 +283,12 @@ export async function fetchData(
       if (errorJson && errorJson.message) {
         errorMessage = errorJson.message;
         // Include details if available
-        if (errorJson.hasOwnProperty('details') && errorJson.details) {
+        if (errorJson.hasOwnProperty("details") && errorJson.details) {
           errorMessage += ` - ${JSON.stringify(errorJson.details)}`;
         }
       } else if (responseText) {
         errorMessage = responseText;
       }
-
     } catch (e) {
       console.error(`[API] ⚠️ Failed to parse error response:`, e);
       errorMessage = responseText || errorMessage;
@@ -144,16 +308,22 @@ export async function fetchData(
 
   // Return parsed JSON for 200, 201, 202, etc.
   const finalResponse: StandardResponse = await response.json();
-  console.log(`[API] ✅ Request successful (${response.status}). Full response:`, finalResponse);
+  console.log(
+    `[API] ✅ Request successful (${response.status}). Full response:`,
+    finalResponse
+  );
 
   // Return the data part of the standard response
   return finalResponse.data;
 }
 
 // Authentication - UPDATED for new response format
-export async function loginEmployee(email: string, password: string): Promise<Employee & { store_id: string }> {
+export async function loginEmployee(
+  email: string,
+  password: string
+): Promise<Employee & { store_id: string }> {
   const url = `${BASE_URL}/login`;
-  console.log('loginEmployee: Starting login process...');
+  console.log("loginEmployee: Starting login process...");
 
   const response = await fetch(url, {
     method: "POST",
@@ -173,17 +343,20 @@ export async function loginEmployee(email: string, password: string): Promise<Em
     try {
       const errorData: StandardResponse = JSON.parse(responseText);
       errorMessage = errorData.message || errorMessage;
-      console.error('Login API error:', errorData);
+      console.error("Login API error:", errorData);
     } catch (e) {
       errorMessage = responseText || `Login failed: ${response.statusText}`;
-      console.error('Login API error:', errorMessage);
+      console.error("Login API error:", errorMessage);
     }
 
     throw new Error(errorMessage);
   }
 
-  const loginResponse: StandardResponse<{ access_token: string; employee: Employee }> = await response.json();
-  console.log('Login response:', loginResponse);
+  const loginResponse: StandardResponse<{
+    access_token: string;
+    employee: Employee;
+  }> = await response.json();
+  console.log("Login response:", loginResponse);
 
   const { access_token, employee } = loginResponse.data!;
 
@@ -191,19 +364,25 @@ export async function loginEmployee(email: string, password: string): Promise<Em
     throw new Error("Employee data not found in login response.");
   }
 
-  localStorage.setItem('access_token', access_token);
+  localStorage.setItem("access_token", access_token);
 
   return {
     ...employee,
-    store_id: employee.store_id
+    store_id: employee.store_id,
   };
 }
 
-// Core POS functions - THESE SHOULD NOW WORK CORRECTLY
+// ==================== UPDATED FUNCTIONS WITH SESSION CONTEXT ====================
+
+// Core POS functions - UPDATED with session context
 export const useFoods = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/foods`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/foods?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    menuItems: data, // This now contains the actual array of foods
+    menuItems: data,
     isLoading,
     isError: error,
     refreshMenuItems: mutate,
@@ -211,9 +390,13 @@ export const useFoods = () => {
 };
 
 export const useCategories = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/categories`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/categories?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    categories: data, // This now contains the actual array of categories
+    categories: data,
     isLoading,
     isError: error,
     refreshCategories: mutate,
@@ -221,9 +404,13 @@ export const useCategories = () => {
 };
 
 export const useTables = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/tables`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/tables?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    tables: data, // This now contains the actual array of tables
+    tables: data,
     isLoading,
     isError: error,
     refreshTables: mutate,
@@ -235,8 +422,12 @@ export const useCreateOrder = () => {
 
   const createOrder = async (order: any) => {
     try {
-      const newOrder = await fetchData("orders", undefined, order, "POST");
-
+      const newOrder = await fetchDataWithContext(
+        "orders",
+        undefined,
+        order,
+        "POST"
+      );
       toast({
         title: "Order created.",
         description: "Your order has been successfully placed.",
@@ -260,9 +451,13 @@ export const useCreateOrder = () => {
 };
 
 export const useOrders = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/orders`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/orders?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    orders: data, // This now contains the actual array of orders
+    orders: data,
     isLoading,
     isError: error,
     refreshOrders: mutate,
@@ -274,8 +469,12 @@ export const useUpdateOrder = () => {
 
   const updateOrder = async (orderId: string, updatedOrder: any) => {
     try {
-      const result = await fetchData("orders", orderId, updatedOrder, "PUT");
-
+      const result = await fetchDataWithContext(
+        "orders",
+        orderId,
+        updatedOrder,
+        "PUT"
+      );
       toast({
         title: "Order Updated.",
         description: "Order status has been successfully updated.",
@@ -299,125 +498,30 @@ export const useUpdateOrder = () => {
 };
 
 export const useInventoryProducts = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/inventory_products`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/inventory_products?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    inventoryProducts: data, // This now contains the actual array of inventory products
+    inventoryProducts: data,
     isLoading,
     isError: error,
     refreshInventoryProducts: mutate,
   };
 };
 
-// HR functions - UPDATED to handle new response format
-export async function getEmployees(): Promise<any[]> {
-  const response = await fetchData("employees");
-  return response; // This is now the actual array
-}
-
-export async function getShifts(): Promise<any[]> {
-  const response = await fetchData("shifts");
-  return response; // This is now the actual array
-}
-
-export async function createShift(newShift: any): Promise<any> {
-  const response = await fetchData("shifts", undefined, newShift, "POST");
-  return response; // This is now the created shift object
-}
-
-export async function updateShift(shiftId: string, updates: any): Promise<any> {
-  const response = await fetchData("shifts", shiftId, updates, "PUT");
-  return response; // This is now the updated shift object
-}
-
-export async function updateShiftStatus(shiftId: string, status: boolean): Promise<any> {
-  const response = await fetchData(`shifts/${shiftId}/status`, undefined, { active: status }, "PUT");
-  return response; // This is now the updated shift object
-}
-
-export async function getTimesheets(): Promise<any[]> {
-  const response = await fetchData("timesheet_entries");
-  return response; // This is now the actual array
-}
-
-export async function clockIn(employeeId: string, storeId: string): Promise<any> {
-  const response = await fetchData("timesheet_entries/clock-in", undefined, {
-    employee_id: employeeId,
-    store_id: storeId
-  }, "POST");
-  return response; // This is now the created timesheet entry
-}
-
-export async function clockOut(timesheetId: string): Promise<any> {
-  const response = await fetchData(`timesheet_entries/${timesheetId}/clock-out`, undefined, {}, "POST");
-  return response; // This is now the updated timesheet entry
-}
-
-// Inventory functions
-export async function getPurchaseOrders(): Promise<any[]> {
-  const response = await fetchData("purchase_orders");
-  return response; // This is now the actual array
-}
-
-export async function createPurchaseOrder(orderData: any): Promise<any> {
-  const response = await fetchData("purchase_orders", undefined, orderData, "POST");
-  return response; // This is now the created purchase order
-}
-
-export async function updatePurchaseOrder(orderId: string, orderData: any): Promise<any> {
-  const response = await fetchData("purchase_orders", orderId, orderData, "PUT");
-  return response; // This is now the updated purchase order
-}
-
-export async function getGoodsReceipts(): Promise<any[]> {
-  const response = await fetchData("goods_receipts");
-  return response; // This is now the actual array
-}
-
-export async function createGoodsReceipt(receiptData: any): Promise<any> {
-  const response = await fetchData("goods_receipts", undefined, receiptData, "POST");
-  return response; // This is now the created goods receipt
-}
-
-export async function getSuppliers(): Promise<any[]> {
-  const response = await fetchData("suppliers");
-  return response; // This is now the actual array
-}
-
-// Additional functions (payroll, low stock, etc.)
-export async function getPayrolls(): Promise<any[]> {
-  const response = await fetchData("payroll");
-  return response; // This is now the actual array
-}
-
-export async function getLowStockItems(): Promise<any[]> {
-  const response = await fetchData("inventory/low-stock");
-  return response; // This is now the actual array of low stock items
-}
-
-export async function deleteItem(resource: string, id: string): Promise<{ message: string }> {
-  await fetchData(resource, id, undefined, "DELETE");
-  return { message: "Item deleted successfully" };
-}
-
-// Other previously missing functions
-export const useFood = (foodId: string | undefined) => {
-  const { data, error, isLoading, mutate } = useSWR<Food>(
-    foodId ? `${BASE_URL}/foods/${foodId}` : null,
-    fetcher
-  );
-  return {
-    food: data, // This now contains the actual food object
-    isLoading,
-    isError: error,
-    refreshFood: mutate,
-  };
-};
-
+// Food Management - UPDATED with session context
 export const useCreateFood = () => {
   const toast = useToast();
   const createFood = async (food: Food) => {
     try {
-      const newFood = await fetchData("foods", undefined, food, "POST");
+      const newFood = await fetchDataWithContext(
+        "foods",
+        undefined,
+        food,
+        "POST"
+      );
       toast({
         title: "Food created.",
         description: `Food ${newFood.name} has been successfully added.`,
@@ -444,7 +548,12 @@ export const useUpdateFood = () => {
   const toast = useToast();
   const updateFood = async (foodId: string, food: Partial<Food>) => {
     try {
-      const updatedFood = await fetchData("foods", foodId, food, "PUT");
+      const updatedFood = await fetchDataWithContext(
+        "foods",
+        foodId,
+        food,
+        "PUT"
+      );
       toast({
         title: "Food updated.",
         description: `Food ${updatedFood.name} has been successfully updated.`,
@@ -493,19 +602,245 @@ export const useDeleteFood = () => {
   return deleteFood;
 };
 
+// HR functions - UPDATED with session context
+export async function getEmployees(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`employees?store_id=${session.store_id}`);
+  return response;
+}
+
+export async function getShifts(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`shifts?store_id=${session.store_id}`);
+  return response;
+}
+
+export async function updateShiftStatus(
+  shiftId: string,
+  status: boolean
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    `shifts/${shiftId}/status`,
+    undefined,
+    { active: status },
+    "PUT"
+  );
+  return response;
+}
+
+export async function createShift(newShift: any): Promise<any> {
+  console.log("🔍 [API] Sending shift data:", newShift);
+
+  // Ensure dates are properly formatted
+  const processedShift = {
+    ...newShift,
+    start:
+      newShift.start instanceof Date
+        ? newShift.start.toISOString()
+        : newShift.start,
+    end:
+      newShift.end instanceof Date ? newShift.end.toISOString() : newShift.end,
+  };
+
+  console.log("🔍 [API] Processed shift data:", processedShift);
+
+  try {
+    const response = await fetchDataWithContext(
+      "shifts",
+      undefined,
+      processedShift,
+      "POST"
+    );
+
+    console.log("🔍 [API] Full API response:", response);
+    console.log("🔍 [API] Response data type:", typeof response);
+
+    if (!response) {
+      console.error("🔍 [API] Response is null or undefined");
+      throw new Error(
+        "Shift creation returned no data - check backend response"
+      );
+    }
+
+    console.log("🔍 [API] Response keys:", Object.keys(response));
+    return response;
+  } catch (error) {
+    console.error("🔍 [API] Error in createShift:", error);
+    throw error;
+  }
+}
+
+export async function updateShift(shiftId: string, updates: any): Promise<any> {
+  // Ensure dates are properly formatted
+  const processedUpdates = { ...updates };
+
+  if (updates.start instanceof Date) {
+    processedUpdates.start = updates.start.toISOString();
+  }
+  if (updates.end instanceof Date) {
+    processedUpdates.end = updates.end.toISOString();
+  }
+  if (updates.recurrence_end_date instanceof Date) {
+    processedUpdates.recurrence_end_date =
+      updates.recurrence_end_date.toISOString();
+  }
+
+  const response = await fetchDataWithContext(
+    "shifts",
+    shiftId,
+    processedUpdates,
+    "PUT"
+  );
+  return response;
+}
+
+export async function getTimesheets(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `timesheet_entries?store_id=${session.store_id}`
+  );
+  return response;
+}
+
+export async function createTimesheetEntry(timesheetData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "timesheet_entries", // This matches the backend endpoint
+    undefined,
+    timesheetData,
+    "POST"
+  );
+  return response;
+}
+
+export async function clockIn(
+  employeeId: string,
+  storeId: string
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "timesheet_entries/clock-in",
+    undefined,
+    {
+      employee_id: employeeId,
+      store_id: storeId,
+    },
+    "POST"
+  );
+  return response;
+}
+
+export async function clockOut(timesheetId: string): Promise<any> {
+  // ✅ FIX: Changed to fetchDataWithContext to ensure store context is passed for POST
+  const response = await fetchDataWithContext(
+    `timesheet_entries/${timesheetId}/clock-out`,
+    undefined,
+    {},
+    "POST"
+  );
+  return response;
+}
+
+// Inventory functions - UPDATED with session context
+export async function getPurchaseOrders(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `purchase_orders?store_id=${session.store_id}`
+  );
+  return response;
+}
+
+export async function createPurchaseOrder(orderData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "purchase_orders",
+    undefined,
+    orderData,
+    "POST"
+  );
+  return response;
+}
+
+export async function updatePurchaseOrder(
+  orderId: string,
+  orderData: any
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "purchase_orders",
+    orderId,
+    orderData,
+    "PUT"
+  );
+  return response;
+}
+
+export async function getGoodsReceipts(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `goods_receipts?store_id=${session.store_id}`
+  );
+  return response;
+}
+
+export async function createGoodsReceipt(receiptData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "goods_receipts",
+    undefined,
+    receiptData,
+    "POST"
+  );
+  return response;
+}
+
+export async function getSuppliers(): Promise<any[]> {
+  const response = await fetchData("suppliers");
+  return response;
+}
+
+export async function getLowStockItems(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `inventory/low-stock?store_id=${session.store_id}`
+  );
+  return response;
+}
+
+export async function deleteItem(
+  resource: string,
+  id: string
+): Promise<{ message: string }> {
+  await fetchData(resource, id, undefined, "DELETE");
+  return { message: "Item deleted successfully" };
+}
+
+export async function deleteShift(
+  resource: string,
+  id: string
+): Promise<{ message: string }> {
+  await fetchData(resource, id, undefined, "DELETE");
+  return { message: "Item deleted successfully" };
+}
+
+// Other previously missing functions
+export const useFood = (foodId: string | undefined) => {
+  const { data, error, isLoading, mutate } = useSWR<Food>(
+    foodId ? `${BASE_URL}/foods/${foodId}` : null,
+    fetcher
+  );
+  return {
+    food: data,
+    isLoading,
+    isError: error,
+    refreshFood: mutate,
+  };
+};
+
 export async function getAccessRoles(): Promise<any[]> {
   const response = await fetchData("access_roles");
-  return response; // This is now the actual array
+  return response;
 }
 
 export async function getJobTitles(): Promise<any[]> {
-  const response = await fetchData("job_titles");
-  return response; // This is now the actual array
-}
-
-export async function getPayrollSettings(): Promise<any> {
-  const response = await fetchData("payroll_settings");
-  return response; // This is now the settings object (not an array anymore)
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`job_titles?store_id=${session.store_id}`);
+  return response;
 }
 
 // Add a test function to verify connection
@@ -513,43 +848,32 @@ export async function testConnection(): Promise<boolean> {
   try {
     const response = await fetch(`${BASE_URL}/health`);
     const data: StandardResponse = await response.json();
-    console.log('Health check:', data);
+    console.log("Health check:", data);
     return data.code === 200;
   } catch (error) {
-    console.error('Connection test failed:', error);
+    console.error("Connection test failed:", error);
     return false;
   }
 }
 
-// Department functions
+// Department functions - UPDATED with session context
 export async function getDepartments(): Promise<any[]> {
-  const response = await fetchData("departments");
-  return response; // This is now the actual array
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`departments?store_id=${session.store_id}`);
+  return response;
 }
 
-// In api.ts - Update the getUsers function
+// User functions - REMOVE name computation
 export async function getUsers(): Promise<any[]> {
   const response = await fetchData("users");
-  // Transform the data to match your frontend expectations
-  return response.map((user: any) => ({
-    ...user,
-    // Create name field from first_name and last_name
-    name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
-    // Ensure all required fields are present
-    email_verified_at: user.email_verified_at || null,
-    remember_token: user.remember_token || null,
-  }));
+  return response; // Remove the entire .map() function
 }
 
-// Also update the useUsers hook
 export const useUsers = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/users`, async (url) => {
-    const users = await fetcher(url);
-    return users.map((user: any) => ({
-      ...user,
-      name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username,
-    }));
-  });
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/users`,
+    fetcher // Remove the async function that computes names
+  );
 
   return {
     users: data,
@@ -560,9 +884,13 @@ export const useUsers = () => {
 };
 
 export const useDepartments = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/departments`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/departments?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    departments: data, // This now contains the actual array of departments
+    departments: data,
     isLoading,
     isError: error,
     refreshDepartments: mutate,
@@ -570,9 +898,12 @@ export const useDepartments = () => {
 };
 
 export const useAccessRoles = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/access_roles`, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/access_roles`,
+    fetcher
+  );
   return {
-    accessRoles: data, // This now contains the actual array of access roles
+    accessRoles: data,
     isLoading,
     isError: error,
     refreshAccessRoles: mutate,
@@ -580,9 +911,13 @@ export const useAccessRoles = () => {
 };
 
 export const useJobTitles = () => {
-  const { data, error, isLoading, mutate } = useSWR(`${BASE_URL}/job_titles`, fetcher);
+  const session = getCurrentSessionContext();
+  const { data, error, isLoading, mutate } = useSWR(
+    `${BASE_URL}/job_titles?store_id=${session.store_id}`,
+    fetcher
+  );
   return {
-    jobTitles: data, // This now contains the actual array of job titles
+    jobTitles: data,
     isLoading,
     isError: error,
     refreshJobTitles: mutate,
@@ -597,64 +932,138 @@ export async function enhancedFetchData(
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET"
 ): Promise<any | null> {
   try {
-    return await fetchData(resource, id, data, method);
+    return await fetchDataWithContext(resource, id, data, method);
   } catch (error: any) {
     console.error(`API Error for ${resource}:`, error);
     throw error;
   }
 }
 
-export async function calculatePayroll(employeeId: string, periodStart: string, periodEnd: string): Promise<any> {
-  const response = await fetchData("payroll/calculate", undefined, {
-    employee_id: employeeId,
-    period_start: periodStart,
-    period_end: periodEnd
-  }, "POST");
+/* Payroll functions - UPDATED with session context
+export async function calculatePayroll(
+  employeeId: string,
+  periodStart: string,
+  periodEnd: string
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "payroll/calculate",
+    undefined,
+    {
+      employee_id: employeeId,
+      period_start: periodStart,
+      period_end: periodEnd,
+    },
+    "POST"
+  );
   return response;
 }
 
 export async function processPayroll(payrollId: string): Promise<any> {
-  const response = await fetchData(`payroll/${payrollId}/process`, undefined, {}, "POST");
+  const response = await fetchData(
+    `payroll/${payrollId}/process`,
+    undefined,
+    {},
+    "POST"
+  );
   return response;
 }
 
 export async function createPayroll(payrollData: any): Promise<any> {
-  const response = await fetchData("payroll", undefined, payrollData, "POST");
+  const response = await fetchDataWithContext(
+    "payroll",
+    undefined,
+    payrollData,
+    "POST"
+  );
   return response;
 }
 
 export async function updatePayrollSettings(settings: any): Promise<any> {
-  const response = await fetchData("payroll_settings", undefined, settings, "POST");
+  const response = await fetchDataWithContext(
+    "payroll_settings",
+    undefined,
+    settings,
+    "POST"
+  );
   return response;
 }
 
-// Inventory functions
+// Additional functions (payroll, low stock, etc.) - UPDATED with session context
+export async function getPayrolls(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`payroll?store_id=${session.store_id}`);
+  return response;
+}
+
+export async function getPayrollSettings(): Promise<any> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `payroll_settings?store_id=${session.store_id}`
+  );
+  return response;
+}*/
+
+// Inventory functions - UPDATED with session context
 export async function getInventoryProducts(): Promise<any[]> {
-  const response = await fetchData("inventory_products");
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `inventory_products?store_id=${session.store_id}`
+  );
   return response;
 }
 
+export async function createInventoryProduct(productData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "inventory_products",
+    undefined,
+    productData,
+    "POST"
+  );
+  return response;
+}
 
+export async function updateInventoryProduct(
+  productId: string,
+  productData: any
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "inventory_products",
+    productId,
+    productData,
+    "PUT"
+  );
+  return response;
+}
 
+export async function deleteInventoryProduct(productId: string): Promise<any> {
+  const response = await fetchData(
+    "inventory_products",
+    productId,
+    undefined,
+    "DELETE"
+  );
+  return response;
+}
 
-
-
-
-// Add these functions to your api.ts file
-
-// Sites functions
+// Sites functions - UPDATED with session context
 export async function getSites(): Promise<any[]> {
-  const response = await fetchData("sites");
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`sites?store_id=${session.store_id}`);
   return response;
 }
 
 export async function createSite(siteData: any): Promise<any> {
-  const response = await fetchData("sites", undefined, siteData, "POST");
+  const response = await fetchDataWithContext(
+    "sites",
+    undefined,
+    siteData,
+    "POST"
+  );
   return response;
 }
 
 export async function updateSite(siteId: string, siteData: any): Promise<any> {
-  const response = await fetchData("sites", siteId, siteData, "PUT");
+  const response = await fetchDataWithContext("sites", siteId, siteData, "PUT");
   return response;
 }
 
@@ -664,31 +1073,195 @@ export async function deleteSite(siteId: string): Promise<any> {
 }
 
 export async function deletePurchaseOrder(orderId: string): Promise<any> {
-  const response = await fetchData("purchase_orders", orderId, undefined, "DELETE");
+  const response = await fetchData(
+    "purchase_orders",
+    orderId,
+    undefined,
+    "DELETE"
+  );
   return response;
 }
 
-export async function updateGoodsReceipt(receiptId: string, receiptData: any): Promise<any> {
-  const response = await fetchData("goods_receipts", receiptId, receiptData, "PUT");
+export async function updateGoodsReceipt(
+  receiptId: string,
+  receiptData: any
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "goods_receipts",
+    receiptId,
+    receiptData,
+    "PUT"
+  );
   return response;
 }
 
 export async function deleteGoodsReceipt(receiptId: string): Promise<any> {
-  const response = await fetchData("goods_receipts", receiptId, undefined, "DELETE");
+  const response = await fetchData(
+    "goods_receipts",
+    receiptId,
+    undefined,
+    "DELETE"
+  );
   return response;
 }
 
-export async function createInventoryProduct(productData: any): Promise<any> {
-  const response = await fetchData("inventory_products", undefined, productData, "POST");
+// Customer functions - UPDATED with session context
+export async function getCustomers(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`customers?store_id=${session.store_id}`);
   return response;
 }
 
-export async function updateInventoryProduct(productId: string, productData: any): Promise<any> {
-  const response = await fetchData("inventory_products", productId, productData, "PUT");
+export async function createCustomer(customerData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "customers",
+    undefined,
+    customerData,
+    "POST"
+  );
   return response;
 }
 
-export async function deleteInventoryProduct(productId: string): Promise<any> {
-  const response = await fetchData("inventory_products", productId, undefined, "DELETE");
+export async function updateCustomer(
+  customerId: string,
+  customerData: any
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "customers",
+    customerId,
+    customerData,
+    "PUT"
+  );
+  return response;
+}
+
+export async function deleteCustomer(customerId: string): Promise<any> {
+  const response = await fetchData(
+    "customers",
+    customerId,
+    undefined,
+    "DELETE"
+  );
+  return response;
+}
+
+// Reservation functions - UPDATED with session context
+export async function getReservations(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`reservations?store_id=${session.store_id}`);
+  return response;
+}
+
+export async function createReservation(reservationData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "reservations",
+    undefined,
+    reservationData,
+    "POST"
+  );
+  return response;
+}
+
+export async function updateReservation(
+  reservationId: string,
+  reservationData: any
+): Promise<any> {
+  const response = await fetchDataWithContext(
+    "reservations",
+    reservationId,
+    reservationData,
+    "PUT"
+  );
+  return response;
+}
+
+export async function deleteReservation(reservationId: string): Promise<any> {
+  const response = await fetchData(
+    "reservations",
+    reservationId,
+    undefined,
+    "DELETE"
+  );
+  return response;
+}
+
+// Payroll functions - FIXED endpoints (REPLACE THE COMMENTED SECTION WITH THIS)
+export async function getPayrolls(): Promise<any[]> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(`payroll?store_id=${session.store_id}`);
+  return response;
+}
+
+export async function calculatePayroll(
+  employeeId: string,
+  periodStart: string,
+  periodEnd: string
+): Promise<any> {
+  const session = getCurrentSessionContext();
+
+  const response = await fetchData(
+    "payroll/calculate",
+    undefined,
+    {
+      employee_id: employeeId,
+      period_start: periodStart,
+      period_end: periodEnd,
+      store_id: session.store_id,
+      tenant_id: session.tenant_id,
+    },
+    "POST"
+  );
+  return response;
+}
+
+export async function processPayroll(payrollId: string): Promise<any> {
+  const response = await fetchData(
+    `payroll/${payrollId}/process`,
+    undefined,
+    {},
+    "POST"
+  );
+  return response;
+}
+
+export async function createPayroll(payrollData: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "payroll",
+    undefined,
+    payrollData,
+    "POST"
+  );
+  return response;
+}
+
+export async function updatePayrollSettings(settings: any): Promise<any> {
+  const response = await fetchDataWithContext(
+    "payroll_settings",
+    undefined,
+    settings,
+    "POST"
+  );
+  return response;
+}
+
+export async function getPayrollSettings(): Promise<any> {
+  const session = getCurrentSessionContext();
+  const response = await fetchData(
+    `payroll_settings?store_id=${session.store_id}`
+  );
+  return response;
+}
+
+// In api.ts - add this function
+export async function updatePayrollSettingsWithId(
+  settingsId: string,
+  settingsData: any
+): Promise<any> {
+  const response = await fetchData(
+    "payroll_settings",
+    settingsId,
+    settingsData,
+    "PUT"
+  );
   return response;
 }

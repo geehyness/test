@@ -34,16 +34,15 @@ class PyObjectId(str):
 
 class MongoModel(BaseModel):
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    created_at: Optional[datetime] = None 
+    updated_at: Optional[datetime] = None
 
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {
             ObjectId: str,
-            datetime: lambda v: v.isoformat() if v else None,
-            date: lambda v: v.isoformat() if v else None
+            # REMOVE datetime and date string conversion - let them stay as datetime objects
         }
 
     def to_dict(self, **kwargs) -> dict:
@@ -73,7 +72,7 @@ class MongoModel(BaseModel):
             
         data = data.copy()
         
-        # Convert _id to id for response models
+        # Convert _id to id
         if '_id' in data:
             if isinstance(data['_id'], ObjectId):
                 data['id'] = str(data['_id'])
@@ -82,11 +81,11 @@ class MongoModel(BaseModel):
             # Remove _id to avoid conflicts
             del data['_id']
         
-        # Convert datetime fields to ISO strings
+        # Convert any remaining nested ObjectIds to strings
         for field, value in data.items():
-            if isinstance(value, (datetime, date)):
-                data[field] = value.isoformat()
-            elif isinstance(value, ObjectId):
+            if isinstance(value, ObjectId):
                 data[field] = str(value)
         
+        # Let Pydantic handle datetime conversion automatically
+        # No need to convert datetime objects to strings
         return cls(**data)

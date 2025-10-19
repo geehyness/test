@@ -23,7 +23,9 @@ async def get_inventory_products(store_id: Optional[str] = Query(None)):
         products_collection = get_collection("inventory_products")
         query = {"store_id": store_id} if store_id else {}
         products = []
-        async for product in products_collection.find(query):
+        # FIXED: Use await and iterate
+        product_docs = await products_collection.find(query)
+        for product in product_docs:
             products.append(InventoryProduct.from_mongo(product))
         return success_response(data=products)
     except Exception as e:
@@ -96,7 +98,9 @@ async def get_suppliers():
     try:
         suppliers_collection = get_collection("suppliers")
         suppliers = []
-        async for supplier in suppliers_collection.find():
+        # FIXED: Use await and iterate
+        supplier_docs = await suppliers_collection.find()
+        for supplier in supplier_docs:
             suppliers.append(Supplier.from_mongo(supplier))
         return success_response(data=suppliers)
     except Exception as e:
@@ -169,7 +173,9 @@ async def get_units():
     try:
         units_collection = get_collection("units")
         units = []
-        async for unit in units_collection.find():
+        # FIXED: Use await and iterate
+        unit_docs = await units_collection.find()
+        for unit in unit_docs:
             units.append(Unit.from_mongo(unit))
         return success_response(data=units)
     except Exception as e:
@@ -243,7 +249,9 @@ async def get_stocks(product_id: Optional[str] = Query(None)):
         stocks_collection = get_collection("stocks")
         query = {"inventory_product_id": product_id} if product_id else {}
         stocks = []
-        async for stock in stocks_collection.find(query):
+        # FIXED: Use await and iterate
+        stock_docs = await stocks_collection.find(query)
+        for stock in stock_docs:
             stocks.append(Stock.from_mongo(stock))
         return success_response(data=stocks)
     except Exception as e:
@@ -317,7 +325,9 @@ async def get_stock_adjustments(stock_id: Optional[str] = Query(None)):
         sa_collection = get_collection("stock_adjustments")
         query = {"stock_id": stock_id} if stock_id else {}
         sas = []
-        async for sa in sa_collection.find(query):
+        # FIXED: Use await and iterate
+        sa_docs = await sa_collection.find(query)
+        for sa in sa_docs:
             sas.append(StockAdjustment.from_mongo(sa))
         return success_response(data=sas)
     except Exception as e:
@@ -391,7 +401,9 @@ async def get_inv_categories(store_id: Optional[str] = Query(None)):
         categories_collection = get_collection("inv_categories")
         query = {"store_id": store_id} if store_id else {}
         categories = []
-        async for category in categories_collection.find(query):
+        # FIXED: Use await and iterate
+        category_docs = await categories_collection.find(query)
+        for category in category_docs:
             categories.append(InvCategory.from_mongo(category))
         return success_response(data=categories)
     except Exception as e:
@@ -465,7 +477,9 @@ async def get_low_stock_items(store_id: Optional[str] = Query(None)):
         products_collection = get_collection("inventory_products")
         query = {"store_id": store_id} if store_id else {}
         low_stock_items = []
-        async for product in products_collection.find(query):
+        # FIXED: Use await and iterate
+        product_docs = await products_collection.find(query)
+        for product in product_docs:
             if product.get("quantity_in_stock", 0) <= product.get("reorder_level", 0):
                 low_stock_items.append(InventoryProduct.from_mongo(product))
         return success_response(data=low_stock_items)
@@ -479,7 +493,9 @@ async def get_pending_purchase_orders():
         po_collection = get_collection("purchase_orders")
         pending_statuses = ['draft', 'pending-approval', 'approved', 'ordered']
         pending_orders = []
-        async for po in po_collection.find({"status": {"$in": pending_statuses}}):
+        # FIXED: Use await and iterate
+        po_docs = await po_collection.find({"status": {"$in": pending_statuses}})
+        for po in po_docs:
             pending_orders.append(PurchaseOrder.from_mongo(po))
         return success_response(data=pending_orders)
     except Exception as e:

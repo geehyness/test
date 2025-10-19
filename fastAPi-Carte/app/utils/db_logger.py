@@ -13,12 +13,12 @@ class DBLogger:
         """Log database operations"""
         
         log_data = {
-            "operation": operation,
-            "collection": collection,
-            "query": DBLogger._sanitize_query(query) if query else None,
+            "db_operation": operation,  # Changed from "operation"
+            "db_collection": collection,  # Changed from "collection"
+            "db_query": DBLogger._sanitize_query(query) if query else None,
             "data_count": len(data) if isinstance(data, (list, dict)) else 1 if data else 0,
             "result_count": DBLogger._get_result_count(result),
-            "error": error
+            "db_error": error  # Changed from "error"
         }
         
         if error:

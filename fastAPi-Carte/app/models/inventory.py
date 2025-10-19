@@ -18,8 +18,6 @@ class InventoryProduct(MongoModel):
     location_in_warehouse: Optional[str] = None
     last_restocked_at: Optional[str] = None
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Supplier(MongoModel):
     name: str
@@ -27,14 +25,10 @@ class Supplier(MongoModel):
     phone: str
     email: str
     address: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Unit(MongoModel):
     name: str
     symbol: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Stock(MongoModel):
     inventory_product_id: str
@@ -43,20 +37,14 @@ class Stock(MongoModel):
     supplier_id: str
     last_restock_date: str
     expiration_date: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class StockAdjustment(MongoModel):
     stock_id: str
     quantity_change: float
     reason: str
     adjustment_date: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class InvCategory(MongoModel):
     name: str
     description: Optional[str] = None
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None

@@ -75,11 +75,13 @@ async def _fetch_and_enrich_employee_data(employee_id: str) -> Dict[str, Any]:
                 "landing_page": main_access_role.get("landing_page", "")
             }
         
-        # 2. Get all access roles for the employee
+        # 2. Get all access roles for the employee - FIXED: Use await instead of async for
         employee_access_roles: List[Dict] = []
         role_ids = [ObjectId(rid) for rid in employee.get("access_role_ids", [])]
         if role_ids:
-            async for role in access_roles_collection.find({"_id": {"$in": role_ids}}):
+            # FIX: Use await and iterate over the list result
+            roles = await access_roles_collection.find({"_id": {"$in": role_ids}})
+            for role in roles:
                 employee_access_roles.append({
                     "id": str(role["_id"]),
                     "name": role.get("name", ""),
@@ -100,7 +102,9 @@ async def debug_users():
     try:
         users_collection = get_collection("users")
         users = []
-        async for user in users_collection.find():
+        # FIX: Use await and iterate over list
+        user_docs = await users_collection.find()
+        for user in user_docs:
             users.append({
                 "id": str(user["_id"]),
                 "username": user.get("username"),
@@ -141,7 +145,6 @@ async def get_current_employee(token: str = Depends(oauth2_scheme)):
 
 # --- Public Endpoints ---
 
-# In app/routes/auth.py - Update the register_employee function
 @router.post("/register", response_model=StandardResponse[EmployeeResponse])
 async def register_employee(employee: Employee):
     """Registers a new employee."""

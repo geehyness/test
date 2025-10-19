@@ -1,40 +1,73 @@
 # app/models/hr.py
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from pydantic import Field, EmailStr
-# At the top of hr.py, ensure proper imports
-from datetime import datetime, timedelta, date  # Add date import if needed
+from datetime import datetime, timedelta, date
 import asyncio
 from .base import MongoModel
 
 class Department(MongoModel):
     name: str
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class PersonalDetails(MongoModel):
     citizenship: str
     gender: str
     birth_date: str
     age: str
+    
+    def to_response_dict(self) -> dict:
+        """Convert PersonalDetails to dictionary for response"""
+        return {
+            "citizenship": self.citizenship,
+            "gender": self.gender,
+            "birth_date": self.birth_date,
+            "age": self.age
+        }
 
 class ContactDetails(MongoModel):
     cell_phone: str
     whatsapp_number: str
     email: str
     address: str
+    
+    def to_response_dict(self) -> dict:
+        """Convert ContactDetails to dictionary for response"""
+        return {
+            "cell_phone": self.cell_phone,
+            "whatsapp_number": self.whatsapp_number,
+            "email": self.email,
+            "address": self.address
+        }
 
 class EmploymentDetails(MongoModel):
     job_title: str
     team: str
     employment_type: str
     location: str
+    
+    def to_response_dict(self) -> dict:
+        """Convert EmploymentDetails to dictionary for response"""
+        return {
+            "job_title": self.job_title,
+            "team": self.team,
+            "employment_type": self.employment_type,
+            "location": self.location
+        }
 
 class EmployeeStatus(MongoModel):
     current_status: str
     on_leave_since: Optional[str] = None
     termination_date: Optional[str] = None
     termination_reason: Optional[str] = None
+    
+    def to_response_dict(self) -> dict:
+        """Convert EmployeeStatus to dictionary for response"""
+        return {
+            "current_status": self.current_status,
+            "on_leave_since": self.on_leave_since,
+            "termination_date": self.termination_date,
+            "termination_reason": self.termination_reason
+        }
 
 class Employee(MongoModel):
     user_id: str
@@ -43,7 +76,7 @@ class Employee(MongoModel):
     tenant_id: str
     store_id: str
     main_access_role_id: str
-    hire_date: str
+    hire_date: datetime  
     salary: float
     first_name: str
     last_name: Optional[str] = None
@@ -60,45 +93,58 @@ class Employee(MongoModel):
     contact_details: Optional[ContactDetails] = None
     employment_details: Optional[EmploymentDetails] = None
     status: Optional[EmployeeStatus] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    
+    def to_response_dict(self) -> dict:
+        """Convert Employee to dictionary for response with proper nested object handling"""
+        data = self.model_dump()
+        
+        # Convert nested objects to dictionaries
+        if self.personal_details:
+            data['personal_details'] = self.personal_details.to_response_dict() if hasattr(self.personal_details, 'to_response_dict') else self.personal_details
+            
+        if self.contact_details:
+            data['contact_details'] = self.contact_details.to_response_dict() if hasattr(self.contact_details, 'to_response_dict') else self.contact_details
+            
+        if self.employment_details:
+            data['employment_details'] = self.employment_details.to_response_dict() if hasattr(self.employment_details, 'to_response_dict') else self.employment_details
+            
+        if self.status:
+            data['status'] = self.status.to_response_dict() if hasattr(self.status, 'to_response_dict') else self.status
+            
+        return data
 
 class AccessRole(MongoModel):
     name: str
     description: str
     permissions: List[str]
     landing_page: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class JobTitle(MongoModel):
     title: str
     description: Optional[str] = None
     department: str
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Shift(MongoModel):
     employee_id: str
-    start: str
-    end: str
+    start: datetime  # Changed from str to datetime
+    end: datetime    # Changed from str to datetime
     title: Optional[str] = None
     employee_name: Optional[str] = None
     color: Optional[str] = None
     active: Optional[bool] = True
     recurring: Optional[bool] = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    recurring_day: Optional[int] = None
+    recurrence_end_date: Optional[datetime] = None
+    # created_at and updated_at are inherited from MongoModel as datetime
 
 class TimesheetEntry(MongoModel):
     employee_id: str
-    clock_in: str
-    clock_out: Optional[str] = None
+    clock_in: datetime  # Changed from str to datetime
+    clock_out: Optional[datetime] = None  # Changed from str to datetime
     duration_minutes: Optional[int] = 0
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    # created_at and updated_at are inherited from MongoModel as datetime
 
 class PayrollDeduction(MongoModel):
     id: Optional[str] = None
@@ -106,16 +152,30 @@ class PayrollDeduction(MongoModel):
     type: str  # "tax" | "insurance" | "retirement" | "other"
     description: str
     amount: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    
+    def to_response_dict(self) -> dict:
+        """Convert PayrollDeduction to dictionary for response"""
+        return {
+            "id": self.id,
+            "payroll_id": self.payroll_id,
+            "type": self.type,
+            "description": self.description,
+            "amount": self.amount,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
 
+# In your backend PayrollSettings model, add these fields:
 class PayrollSettings(MongoModel):
     store_id: str
-    default_payment_cycle: str  # "weekly" | "bi-weekly" | "monthly"
-    tax_rate: float
-    overtime_multiplier: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    default_payment_cycle: Literal["weekly", "bi-weekly", "monthly"] = "bi-weekly"
+    tax_rate: float = 0.20
+    overtime_multiplier: float = 1.5
+    overtime_threshold: float = 40  # hours per week
+    pay_day: Optional[int] = 15  # Day of month for monthly payments
+    auto_process: bool = False
+    include_benefits: bool = False
+    benefits_rate: float = 0.05
 
 class Payroll(MongoModel):
     employee_id: str
@@ -131,8 +191,19 @@ class Payroll(MongoModel):
     overtime_rate: float
     deductions: Optional[List[PayrollDeduction]] = []
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    
+    def to_response_dict(self) -> dict:
+        """Convert Payroll to dictionary for response with proper nested handling"""
+        data = self.model_dump()
+        
+        # Convert deductions to dictionaries
+        if self.deductions:
+            data['deductions'] = [
+                deduction.to_response_dict() if hasattr(deduction, 'to_response_dict') 
+                else deduction for deduction in self.deductions
+            ]
+        
+        return data
 
 class Company(MongoModel):
     company_id: str

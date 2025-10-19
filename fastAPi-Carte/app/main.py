@@ -1,4 +1,4 @@
-# app/main.py - UPDATED WITH LOGGING
+# app/main.py - FIXED VERSION
 from fastapi import FastAPI, HTTPException
 from app.routes import core, hr, inventory, auth
 from app.database import client
@@ -8,25 +8,35 @@ from app.logging_config import get_logger, setup_logging
 from app.routes import core, hr, inventory, auth, log_router
 import os
 
+from fastapi.encoders import jsonable_encoder
+from datetime import datetime
+from bson import ObjectId
+
 # Setup logging
 setup_logging()
 logger = get_logger("api.main")
 
-app = FastAPI(title="POS System API", version="1.0.0")
+# Create ONE FastAPI instance with all configurations
+app = FastAPI(
+    title="POS System API", 
+    version="1.0.0",
+    json_encoders={
+        datetime: lambda v: v.isoformat(),
+        ObjectId: str
+    }
+)
 
-# Add logging middleware
+# Add middleware to the single app instance
 app.add_middleware(LoggingMiddleware)
-
-# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"],  # Specific origins for security
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
 
-# Include routers - FIXED: Remove duplicate prefix since routers already have /api
+# Include routers
 app.include_router(core.router)
 app.include_router(hr.router) 
 app.include_router(inventory.router)

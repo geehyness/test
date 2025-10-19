@@ -60,6 +60,9 @@ def setup_logging():
     logging.getLogger('motor').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('asyncio').setLevel(logging.WARNING)
+    logging.getLogger('watchfiles').setLevel(logging.WARNING)  # ADD THIS LINE
+    logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
+
 
 # Create logger instances for different modules
 def get_logger(name):

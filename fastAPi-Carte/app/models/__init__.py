@@ -25,7 +25,8 @@ from .response import (
     HealthResponse, DepartmentResponse, UserResponse, PaymentResponse, TaxResponse,
     PaymentMethodResponse, BrandResponse, ContactMessageResponse, ReportResponse,
     DomainResponse, TenantResponse, SiteResponse, JobResponse, FailedJobResponse,
-    PasswordResetResponse
+    PasswordResetResponse, PayrollPreviewResponse, # New
+    PayrollDeductionPreviewResponse, # New
 )
 
 __all__ = [

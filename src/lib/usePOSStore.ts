@@ -3,7 +3,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 import {
   Food,
@@ -11,7 +11,7 @@ import {
   Table,
   Order,
   OrderItem,
-  Employee as EmployeeDetails, // Renamed to avoid conflict with local interface
+  Employee as EmployeeDetails,
   AccessRole,
   JobTitle,
   Report,
@@ -20,11 +20,9 @@ import {
   TimesheetEntry,
 } from "@/lib/config/entities";
 import { fetchData, updateShiftStatus } from "@/lib/api";
-import { useToast } from "@chakra-ui/react";
 
 // --- Types for Shift Management ---
 
-// This is the Employee interface used by the Shift Management page
 export interface Employee {
   id: string;
   first_name: string;
@@ -35,29 +33,32 @@ export interface Employee {
   color?: string;
 }
 
-// Add the Shift interface
 export interface Shift {
   id: string;
   employee_id: string;
-  start: string; // ISO string
-  end: string;   // ISO string
+  start: Date;
+  end: Date;
   title?: string;
   employee_name?: string;
   color?: string;
   active?: boolean;
   recurring?: boolean;
+  recurring_day?: number;
+  recurrence_end_date?: Date;
+  // **NEW FIELD**
+  recurring_series_id?: string;
 }
 
-// Corrected: Extend Employee type to include store-specific details
-type CurrentStaff = (EmployeeDetails & {
-  accessRoles: AccessRole[];
-  mainAccessRole: AccessRole;
-  jobTitleName: string;
-  storeName: string | null;
-  storeId: string | null;
-}) | null;
+type CurrentStaff =
+  | (EmployeeDetails & {
+      accessRoles: AccessRole[];
+      mainAccessRole: AccessRole;
+      jobTitleName: string;
+      storeName: string | null;
+      storeId: string | null;
+    })
+  | null;
 
-// Define the shape of your POS state and actions
 interface POSState {
   currentStaff: CurrentStaff;
   menuItems: Food[];
@@ -106,7 +107,10 @@ interface POSActions {
   setAccessReports: (reports: Report[]) => void;
   setHasHydrated: (state: boolean) => void;
   addOrder: (order: Order) => void;
-  processOrderPayment: (order: Order, paymentMethod: "cash" | "card" | "split") => Promise<void>;
+  processOrderPayment: (
+    order: Order,
+    paymentMethod: "cash" | "card" | "split"
+  ) => Promise<void>;
   setCurrentOrder: (order: Order) => void;
   setShifts: (shifts: Shift[]) => void;
   addShift: (newShift: Shift) => void;
@@ -119,6 +123,7 @@ interface POSActions {
 export const usePOSStore = create<POSState & POSActions>()(
   persist(
     (set, get) => ({
+      // Initial State
       currentStaff: null,
       menuItems: [],
       categories: [],
@@ -127,7 +132,7 @@ export const usePOSStore = create<POSState & POSActions>()(
       employees: [],
       currentOrder: {
         id: "new-order",
-        store_id: 'default-store',
+        store_id: "default-store",
         tenant_id: "tenant-231",
         table_id: null,
         customer_id: null,
@@ -141,20 +146,20 @@ export const usePOSStore = create<POSState & POSActions>()(
         tax_amount: 0,
         discount_amount: 0,
         employee_id: "",
-        order_type: undefined,
+        order_type: "dine-in" as const,
       },
       activeOrders: [],
       accessReports: [],
       _hasHydrated: false,
-      currentTimesheetId: null, // <--- ADDED: Initialize state
+      currentTimesheetId: null,
       kioskUserId: null,
-      _hasHydrated: false,
 
+      // Actions
       setHasHydrated: (state: boolean) => {
         set({ _hasHydrated: state });
       },
 
-      // --- Shift Management Actions ---
+      // Shift Management Actions
       setEmployees: (employees) => {
         set({ employees: employees });
       },
@@ -165,32 +170,71 @@ export const usePOSStore = create<POSState & POSActions>()(
 
       addShift: (newShift) => {
         set((state) => ({
-          shifts: [...state.shifts, newShift]
+          shifts: [...state.shifts, newShift],
         }));
       },
 
-      updateShift: (shiftId, updates) => {
+      // Update the updateShift action to handle recurrence properly
+      updateShift: (shiftId: string, updates: Partial<Shift>) => {
         set((state) => ({
-          shifts: state.shifts.map(shift =>
-            shift.id === shiftId ? { ...shift, ...updates } : shift
-          )
+          shifts: state.shifts.map((shift) => {
+            if (shift.id === shiftId) {
+              const updatedShift = { ...shift, ...updates };
+
+              // If turning off recurrence, set recurrence_end_date to the previous week
+              if (shift.recurring && updates.recurring === false) {
+                const lastOccurrence = new Date(shift.start);
+                lastOccurrence.setDate(lastOccurrence.getDate() - 7);
+                updatedShift.recurrence_end_date = lastOccurrence;
+              }
+
+              return updatedShift;
+            }
+            return shift;
+          }),
         }));
       },
 
-      // In usePOSStore.ts - Replace the deleteShift action:
-      deleteShift: async (shiftId) => {
+      // Update deleteShift to handle recurrence properly
+      deleteShift: async (shiftId: string) => {
         try {
-          await updateShiftStatus(shiftId, false);
-          set((state) => ({
-            shifts: state.shifts.map(shift =>
-              shift.id === shiftId ? { ...shift, active: false } : shift
-            )
-          }));
-          return { success: true }; // Return success status
+          const shift = get().shifts.find((s) => s.id === shiftId);
+
+          if (shift?.recurring) {
+            // For recurring shifts, set recurrence_end_date instead of deleting
+            await updateShiftStatus(shiftId, false);
+            set((state) => ({
+              shifts: state.shifts.map((s) =>
+                s.id === shiftId
+                  ? {
+                      ...s,
+                      active: false,
+                      recurrence_end_date: new Date(
+                        s.start.getTime() - 7 * 24 * 60 * 60 * 1000
+                      ), // One week before
+                    }
+                  : s
+              ),
+            }));
+          } else {
+            // For non-recurring shifts, delete normally
+            await updateShiftStatus(shiftId, false);
+            set((state) => ({
+              shifts: state.shifts.map((s) =>
+                s.id === shiftId ? { ...s, active: false } : s
+              ),
+            }));
+          }
+
+          return { success: true };
         } catch (error: any) {
-          return { success: false, error: error.message || "An error occurred." };
+          return {
+            success: false,
+            error: error.message || "An error occurred.",
+          };
         }
       },
+
       logAccessAttempt: (userId, userName, userRole, attemptedPath) => {
         set((state) => {
           const existingReportIndex = state.accessReports.findIndex(
@@ -211,7 +255,9 @@ export const usePOSStore = create<POSState & POSActions>()(
             };
           } else {
             const newReport: Report = {
-              id: `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              id: `report-${Date.now()}-${Math.random()
+                .toString(36)
+                .substr(2, 9)}`,
               user_id: userId,
               user_name: userName,
               user_role: userRole,
@@ -229,74 +275,91 @@ export const usePOSStore = create<POSState & POSActions>()(
       setAccessReports: (reports) => set({ accessReports: reports }),
 
       loginStaff: async (staff: EmployeeDetails) => {
-        const allAccessRoles = (await fetchData("access_roles")) as AccessRole[];
-        const allJobTitles = (await fetchData("job_titles")) as JobTitle[];
-        const stores = (await fetchData("stores")) as Store[];
+        try {
+          const allAccessRoles = (await fetchData(
+            "access_roles"
+          )) as AccessRole[];
+          const allJobTitles = (await fetchData("job_titles")) as JobTitle[];
+          const stores = (await fetchData("stores")) as Store[];
 
-        const resolvedAccessRoles = staff.access_role_ids
-          .map((roleId) => allAccessRoles.find((role) => role.id === roleId))
-          .filter(Boolean) as AccessRole[];
+          const resolvedAccessRoles = staff.access_role_ids
+            .map((roleId) => allAccessRoles.find((role) => role.id === roleId))
+            .filter(Boolean) as AccessRole[];
 
-        const mainAccessRole = resolvedAccessRoles.find(
-          (role) => role.id === staff.main_access_role_id
-        );
+          const mainAccessRole = resolvedAccessRoles.find(
+            (role) => role.id === staff.main_access_role_id
+          );
 
-        const jobTitle = allJobTitles.find((jt) => jt.id === staff.job_title_id);
+          const jobTitle = allJobTitles.find(
+            (jt) => jt.id === staff.job_title_id
+          );
 
-        const staffStore = stores.find((store: any) => store.id === staff.store_id) || null;
+          const staffStore =
+            stores.find((store: any) => store.id === staff.store_id) || null;
 
-        if (!mainAccessRole) {
-          console.error("Main access role not found for staff:", staff);
-          set({ currentStaff: null });
-          return;
-        }
+          if (!mainAccessRole) {
+            console.error("Main access role not found for staff:", staff);
+            set({ currentStaff: null });
+            return;
+          }
 
-        const staffWithRoles: CurrentStaff = {
-          ...staff,
-          accessRoles: resolvedAccessRoles,
-          mainAccessRole: mainAccessRole,
-          jobTitleName: jobTitle ? jobTitle.title : "Unknown",
-          storeName: staffStore ? staffStore.name : "Unknown Store",
-          storeId: staffStore ? staffStore.id : null,
-        };
-
-        const newOrder: Order = {
-          id: "new-order",
-          store_id: staffStore ? staffStore.id : "",
-          table_id: null,
-          customer_id: null,
-          total_amount: 0,
-          status: "new",
-          notes: "",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          items: [],
-          subtotal_amount: 0,
-          tax_amount: 0,
-          discount_amount: 0,
-          employee_id: staff.id,
-          order_type: "dine-in",
-        };
-
-        set((state) => {
-          const currentTableId = state.currentOrder.table_id;
-          const updatedTables = currentTableId
-            ? state.tables.map((table) =>
-              table.id === currentTableId
-                ? { ...table, status: "available", current_order_id: null }
-                : table
-            )
-            : state.tables;
-
-          return {
-            currentStaff: staffWithRoles,
-            currentOrder: newOrder,
-            tables: updatedTables,
+          const staffWithRoles: CurrentStaff = {
+            ...staff,
+            accessRoles: resolvedAccessRoles,
+            mainAccessRole: mainAccessRole,
+            jobTitleName: jobTitle ? jobTitle.title : "Unknown",
+            storeName: staffStore ? staffStore.name : "Unknown Store",
+            storeId: staffStore ? staffStore.id : null,
           };
+
+          const newOrder: Order = {
+            id: "new-order",
+            store_id: staffStore ? staffStore.id : "default-store",
+            table_id: null,
+            customer_id: null,
+            total_amount: 0,
+            status: "new",
+            notes: "",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            items: [],
+            subtotal_amount: 0,
+            tax_amount: 0,
+            discount_amount: 0,
+            employee_id: staff.id,
+            order_type: "dine-in" as const,
+          };
+
+          set((state) => {
+            const currentTableId = state.currentOrder.table_id;
+            const updatedTables = currentTableId
+              ? state.tables.map((table) =>
+                  table.id === currentTableId
+                    ? { ...table, status: "available", current_order_id: null }
+                    : table
+                )
+              : state.tables;
+
+            return {
+              currentStaff: staffWithRoles,
+              currentOrder: newOrder,
+              tables: updatedTables,
+            };
+          });
+        } catch (error) {
+          console.error("Error during staff login:", error);
+          set({ currentStaff: null });
+        }
+      },
+
+      logoutStaff: () => {
+        set({
+          currentStaff: null,
+          currentTimesheetId: null,
+          kioskUserId: null,
         });
       },
 
-      logoutStaff: () => set({ currentStaff: null }),
       setMenuItems: (items) => set({ menuItems: items }),
       setCategories: (categories) => set({ categories: categories }),
       setTables: (tables) => set({ tables: tables }),
@@ -312,10 +375,10 @@ export const usePOSStore = create<POSState & POSActions>()(
             updatedItems = state.currentOrder.items.map((orderItem) =>
               orderItem.food_id === item.id
                 ? {
-                  ...orderItem,
-                  quantity: orderItem.quantity + 1,
-                  sub_total: (orderItem.quantity + 1) * orderItem.price,
-                }
+                    ...orderItem,
+                    quantity: orderItem.quantity + 1,
+                    sub_total: (orderItem.quantity + 1) * orderItem.price,
+                  }
                 : orderItem
             );
           } else {
@@ -330,7 +393,7 @@ export const usePOSStore = create<POSState & POSActions>()(
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
               price_at_sale: item.price,
-              name: item.name
+              name: item.name,
             };
             updatedItems = [...state.currentOrder.items, newItem];
           }
@@ -386,10 +449,10 @@ export const usePOSStore = create<POSState & POSActions>()(
           const updatedItems = state.currentOrder.items.map((orderItem) =>
             orderItem.food_id === foodId
               ? {
-                ...orderItem,
-                quantity: quantity,
-                sub_total: quantity * orderItem.price,
-              }
+                  ...orderItem,
+                  quantity: quantity,
+                  sub_total: quantity * orderItem.price,
+                }
               : orderItem
           );
 
@@ -415,7 +478,7 @@ export const usePOSStore = create<POSState & POSActions>()(
 
       addOrder: (order: Order) => {
         set((state) => ({
-          activeOrders: [...state.activeOrders, order]
+          activeOrders: [...state.activeOrders, order],
         }));
       },
 
@@ -425,16 +488,16 @@ export const usePOSStore = create<POSState & POSActions>()(
           const currentStaff = state.currentStaff;
           const updatedTables = currentTableId
             ? state.tables.map((table) =>
-              table.id === currentTableId
-                ? { ...table, status: "available", current_order_id: null }
-                : table
-            )
+                table.id === currentTableId
+                  ? { ...table, status: "available", current_order_id: null }
+                  : table
+              )
             : state.tables;
 
           return {
             currentOrder: {
               id: "new-order",
-              store_id: currentStaff?.storeId || 'default-store',
+              store_id: currentStaff?.storeId || "default-store",
               tenant_id: "tenant-231",
               table_id: null,
               customer_id: null,
@@ -447,8 +510,8 @@ export const usePOSStore = create<POSState & POSActions>()(
               subtotal_amount: 0,
               tax_amount: 0,
               discount_amount: 0,
-              employee_id: currentStaff?.id || "null",
-              order_type: "dine-in",
+              employee_id: currentStaff?.id || "",
+              order_type: "dine-in" as const,
             },
             tables: updatedTables,
           };
@@ -463,7 +526,11 @@ export const usePOSStore = create<POSState & POSActions>()(
               return { ...table, status: "available", current_order_id: null };
             }
             if (table.id === tableId) {
-              return { ...table, status: "occupied", current_order_id: state.currentOrder.id };
+              return {
+                ...table,
+                status: "occupied",
+                current_order_id: state.currentOrder.id,
+              };
             }
             return table;
           });
@@ -536,14 +603,18 @@ export const usePOSStore = create<POSState & POSActions>()(
               status: newStatus,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              employee_id: get().currentStaff?.id || "null",
-              order_type: "dine-in",
+              employee_id: get().currentStaff?.id || "",
+              order_type: "dine-in" as const,
             });
           }
 
           const updatedTables = state.tables.map((table) => {
             if (order.table_id && table.id === order.table_id) {
-              return { ...table, status: "occupied", current_order_id: order.id };
+              return {
+                ...table,
+                status: "occupied",
+                current_order_id: order.id,
+              };
             }
             return table;
           });
@@ -553,7 +624,7 @@ export const usePOSStore = create<POSState & POSActions>()(
             tables: updatedTables,
             currentOrder: {
               id: "new-order",
-              store_id: get().currentStaff?.storeId || 'default-store',
+              store_id: get().currentStaff?.storeId || "default-store",
               tenant_id: "tenant-231",
               table_id: null,
               customer_id: null,
@@ -566,8 +637,8 @@ export const usePOSStore = create<POSState & POSActions>()(
               subtotal_amount: 0,
               tax_amount: 0,
               discount_amount: 0,
-              employee_id: get().currentStaff?.id || "null",
-              order_type: "dine-in",
+              employee_id: get().currentStaff?.id || "",
+              order_type: "dine-in" as const,
             },
           };
         });
@@ -633,17 +704,14 @@ export const usePOSStore = create<POSState & POSActions>()(
         set({ currentOrder: order });
       },
 
-      processOrderPayment: async (order: Order, paymentMethod: "cash" | "card" | "split") => {
+      processOrderPayment: async (
+        order: Order,
+        paymentMethod: "cash" | "card" | "split"
+      ) => {
         return Promise.resolve();
       },
 
       setKioskUserId: (id) => set({ kioskUserId: id }),
-      _setHasHydrated: (state: any) => {
-        set({
-          _hasHydrated: state
-        });
-      },
-
       setCurrentTimesheetId: (id) => set({ currentTimesheetId: id }),
     }),
     {
@@ -654,12 +722,12 @@ export const usePOSStore = create<POSState & POSActions>()(
         activeOrders: state.activeOrders,
         accessReports: state.accessReports,
         _hasHydrated: state._hasHydrated,
-        currentTimesheetId: state.currentTimesheetId, // <--- ADDED: Persist timesheet ID
-        kioskUserId: state.kioskUserId, // ADDED: Persist kioskUserId
+        currentTimesheetId: state.currentTimesheetId,
+        kioskUserId: state.kioskUserId,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          state._hasHydrated = true;
+          state.setHasHydrated(true);
         }
       },
     }

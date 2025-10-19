@@ -1,8 +1,7 @@
 # app/models/core.py
 from typing import Optional, List, Dict, Any
 from pydantic import Field, EmailStr
-# At the top of core.py, ensure proper imports  
-from datetime import datetime, date  # Add date import if needed
+from datetime import datetime, date
 import math
 from .base import MongoModel, PyObjectId
 
@@ -13,8 +12,18 @@ class RecipeItem(MongoModel):
     inventory_product_id: str
     quantity_used: float
     unit_of_measure: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+    
+    def to_response_dict(self) -> dict:
+        """Convert RecipeItem to dictionary for response"""
+        return {
+            "id": self.id,
+            "food_id": self.food_id,
+            "inventory_product_id": self.inventory_product_id,
+            "quantity_used": self.quantity_used,
+            "unit_of_measure": self.unit_of_measure,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
 
 class Food(MongoModel):
     name: str
@@ -28,6 +37,17 @@ class Food(MongoModel):
     recipes: Optional[List[RecipeItem]] = []
     store_id: Optional[str] = None
     is_available: Optional[bool] = True
+    
+    def to_response_dict(self) -> dict:
+        """Convert Food to dictionary for response with proper recipe handling"""
+        data = self.model_dump()
+        
+        # Convert RecipeItem objects to dictionaries
+        if self.recipes:
+            data['recipes'] = [recipe.to_response_dict() if hasattr(recipe, 'to_response_dict') 
+                             else recipe for recipe in self.recipes]
+        
+        return data
 
 class StoreFood(MongoModel):
     food_id: str
@@ -44,8 +64,6 @@ class OrderItem(MongoModel):
     notes: Optional[str] = None
     name: str
     price_at_sale: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Order(MongoModel):
     store_id: Optional[str] = None
@@ -62,22 +80,16 @@ class Order(MongoModel):
     order_type: Optional[str] = None  # "dine-in" | "takeaway"
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Category(MongoModel):
     name: str
     description: Optional[str] = None
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class InvCategory(MongoModel):
     name: str
     description: Optional[str] = None
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Customer(MongoModel):
     first_name: str
@@ -86,8 +98,6 @@ class Customer(MongoModel):
     phone_number: Optional[str] = None
     loyalty_points: Optional[int] = 0
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Table(MongoModel):
     name: str
@@ -96,8 +106,6 @@ class Table(MongoModel):
     status: str
     current_order_id: Optional[str] = None
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Store(MongoModel):
     name: str
@@ -108,8 +116,6 @@ class Store(MongoModel):
     location: Optional[str] = None
     manager_id: Optional[str] = None
     kiosk_user_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class PurchaseOrderItem(MongoModel):
     inventory_product_id: str
@@ -130,8 +136,6 @@ class PurchaseOrder(MongoModel):
     ordered_by: str
     notes: Optional[str] = None
     items: List[PurchaseOrderItem] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class GoodsReceiptItem(MongoModel):
     inventory_product_id: str
@@ -151,17 +155,15 @@ class GoodsReceipt(MongoModel):
     receiving_bin_id: Optional[str] = None
     status: Optional[str] = None
     received_items: Optional[List[Dict]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class User(MongoModel):
-    name: Optional[str] = None
+    # name: Optional[str] = None
     email: EmailStr
     username: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     password: Optional[str] = None  # Make password optional
-    email_verified_at: Optional[str] = None
+    email_verified_at: Optional[datetime] = None
     remember_token: Optional[str] = None
     cashAccounts: Optional[List[Any]] = []
     cardAccounts: Optional[List[Any]] = []
@@ -170,8 +172,6 @@ class User(MongoModel):
     phonepeAccounts: Optional[List[Any]] = []
     amazonpayAccounts: Optional[List[Any]] = []
     locations: Optional[List[Any]] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
     def to_dict(self, **kwargs) -> dict:
         """Convert model to dictionary with proper handling for all fields"""
@@ -189,36 +189,26 @@ class Payment(MongoModel):
     payment_date: str
     transaction_id: Optional[str] = None
     status: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Tax(MongoModel):
     name: str
     percentage: float
     is_active: bool = True
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class PaymentMethod(MongoModel):
     name: str
     description: str
     is_active: bool = True
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Brand(MongoModel):
     name: str
     description: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class ContactMessage(MongoModel):
     name: str
     email: str
     subject: str
     message: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Report(MongoModel):
     user_id: str
@@ -237,15 +227,11 @@ class Reservation(MongoModel):
     status: str
     notes: Optional[str] = None
     store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Domain(MongoModel):
     tenant_id: str
     domain: str
     is_primary: bool = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Job(MongoModel):
     queue: str
@@ -275,16 +261,12 @@ class Tenant(MongoModel):
     remember_token: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Site(MongoModel):
     name: str
     address: str
     type: str
     store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class Stock(MongoModel):
     food_id: str
@@ -293,13 +275,9 @@ class Stock(MongoModel):
     supplier_id: str
     last_restock_date: str
     expiration_date: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
 
 class StockAdjustment(MongoModel):
     stock_id: str
     quantity_change: int
     reason: str
     adjustment_date: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
