@@ -1,9 +1,11 @@
 # app/models/core.py
 from typing import Optional, List, Dict, Any
-from pydantic import Field, EmailStr
+from pydantic import Field, BaseModel, EmailStr, ConfigDict, validator # <-- ADDED validator
 from datetime import datetime, date
 import math
 from .base import MongoModel, PyObjectId
+from .response import COMMON_ENCODERS           # <-- ADDED COMMON_ENCODERS import
+# ...
 
 # Recipe model for embedded recipes
 class RecipeItem(MongoModel):
@@ -30,14 +32,14 @@ class Food(MongoModel):
     description: str
     price: float
     category_id: str
-    image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = [] 
     preparation_time: Optional[int] = None
     allergens: Optional[List[str]] = []
     tenant_id: str
     recipes: Optional[List[RecipeItem]] = []
     store_id: Optional[str] = None
     is_available: Optional[bool] = True
-    
+
     def to_response_dict(self) -> dict:
         """Convert Food to dictionary for response with proper recipe handling"""
         data = self.model_dump()
@@ -85,6 +87,7 @@ class Category(MongoModel):
     name: str
     description: Optional[str] = None
     store_id: Optional[str] = None
+    image_url: Optional[str] = None  # ADD THIS LINE for category images
 
 class InvCategory(MongoModel):
     name: str
@@ -254,13 +257,33 @@ class PasswordReset(MongoModel):
     token: str
     created_at: str
 
+# In core.py - Update Tenant model
+# In app/models/core.py - Update Tenant model to match your BaseModel pattern
 class Tenant(MongoModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
     name: str
     email: str
     password: str
     remember_token: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    customer_page_settings: Optional[dict] = Field(default_factory=dict)
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+    def to_response_dict(self) -> dict:
+        """Convert Tenant to dictionary for response"""
+        data = self.model_dump(exclude={'password'})
+        
+        # Ensure customer_page_settings exists
+        if 'customer_page_settings' not in data or data['customer_page_settings'] is None:
+            data['customer_page_settings'] = {}
+            
+        return data
 
 class Site(MongoModel):
     name: str

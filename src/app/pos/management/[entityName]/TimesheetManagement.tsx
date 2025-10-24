@@ -684,7 +684,9 @@ export default function TimesheetManagement() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  max={moment().format("YYYY-MM-DD")}
+                  max={moment().format
+                    ("YYYY-MM-DD")}
+                  w={64}
                 />
               </FormControl>
 

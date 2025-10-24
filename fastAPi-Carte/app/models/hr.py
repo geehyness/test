@@ -179,8 +179,8 @@ class PayrollSettings(MongoModel):
 
 class Payroll(MongoModel):
     employee_id: str
-    pay_period_start: str
-    pay_period_end: str
+    pay_period_start: datetime  # This should be datetime
+    pay_period_end: datetime    # This should be datetime
     payment_cycle: str  # "weekly" | "bi-weekly" | "monthly"
     gross_pay: float
     tax_deductions: float

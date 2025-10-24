@@ -1,5 +1,5 @@
-# app/routes/payroll.py - REMOVED DUPLICATES
-from fastapi import APIRouter, HTTPException, Query
+# app/routes/payroll.py - FIXED VERSION
+from fastapi import APIRouter, HTTPException, Query, Body
 from typing import List, Optional
 from app.database import get_collection
 from app.models.hr import Payroll, PayrollSettings, Employee, PayrollDeduction
@@ -24,7 +24,12 @@ async def get_or_create_payroll_settings(store_id: str) -> PayrollSettings:
             store_id=store_id,
             default_payment_cycle="bi-weekly",
             tax_rate=0.20,
-            overtime_multiplier=1.5
+            overtime_multiplier=1.5,
+            overtime_threshold=40.0,
+            pay_day=15,
+            auto_process=False,
+            include_benefits=False,
+            benefits_rate=0.05
         )
         settings_dict = to_mongo_dict(default_settings)
         await settings_collection.insert_one(settings_dict)
@@ -32,25 +37,18 @@ async def get_or_create_payroll_settings(store_id: str) -> PayrollSettings:
     
     return PayrollSettings.from_mongo(settings_data)
 
-# REMOVED DUPLICATES:
-# - GET /api/payroll (duplicate in hr.py)
-# - GET /api/payroll/{payroll_id} (duplicate in hr.py) 
-# - POST /api/payroll (duplicate in hr.py)
-# - PUT /api/payroll/{payroll_id} (duplicate in hr.py)
-# - POST /api/payroll/{payroll_id}/process (duplicate in hr.py)
-# - DELETE /api/payroll/{payroll_id} (duplicate in hr.py)
-# - GET /api/payroll_settings (duplicate in hr.py)
-# - POST /api/payroll_settings (duplicate in hr.py)
-
 @router.post("/payroll/calculate", response_model=StandardResponse[PayrollResponse])
 async def calculate_payroll(
-    employee_id: str,
-    period_start: str,
-    period_end: str,
-    store_id: Optional[str] = None
+    employee_id: str = Body(...),
+    period_start: str = Body(...),
+    period_end: str = Body(...),
+    store_id: Optional[str] = Body(None)
 ):
     """Calculate payroll for a specific employee and time period using payroll settings."""
     try:
+        print(f"🔍 [Payroll Calculate] Starting calculation for employee: {employee_id}")
+        print(f"📅 [Payroll Calculate] Period: {period_start} to {period_end}")
+
         # Get employee data
         employees_collection = get_collection("employees")
         employee_doc = await employees_collection.find_one({"_id": ObjectId(employee_id)})
@@ -62,8 +60,8 @@ async def calculate_payroll(
         store_id = employee_doc.get("store_id", store_id or "default")
         settings = await get_or_create_payroll_settings(store_id)
         
-        print(f"Using payroll settings: {settings.model_dump()}")  # Debug log
-        
+        print(f"⚙️ [Payroll Calculate] Using payroll settings: {settings.model_dump()}")
+
         # Get timesheet entries for the period
         ts_collection = get_collection("timesheet_entries")
         
@@ -71,20 +69,20 @@ async def calculate_payroll(
         try:
             start_dt = datetime.fromisoformat(period_start.replace('Z', '+00:00'))
             end_dt = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
-            
-            query_start = start_dt.isoformat()
-            query_end = end_dt.isoformat()
-            
         except ValueError:
             return error_response(message="Invalid date format. Use ISO 8601 format.", code=400)
-        
-        # Get timesheets for the period - FIX: Use to_list()
-        timesheet_list = await ts_collection.find({
+            
+        # FIXED: Use async for loop instead of to_list()
+        timesheet_list = []
+        async for ts in ts_collection.find({
             "employee_id": employee_id,
-            "clock_in": {"$gte": query_start, "$lte": query_end},
+            "clock_in": {"$gte": start_dt, "$lte": end_dt},
             "clock_out": {"$ne": None}
-        }).to_list(length=1000)
+        }):
+            timesheet_list.append(ts)
         
+        print(f"⏰ [Payroll Calculate] Found {len(timesheet_list)} timesheet entries")
+
         # Calculate total hours worked
         total_minutes = 0
         
@@ -113,7 +111,7 @@ async def calculate_payroll(
             overtime_hours = total_hours - regular_hours_threshold
             regular_hours = regular_hours_threshold
         
-        print(f"Hours calculation - Total: {total_hours}, Regular: {regular_hours}, Overtime: {overtime_hours}")
+        print(f"⏱️ [Payroll Calculate] Hours calculation - Total: {total_hours}, Regular: {regular_hours}, Overtime: {overtime_hours}")
         
         # Calculate pay rates
         annual_salary = employee_doc.get("salary", 0)
@@ -129,7 +127,7 @@ async def calculate_payroll(
             # 52 weeks per year, 40 hours per week
             hourly_rate = annual_salary / (52 * 40) if annual_salary > 0 else 0
         
-        print(f"Hourly rate: {hourly_rate}, Overtime multiplier: {settings.overtime_multiplier}")
+        print(f"💰 [Payroll Calculate] Hourly rate: {hourly_rate}, Overtime multiplier: {settings.overtime_multiplier}")
         
         # Calculate pay components
         regular_pay = regular_hours * hourly_rate
@@ -140,7 +138,7 @@ async def calculate_payroll(
         tax_deductions = gross_pay * settings.tax_rate
         net_pay = gross_pay - tax_deductions
         
-        print(f"Pay calculation - Regular: {regular_pay}, Overtime: {overtime_pay}, Gross: {gross_pay}, Tax: {tax_deductions}, Net: {net_pay}")
+        print(f"💵 [Payroll Calculate] Pay calculation - Regular: {regular_pay}, Overtime: {overtime_pay}, Gross: {gross_pay}, Tax: {tax_deductions}, Net: {net_pay}")
         
         # Create payroll data with deductions
         tax_deduction_record = PayrollDeduction(
@@ -152,8 +150,8 @@ async def calculate_payroll(
         
         payroll_data = Payroll(
             employee_id=employee_id,
-            pay_period_start=period_start,
-            pay_period_end=period_end,
+            pay_period_start=start_dt,
+            pay_period_end=end_dt,
             payment_cycle=settings.default_payment_cycle,
             gross_pay=round(gross_pay, 2),
             tax_deductions=round(tax_deductions, 2),
@@ -169,7 +167,7 @@ async def calculate_payroll(
         return success_response(data=payroll_data)
         
     except Exception as e:
-        print(f"Error in payroll calculation: {str(e)}")
+        print(f"❌ [Payroll Calculate] Error in payroll calculation: {str(e)}")
         return error_response(message=f"Error calculating payroll: {str(e)}", code=400)
 
 @router.get("/health")

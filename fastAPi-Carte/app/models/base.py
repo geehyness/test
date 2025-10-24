@@ -43,6 +43,7 @@ class MongoModel(BaseModel):
         json_encoders = {
             ObjectId: str,
             # REMOVE datetime and date string conversion - let them stay as datetime objects
+            datetime: lambda dt: dt.isoformat(),
         }
 
     def to_dict(self, **kwargs) -> dict:

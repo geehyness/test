@@ -5,7 +5,7 @@ from app.database import client
 from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
 from app.logging_config import get_logger, setup_logging
-from app.routes import core, hr, inventory, auth, log_router
+from app.routes import core, hr, inventory, auth, payroll_router, log_router
 import os
 
 from fastapi.encoders import jsonable_encoder
@@ -41,6 +41,7 @@ app.include_router(core.router)
 app.include_router(hr.router) 
 app.include_router(inventory.router)
 app.include_router(auth.router)
+app.include_router(payroll_router)  # Make sure this is included
 app.include_router(log_router)
 
 @app.on_event("startup")

@@ -1,534 +1,574 @@
-Here's a comprehensive reference of all backend models, endpoints, and data formats:
+(venv) geehyess@synapse-digital
+~/Documents/Code/test/fastAPi-Carte (main *=)
+❯ python run.py 
+INFO:     Will watch for changes in these directories: ['/home/geehyess/Documents/Code/test/fastAPi-Carte']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [46069] using WatchFiles
+INFO:     Started server process [46073]
+INFO:     Waiting for application startup.
+2025-10-21 07:38:45.644 | INFO     | api.main             | ✅ Connected to MongoDB!
+✅ Connected to MongoDB!
+INFO:     Application startup complete.
+INFO:     127.0.0.1:56190 - "OPTIONS /api/payroll?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56190 - "OPTIONS /api/employees?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:54.962 | INFO     | api.middleware       | REQUEST [d25bb30b] | GET /api/payroll | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:54.965 | INFO     | api.middleware       | REQUEST [c5caabd6] | GET /api/health | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:54.970 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+INFO:     127.0.0.1:56202 - "OPTIONS /api/payroll_settings?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56212 - "OPTIONS /api/job_titles?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:54.973 | INFO     | api.middleware       | RESPONSE [c5caabd6] | Status: 200 | Time: 0.008s
+INFO:     127.0.0.1:56196 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56228 - "OPTIONS /api/timesheet_entries?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:54.978 | INFO     | api.middleware       | REQUEST [a954fa83] | GET /api/payroll_settings | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:54.979 | INFO     | api.middleware       | REQUEST [71bfea5b] | GET /api/employees | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:54.992 | INFO     | api.middleware       | REQUEST [6684f342] | GET /api/job_titles | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:54.996 | INFO     | api.middleware       | REQUEST [199c966f] | GET /api/timesheet_entries | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:55.008 | INFO     | api.middleware       | REQUEST [bf936780] | GET /api/health | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:55.011 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.012 | INFO     | api.middleware       | RESPONSE [bf936780] | Status: 200 | Time: 0.004s
+INFO:     127.0.0.1:56228 - "GET /api/health HTTP/1.1" 200 OK
+2025-10-21 07:38:55.061 | INFO     | api.database         | DB FIND | Collection: payroll
+2025-10-21 07:38:55.061 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.062 | ERROR    | api.middleware       | ERROR [d25bb30b] | Exception: 8 validation errors:
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
+ | Time: 0.100s
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/anyio/streams/memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
 
-## 🗂 **Backend Models & Data Structures**
+During handling of the above exception, another exception occurred:
 
-### **Core Models** (`app/models/core.py`)
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/middleware/logging_middleware.py", line 40, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 159, in call_next
+    raise app_exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 334, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 183, in serialize_response
+    raise ResponseValidationError(
+        errors=_normalize_errors(errors), body=response_content
+    )
+fastapi.exceptions.ResponseValidationError: 8 validation errors:
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
 
-#### **Food & Recipes**
-```python
-class Food(MongoModel):
-    name: str
-    description: str
-    price: float
-    category_id: str
-    image_url: Optional[str] = None
-    preparation_time: Optional[int] = None
-    allergens: Optional[List[str]] = []
-    tenant_id: str
-    recipes: Optional[List[RecipeItem]] = []
-    store_id: Optional[str] = None
-    is_available: Optional[bool] = True
+INFO:     127.0.0.1:56190 - "GET /api/payroll?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+  |     yield
+  |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 183, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         self.scope, self.receive, self.send
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/applications.py", line 1082, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    |     await self.simple_response(scope, receive, send, request_headers=headers)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    |     await self.app(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 182, in __call__
+    |     with recv_stream, send_stream, collapse_excgroups():
+    |                                    ~~~~~~~~~~~~~~~~~~^^
+    |   File "/usr/lib/python3.13/contextlib.py", line 162, in __exit__
+    |     self.gen.throw(value)
+    |     ~~~~~~~~~~~~~~^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 184, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/middleware/logging_middleware.py", line 40, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 159, in call_next
+    |     raise app_exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 78, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 75, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 334, in app
+    |     content = await serialize_response(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<9 lines>...
+    |     )
+    |     ^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 183, in serialize_response
+    |     raise ResponseValidationError(
+    |         errors=_normalize_errors(errors), body=response_content
+    |     )
+    | fastapi.exceptions.ResponseValidationError: 8 validation errors:
+    |   {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
+    | 
+    +------------------------------------
 
-class RecipeItem(MongoModel):
-    id: Optional[str] = None
-    food_id: str
-    inventory_product_id: str
-    quantity_used: float
-    unit_of_measure: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+During handling of the above exception, another exception occurred:
 
-class StoreFood(MongoModel):
-    food_id: str
-    store_id: str
-    is_available: bool = True
-```
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/applications.py", line 1082, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 182, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 184, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/middleware/logging_middleware.py", line 40, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 159, in call_next
+    raise app_exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 334, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 183, in serialize_response
+    raise ResponseValidationError(
+        errors=_normalize_errors(errors), body=response_content
+    )
+fastapi.exceptions.ResponseValidationError: 8 validation errors:
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
 
-#### **Orders & Payments**
-```python
-class Order(MongoModel):
-    store_id: Optional[str] = None
-    table_id: Optional[str] = None
-    customer_id: Optional[str] = None
-    total_amount: float
-    status: str
-    notes: str
-    items: List[OrderItem] = []
-    subtotal_amount: float
-    tax_amount: float
-    discount_amount: float
-    employee_id: Optional[str] = None
-    order_type: Optional[str] = None
-    payment_status: Optional[str] = None
-    payment_method: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+INFO:     127.0.0.1:56228 - "OPTIONS /api/payroll?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:55.103 | INFO     | api.middleware       | REQUEST [4f582725] | GET /api/payroll | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:55.141 | INFO     | api.database         | DB FIND | Collection: job_titles
+2025-10-21 07:38:55.141 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.144 | INFO     | api.middleware       | RESPONSE [6684f342] | Status: 200 | Time: 0.152s
+INFO:     127.0.0.1:56212 - "GET /api/job_titles?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:55.149 | INFO     | api.middleware       | REQUEST [4e512288] | GET /api/job_titles | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:55.297 | INFO     | api.database         | DB FIND | Collection: timesheet_entries
+2025-10-21 07:38:55.300 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.303 | INFO     | api.middleware       | RESPONSE [199c966f] | Status: 200 | Time: 0.307s
+INFO:     127.0.0.1:56196 - "GET /api/timesheet_entries?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:55.311 | INFO     | api.middleware       | REQUEST [6be9f34d] | GET /api/timesheet_entries | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:55.372 | INFO     | api.database         | DB FIND | Collection: payroll
+2025-10-21 07:38:55.373 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.376 | ERROR    | api.middleware       | ERROR [4f582725] | Exception: 8 validation errors:
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
+ | Time: 0.273s
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 151, in call_next
+    message = await recv_stream.receive()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/anyio/streams/memory.py", line 126, in receive
+    raise EndOfStream from None
+anyio.EndOfStream
 
-class OrderItem(MongoModel):
-    id: Optional[str] = None
-    order_id: str
-    food_id: str
-    quantity: int
-    price: float
-    sub_total: float
-    notes: Optional[str] = None
-    name: str
-    price_at_sale: float
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+During handling of the above exception, another exception occurred:
 
-class Payment(MongoModel):
-    order_id: str
-    payment_method_id: str
-    amount: float
-    payment_date: str
-    transaction_id: Optional[str] = None
-    status: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/middleware/logging_middleware.py", line 40, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 159, in call_next
+    raise app_exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 334, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 183, in serialize_response
+    raise ResponseValidationError(
+        errors=_normalize_errors(errors), body=response_content
+    )
+fastapi.exceptions.ResponseValidationError: 8 validation errors:
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
 
-#### **Business Entities**
-```python
-class Category(MongoModel):
-    name: str
-    description: Optional[str] = None
-    store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+INFO:     127.0.0.1:56228 - "GET /api/payroll?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+  |     yield
+  |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 183, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    |     result = await app(  # type: ignore[func-returns-value]
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         self.scope, self.receive, self.send
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    |     return await self.app(scope, receive, send)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/applications.py", line 1082, in __call__
+    |     await super().__call__(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    |     await self.simple_response(scope, receive, send, request_headers=headers)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    |     await self.app(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 182, in __call__
+    |     with recv_stream, send_stream, collapse_excgroups():
+    |                                    ~~~~~~~~~~~~~~~~~~^^
+    |   File "/usr/lib/python3.13/contextlib.py", line 162, in __exit__
+    |     self.gen.throw(value)
+    |     ~~~~~~~~~~~~~~^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 184, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/middleware/logging_middleware.py", line 40, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 159, in call_next
+    |     raise app_exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    |     await route.handle(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    |     await self.app(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 78, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 75, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 334, in app
+    |     content = await serialize_response(
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<9 lines>...
+    |     )
+    |     ^
+    |   File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 183, in serialize_response
+    |     raise ResponseValidationError(
+    |         errors=_normalize_errors(errors), body=response_content
+    |     )
+    | fastapi.exceptions.ResponseValidationError: 8 validation errors:
+    |   {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+    |   {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
+    | 
+    +------------------------------------
 
-class Customer(MongoModel):
-    first_name: str
-    last_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone_number: Optional[str] = None
-    loyalty_points: Optional[int] = 0
-    store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+During handling of the above exception, another exception occurred:
 
-class Table(MongoModel):
-    name: str
-    capacity: int
-    location: str
-    status: str
-    current_order_id: Optional[str] = None
-    store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
+Traceback (most recent call last):
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+    result = await app(  # type: ignore[func-returns-value]
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.scope, self.receive, self.send
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+    return await self.app(scope, receive, send)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/applications.py", line 1082, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/applications.py", line 113, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 93, in __call__
+    await self.simple_response(scope, receive, send, request_headers=headers)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/cors.py", line 144, in simple_response
+    await self.app(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 182, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+                                   ~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 184, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/app/middleware/logging_middleware.py", line 40, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 159, in call_next
+    raise app_exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 334, in app
+    content = await serialize_response(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<9 lines>...
+    )
+    ^
+  File "/home/geehyess/Documents/Code/test/fastAPi-Carte/venv/lib/python3.13/site-packages/fastapi/routing.py", line 183, in serialize_response
+    raise ResponseValidationError(
+        errors=_normalize_errors(errors), body=response_content
+    )
+fastapi.exceptions.ResponseValidationError: 8 validation errors:
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 0, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 1, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 22, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 2, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 9, 29, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_start'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 5, 0, 0)}
+  {'type': 'string_type', 'loc': ('response', 'data', 3, 'pay_period_end'), 'msg': 'Input should be a valid string', 'input': datetime.datetime(2025, 10, 26, 0, 0)}
 
-class Store(MongoModel):
-    name: str
-    address: str
-    phone: str
-    email: str
-    tenant_id: str
-    location: Optional[str] = None
-    manager_id: Optional[str] = None
-    kiosk_user_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
+2025-10-21 07:38:55.418 | INFO     | api.database         | DB FIND | Collection: payroll_settings
+2025-10-21 07:38:55.419 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.422 | INFO     | api.middleware       | RESPONSE [a954fa83] | Status: 200 | Time: 0.444s
+INFO:     127.0.0.1:56202 - "GET /api/payroll_settings?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:55.444 | INFO     | api.middleware       | REQUEST [da3f9d61] | GET /api/payroll_settings | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:55.613 | INFO     | api.database         | DB FIND | Collection: timesheet_entries
+2025-10-21 07:38:55.614 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.616 | INFO     | api.middleware       | RESPONSE [6be9f34d] | Status: 200 | Time: 0.305s
+INFO:     127.0.0.1:56196 - "GET /api/timesheet_entries?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:55.780 | INFO     | api.database         | DB FIND | Collection: job_titles
+2025-10-21 07:38:55.781 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:55.782 | INFO     | api.middleware       | RESPONSE [4e512288] | Status: 200 | Time: 0.632s
+INFO:     127.0.0.1:56212 - "GET /api/job_titles?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:56.084 | INFO     | api.database         | DB FIND | Collection: payroll_settings
+2025-10-21 07:38:56.085 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:56.085 | INFO     | api.middleware       | RESPONSE [da3f9d61] | Status: 200 | Time: 0.644s
+INFO:     127.0.0.1:56202 - "GET /api/payroll_settings?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:56.606 | INFO     | api.database         | DB FIND | Collection: employees
+2025-10-21 07:38:56.607 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:56.609 | INFO     | api.middleware       | RESPONSE [71bfea5b] | Status: 200 | Time: 1.630s
+INFO:     127.0.0.1:56238 - "GET /api/employees?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
+2025-10-21 07:38:56.616 | INFO     | api.middleware       | REQUEST [be6c9f2c] | GET /api/employees | Client: 127.0.0.1 | User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:143.0) Gecko/20100101 Firefox/143.0
+2025-10-21 07:38:57.484 | INFO     | api.database         | DB FIND | Collection: employees
+2025-10-21 07:38:57.486 | INFO     | api.response         | SUCCESS RESPONSE | Code: 200 | Message: success
+2025-10-21 07:38:57.488 | INFO     | api.middleware       | RESPONSE [be6c9f2c] | Status: 200 | Time: 0.872s
+INFO:     127.0.0.1:56238 - "GET /api/employees?store_id=68e28478a5cf3983c41f755b HTTP/1.1" 200 OK
 
-#### **Inventory & Purchasing**
-```python
-class PurchaseOrder(MongoModel):
-    po_number: str
-    supplier_id: str
-    site_id: str
-    status: str
-    order_date: str
-    expected_delivery_date: str
-    total_amount: float
-    ordered_by: str
-    notes: Optional[str] = None
-    items: List[PurchaseOrderItem] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class GoodsReceipt(MongoModel):
-    receipt_number: str
-    purchase_order_id: str
-    store_id: str
-    receipt_date: str
-    received_by: str
-    items: List[GoodsReceiptItem] = []
-    receiving_bin_id: Optional[str] = None
-    status: Optional[str] = None
-    received_items: Optional[List[Dict]] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
-
-#### **System Entities**
-```python
-class User(MongoModel):
-    name: Optional[str] = None
-    email: EmailStr
-    username: str
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    password: Optional[str] = None
-    email_verified_at: Optional[str] = None
-    remember_token: Optional[str] = None
-    cashAccounts: Optional[List[Any]] = []
-    cardAccounts: Optional[List[Any]] = []
-    onlineAccounts: Optional[List[Any]] = []
-    gpayAccounts: Optional[List[Any]] = []
-    phonepeAccounts: Optional[List[Any]] = []
-    amazonpayAccounts: Optional[List[Any]] = []
-    locations: Optional[List[Any]] = []
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class Tenant(MongoModel):
-    name: str
-    email: str
-    password: str
-    remember_token: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
-
-### **HR Models** (`app/models/hr.py`)
-
-#### **Employee & Roles**
-```python
-class Employee(MongoModel):
-    user_id: str
-    job_title_id: str
-    access_role_ids: List[str]
-    tenant_id: str
-    store_id: str
-    main_access_role_id: str
-    hire_date: str
-    salary: float
-    first_name: str
-    last_name: Optional[str] = None
-    avatar_url: Optional[str] = None
-    employee_id: Optional[str] = None
-    full_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    suffix: Optional[str] = None
-    profile_photo_url: Optional[str] = None
-    personal_details: Optional[PersonalDetails] = None
-    contact_details: Optional[ContactDetails] = None
-    employment_details: Optional[EmploymentDetails] = None
-    status: Optional[EmployeeStatus] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class AccessRole(MongoModel):
-    name: str
-    description: str
-    permissions: List[str]
-    landing_page: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class Department(MongoModel):
-    name: str
-    store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
-
-#### **Time & Payroll**
-```python
-class Shift(MongoModel):
-    employee_id: str
-    start: str
-    end: str
-    title: Optional[str] = None
-    employee_name: Optional[str] = None
-    color: Optional[str] = None
-    active: Optional[bool] = True
-    recurring: Optional[bool] = False
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class TimesheetEntry(MongoModel):
-    employee_id: str
-    clock_in: str
-    clock_out: Optional[str] = None
-    duration_minutes: Optional[int] = 0
-    store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class Payroll(MongoModel):
-    employee_id: str
-    pay_period_start: str
-    pay_period_end: str
-    payment_cycle: str
-    gross_pay: float
-    tax_deductions: float
-    net_pay: float
-    status: str
-    hours_worked: float
-    overtime_hours: float
-    overtime_rate: float
-    deductions: Optional[List[PayrollDeduction]] = []
-    store_id: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
-
-### **Inventory Models** (`app/models/inventory.py`)
-
-```python
-class InventoryProduct(MongoModel):
-    name: str
-    description: Optional[str] = None
-    sku: str
-    unit_of_measure: str
-    tenant_id: str
-    unit_cost: float
-    quantity_in_stock: float
-    reorder_level: float
-    supplier_id: Optional[str] = None
-    inv_category_id: Optional[str] = None
-    location_in_warehouse: Optional[str] = None
-    last_restocked_at: Optional[str] = None
-    store_id: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class Supplier(MongoModel):
-    name: str
-    contact_person: str
-    phone: str
-    email: str
-    address: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-
-class Unit(MongoModel):
-    name: str
-    symbol: str
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-```
-
-## 🌐 **API Endpoints Reference**
-
-### **Standard Response Format**
-```typescript
-interface StandardResponse<T = any> {
-  code: number;
-  message: string;
-  data?: T;
-}
-```
-
-### **Authentication Endpoints** (`/api/auth`)
-
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| POST | `/login` | `{username, password}` | `{access_token, token_type, employee}` | Employee login |
-| POST | `/register` | `Employee` | `Employee` | Register employee |
-| GET | `/employees/me` | - | `Employee` | Get current employee |
-| POST | `/logout` | - | `{message}` | Logout |
-| POST | `/refresh-token` | - | `{access_token, token_type, employee}` | Refresh token |
-| GET | `/verify-token` | - | `{valid, employee_id, store_id}` | Verify token |
-| POST | `/forgot-password` | `{email}` | `{message}` | Forgot password |
-| POST | `/reset-password` | `{token, new_password}` | `{message}` | Reset password |
-
-### **Core POS Endpoints** (`/api/core`)
-
-#### **Foods**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/foods` | - | `Food[]` | Get all foods |
-| GET | `/foods/{id}` | - | `Food` | Get food by ID |
-| POST | `/foods` | `Food` | `Food` | Create food |
-| PUT | `/foods/{id}` | `Food` | `Food` | Update food |
-| DELETE | `/foods/{id}` | - | `{message}` | Delete food |
-
-#### **Orders**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/orders` | - | `Order[]` | Get all orders |
-| GET | `/orders/{id}` | - | `Order` | Get order by ID |
-| POST | `/orders` | `Order` | `Order` | Create order |
-| PUT | `/orders/{id}` | `Order` | `Order` | Update order |
-| DELETE | `/orders/{id}` | - | `{message}` | Delete order |
-
-#### **Categories**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/categories` | - | `Category[]` | Get all categories |
-| GET | `/categories/{id}` | - | `Category` | Get category by ID |
-| POST | `/categories` | `Category` | `Category` | Create category |
-| PUT | `/categories/{id}` | `Category` | `Category` | Update category |
-| DELETE | `/categories/{id}` | - | `{message}` | Delete category |
-
-#### **Customers, Tables, Stores**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/customers` | - | `Customer[]` | Get all customers |
-| POST | `/customers` | `Customer` | `Customer` | Create customer |
-| GET | `/tables` | - | `Table[]` | Get all tables |
-| POST | `/tables` | `Table` | `Table` | Create table |
-| GET | `/stores` | - | `Store[]` | Get all stores |
-| POST | `/stores` | `Store` | `Store` | Create store |
-
-### **HR Endpoints** (`/api/hr`)
-
-#### **Employees & Departments**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/employees` | - | `Employee[]` | Get all employees |
-| POST | `/employees` | `Employee` | `Employee` | Create employee |
-| GET | `/departments` | - | `Department[]` | Get all departments |
-| POST | `/departments` | `Department` | `Department` | Create department |
-
-#### **Shifts & Timekeeping**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/shifts` | - | `Shift[]` | Get all shifts |
-| POST | `/shifts` | `Shift` | `Shift` | Create shift |
-| PUT | `/shifts/{id}/status` | `{active: boolean}` | `Shift` | Update shift status |
-| POST | `/timesheet_entries/clock-in` | `{employee_id, store_id}` | `TimesheetEntry` | Clock in |
-| POST | `/timesheet_entries/{id}/clock-out` | - | `TimesheetEntry` | Clock out |
-
-#### **Payroll**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/payroll` | - | `Payroll[]` | Get payroll entries |
-| POST | `/payroll` | `Payroll` | `Payroll` | Create payroll |
-| POST | `/payroll/calculate` | `{employee_id, period_start, period_end}` | `Payroll` | Calculate payroll |
-| POST | `/payroll/{id}/process` | - | `Payroll` | Process payroll |
-
-### **Inventory Endpoints** (`/api/inventory`)
-
-#### **Products & Suppliers**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/inventory_products` | - | `InventoryProduct[]` | Get all products |
-| POST | `/inventory_products` | `InventoryProduct` | `InventoryProduct` | Create product |
-| GET | `/suppliers` | - | `Supplier[]` | Get all suppliers |
-| POST | `/suppliers` | `Supplier` | `Supplier` | Create supplier |
-
-#### **Purchase Orders & Receipts**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/purchase_orders` | - | `PurchaseOrder[]` | Get all POs |
-| POST | `/purchase_orders` | `PurchaseOrder` | `PurchaseOrder` | Create PO |
-| GET | `/goods_receipts` | - | `GoodsReceipt[]` | Get all receipts |
-| POST | `/goods_receipts` | `GoodsReceipt` | `GoodsReceipt` | Create receipt |
-
-#### **Stock Management**
-| Method | Endpoint | Request Body | Response Data | Description |
-|--------|----------|--------------|---------------|-------------|
-| GET | `/inventory/low-stock` | - | `InventoryProduct[]` | Get low stock items |
-| POST | `/inventory_products/{id}/update-stock` | `{quantity_change, reason}` | `{message, product_id, new_stock}` | Update stock |
-
-### **Utility Endpoints**
-
-| Method | Endpoint | Response Data | Description |
-|--------|----------|---------------|-------------|
-| GET | `/health` | `{status, module}` | Health check |
-| GET | `/debug/users` | `User[]` | Debug users |
-| GET | `/purchase_orders/pending` | `PurchaseOrder[]` | Pending POs |
-
-## 🔄 **Data Flow Examples**
-
-### **Login Response**
-```typescript
-// POST /api/login
-Response: {
-  code: 200,
-  message: "success",
-  data: {
-    access_token: "jwt_token_here",
-    token_type: "bearer",
-    employee: {
-      id: "emp_123",
-      first_name: "John",
-      last_name: "Doe",
-      email: "john@example.com",
-      store_id: "store_123",
-      main_access_role: {
-        id: "role_1",
-        name: "Manager",
-        permissions: ["read", "write"],
-        landing_page: "/dashboard"
-      },
-      access_roles: [...],
-      // ... other employee fields
-    }
-  }
-}
-```
-
-### **Order Creation**
-```typescript
-// POST /api/orders
-Request: {
-  store_id: "store_123",
-  table_id: "table_1",
-  items: [
-    {
-      food_id: "food_123",
-      quantity: 2,
-      price: 25.99,
-      name: "Burger",
-      price_at_sale: 25.99
-    }
-  ],
-  total_amount: 51.98,
-  status: "pending"
-}
-
-Response: {
-  code: 201,
-  message: "Order created successfully",
-  data: {
-    id: "order_123",
-    store_id: "store_123",
-    items: [...],
-    total_amount: 51.98,
-    status: "pending",
-    created_at: "2024-01-15T10:30:00Z"
-    // ... plus any stock warnings
-  }
-}
-```
-
-### **Employee with Enriched Data**
-```typescript
-// GET /api/employees/me
-Response: {
-  code: 200,
-  message: "success",
-  data: {
-    id: "emp_123",
-    first_name: "John",
-    last_name: "Doe",
-    store_id: "store_123",
-    main_access_role_id: "role_1",
-    // Enriched data from _fetch_and_enrich_employee_data:
-    main_access_role: {
-      id: "role_1",
-      name: "Manager",
-      description: "Store Manager",
-      permissions: ["orders:read", "orders:write", "reports:read"],
-      landing_page: "/dashboard"
-    },
-    access_roles: [
-      {
-        id: "role_2", 
-        name: "Cashier",
-        permissions: ["orders:read", "orders:write"],
-        landing_page: "/pos"
-      }
-    ]
-  }
-}
-```
-
-## 📋 **Key Data Types**
-
-| Field Type | Python | TypeScript | Example |
-|------------|--------|------------|---------|
-| ID | `str` (ObjectId) | `string` | `"507f1f77bcf86cd799439011"` |
-| Date/Time | `str` (ISO) | `string` | `"2024-01-15T10:30:00Z"` |
-| Money | `float` | `number` | `25.99` |
-| Boolean | `bool` | `boolean` | `true` |
-| List | `List[Type]` | `Type[]` | `["perm1", "perm2"]` |
-| Optional | `Optional[Type]` | `Type \| undefined` | `undefined` |
-
-This comprehensive reference should help you maintain consistency between frontend and backend data structures!

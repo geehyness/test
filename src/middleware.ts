@@ -5,11 +5,26 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // The matcher configuration below handles excluding public files.
-  // This function only needs to handle the routing logic for pages.
+  // Check if request is from an iframe (preview mode)
+  const isIframePreview = request.nextUrl.searchParams.get('preview') === 'true'
 
+  // If it's an iframe preview, ONLY allow customer-menu
+  if (isIframePreview) {
+    if (pathname.startsWith('/customer-menu')) {
+      return NextResponse.next()
+    }
+    // Block any other routes in iframe preview
+    return new NextResponse('Access denied in preview mode', { status: 403 })
+  }
+
+  // Normal routing for non-iframe requests
   // Allow all routes under /pos
   if (pathname.startsWith('/pos')) {
+    return NextResponse.next()
+  }
+
+  // Allow customer menu page
+  if (pathname.startsWith('/customer-menu')) {
     return NextResponse.next()
   }
 
@@ -19,14 +34,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - Any file with a file extension (e.g., .png, .svg, .js, .css)
-     */
     '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 }

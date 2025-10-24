@@ -26,7 +26,14 @@ SAMPLE_DATA = {
             "created_at": datetime.now()
         },
     ],
-    
+    "domains": [
+        {
+            "tenant_id": "",  # Will be populated
+            "domain": "imbizo",  # Just "imbizo" as requested
+            "is_primary": True,
+            "created_at": datetime.now()
+        }
+    ],
     "stores": [
         {
             "name": "Imbizo Shisanyama - Busy Corner",

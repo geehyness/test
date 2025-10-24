@@ -71,6 +71,8 @@ import {
   updatePayrollSettingsWithId,
   getCurrentSessionContext,
   getJobTitles,
+  getTimesheets,
+  checkBackendHealth,
 } from "@/lib/api";
 import { Payroll, Employee, PayrollSettings } from "@/lib/config/entities";
 import {
@@ -110,6 +112,91 @@ const createDefaultPayrollSettings = (): PayrollSettings => {
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+};
+
+// Enhanced error handling function with warning messages (same as page.tsx)
+const handleApiError = (error: any, operation: string, toast: any) => {
+  // Handle validation errors specifically with warning messages
+  if (error.message?.includes("422")) {
+    try {
+      const errorData = JSON.parse(error.message);
+      if (errorData.detail && Array.isArray(errorData.detail)) {
+        const errorMessages = errorData.detail
+          .map((err: any) => {
+            const field = err.loc[err.loc.length - 1];
+            const friendlyName = field
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (l: string) => l.toUpperCase());
+            return `${friendlyName}: ${err.msg}`;
+          })
+          .join(", ");
+
+        toast({
+          title: "Form Validation Warning",
+          description: `Please check: ${errorMessages}`,
+          status: "warning",
+          duration: 6000,
+          isClosable: true,
+        });
+        return;
+      }
+    } catch {
+      // If parsing fails, use the original error
+      toast({
+        title: "Validation Warning",
+        description:
+          error.message || `Please check your input for ${operation}.`,
+        status: "warning",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  } else if (error.message?.includes("404")) {
+    toast({
+      title: "Not Found",
+      description: `The requested resource was not found for ${operation}.`,
+      status: "warning",
+      duration: 5000,
+      isClosable: true,
+    });
+  } else if (error.message?.includes("405")) {
+    toast({
+      title: "Method Not Allowed",
+      description: `The operation ${operation} is not supported.`,
+      status: "warning",
+      duration: 5000,
+      isClosable: true,
+    });
+  } else if (error.message?.includes("400")) {
+    toast({
+      title: "Input Warning",
+      description: `Please check your input data for ${operation}.`,
+      status: "warning",
+      duration: 5000,
+      isClosable: true,
+    });
+  } else if (
+    error.message?.includes("Network error") ||
+    error.message?.includes("fetch")
+  ) {
+    toast({
+      title: "Connection Issue",
+      description:
+        "Unable to connect to the server. Please check your connection.",
+      status: "warning",
+      duration: 5000,
+      isClosable: true,
+    });
+  } else {
+    // For generic errors, use warning instead of error
+    toast({
+      title: "Operation Warning",
+      description: error.message || `Failed to ${operation}. Please try again.`,
+      status: "warning",
+      duration: 5000,
+      isClosable: true,
+    });
+  }
 };
 
 // Native Date helper functions
@@ -170,7 +257,7 @@ const addMonths = (date: Date, months: number): Date => {
 const startOfWeek = (date: Date): Date => {
   const result = new Date(date);
   const day = result.getDay();
-  const diff = result.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday as first day
+  const diff = result.getDate() - day + (day === 0 ? -6 : 1);
   result.setDate(diff);
   result.setHours(0, 0, 0, 0);
   return result;
@@ -219,6 +306,7 @@ export default function PayrollManagement() {
   const [batchProcessing, setBatchProcessing] = useState(false);
   const toast = useToast();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const [timesheets, setTimesheets] = useState<any[]>([]); // Add this line with other state declarations
 
   // Job title lookup map
   const jobTitleMap = React.useMemo(() => {
@@ -334,6 +422,7 @@ export default function PayrollManagement() {
     }
   }, [settings, isLoading]);
 
+  // In the fetchData function, replace the current implementation with this:
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -341,30 +430,52 @@ export default function PayrollManagement() {
 
       console.log("Fetching payroll data...");
 
-      const [
-        fetchedPayrolls,
-        fetchedEmployees,
-        fetchedSettings,
-        fetchedJobTitles,
-      ] = await Promise.all([
+      // Use Promise.allSettled to handle potential API failures gracefully
+      const results = await Promise.allSettled([
         getPayrolls(),
         getEmployees(),
         getPayrollSettings(),
         getJobTitles(),
+        getTimesheets(), // Add this to get timesheet data
       ]);
+
+      // Extract results with proper error handling
+      const fetchedPayrolls =
+        results[0].status === "fulfilled" ? results[0].value || [] : [];
+      const fetchedEmployees =
+        results[1].status === "fulfilled" ? results[1].value || [] : [];
+      const fetchedSettings =
+        results[2].status === "fulfilled" ? results[2].value : null;
+      const fetchedJobTitles =
+        results[3].status === "fulfilled" ? results[3].value || [] : [];
+      const fetchedTimesheets =
+        results[4].status === "fulfilled" ? results[4].value || [] : [];
 
       setJobTitles(fetchedJobTitles);
 
       console.log("Raw payroll data:", fetchedPayrolls);
       console.log("Raw employees data:", fetchedEmployees);
+      console.log("Raw timesheets data:", fetchedTimesheets);
+
+      // FIX: Ensure we always have arrays
+      const safePayrolls = Array.isArray(fetchedPayrolls)
+        ? fetchedPayrolls
+        : [];
+      const safeEmployees = Array.isArray(fetchedEmployees)
+        ? fetchedEmployees
+        : [];
+      const safeTimesheets = Array.isArray(fetchedTimesheets)
+        ? fetchedTimesheets
+        : [];
+
+      // Store timesheets for the hasTimesheetData function
+      setTimesheets(safeTimesheets);
 
       // Enrich payrolls with full employee objects
-      const payrollsWithEmployees = fetchedPayrolls.map((payroll: any) => {
-        const employee = fetchedEmployees.find(
+      const payrollsWithEmployees = safePayrolls.map((payroll: any) => {
+        const employee = safeEmployees.find(
           (emp: any) => emp.id === payroll.employee_id
         );
-
-        console.log(`Matching employee ${payroll.employee_id}:`, employee);
 
         return {
           ...payroll,
@@ -381,7 +492,7 @@ export default function PayrollManagement() {
       console.log("Enriched payroll data:", payrollsWithEmployees);
 
       setPayrolls(payrollsWithEmployees);
-      setEmployees(fetchedEmployees);
+      setEmployees(safeEmployees);
       setSettings(fetchedSettings);
 
       // Calculate period after settings are loaded
@@ -392,13 +503,7 @@ export default function PayrollManagement() {
       console.error("Error fetching payroll data:", err);
       const errorMessage = err.message || "Failed to load payroll data.";
       setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      handleApiError(err, "loading payroll data", toast);
     } finally {
       setIsLoading(false);
     }
@@ -406,6 +511,23 @@ export default function PayrollManagement() {
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      const isBackendHealthy = await checkBackendHealth();
+      if (!isBackendHealthy) {
+        toast({
+          title: "Backend Connection Issue",
+          description: "Cannot connect to payroll backend. Some features may not work.",
+          status: "warning",
+          duration: 6000,
+          isClosable: true,
+        });
+      }
+    };
+
+    checkBackend();
   }, []);
 
   const handleProcessPayroll = async (payrollId: string) => {
@@ -432,14 +554,7 @@ export default function PayrollManagement() {
       });
     } catch (err: any) {
       console.error("Error processing payroll:", err);
-      const errorMessage = err.message || "Failed to process payroll.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      handleApiError(err, "processing payroll", toast);
     } finally {
       setIsProcessing(false);
     }
@@ -474,28 +589,36 @@ export default function PayrollManagement() {
     try {
       setIsProcessing(true);
       setSelectedEmployee(employee);
-
-      console.log("Generating payroll for:", employee);
-      console.log("Period:", payrollPeriod);
-      console.log("Using settings:", settings);
+  
+      console.log("🔍 [Payroll] Generating payroll for:", employee);
+      console.log("📅 [Payroll] Period:", payrollPeriod);
+      console.log("⚙️ [Payroll] Using settings:", settings);
 
       // Ensure we have settings
       if (!settings) {
         toast({
           title: "Settings Missing",
-          description:
-            "Payroll settings not loaded. Please check settings and try again.",
-          status: "error",
+          description: "Payroll settings not loaded. Please check settings and try again.",
+          status: "warning",
           duration: 5000,
           isClosable: true,
         });
         return;
       }
 
+      // Convert date strings to ISO strings for backend
+      const periodStartISO = new Date(payrollPeriod.start).toISOString();
+      const periodEndISO = new Date(payrollPeriod.end).toISOString();
+
+      console.log("Sending dates to backend:", {
+        start: periodStartISO,
+        end: periodEndISO
+      });
+
       const payrollData = await calculatePayroll(
         employee.id,
-        payrollPeriod.start,
-        payrollPeriod.end
+        periodStartISO,  // Send as ISO string
+        periodEndISO     // Send as ISO string
       );
 
       console.log("Calculated payroll data:", payrollData);
@@ -507,15 +630,15 @@ export default function PayrollManagement() {
       // Use settings to determine payment date
       const paymentDate = determinePaymentDate(payrollPeriod, settings);
 
-      // Create the payroll record with proper data mapping
+      // Create the payroll record with proper datetime handling
       const newPayroll = await createPayroll({
         ...payrollData,
         employee_id: employee.id,
         status: "pending",
         store_id: employee.store_id || "default-store",
-        pay_period_start: payrollPeriod.start,
-        pay_period_end: payrollPeriod.end,
-        payment_date: paymentDate,
+        pay_period_start: periodStartISO,  // Use ISO string
+        pay_period_end: periodEndISO,      // Use ISO string
+        payment_date: new Date(paymentDate).toISOString(), // Convert to ISO string
         // Use actual calculated values from backend
         hours_worked: payrollData.hours_worked || 0,
         overtime_hours: payrollData.overtime_hours || 0,
@@ -539,14 +662,8 @@ export default function PayrollManagement() {
         isClosable: true,
       });
     } catch (err: any) {
-      console.error("Error generating payroll:", err);
-      toast({
-        title: "Error",
-        description: err.message || "Failed to generate payroll.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      console.error("❌ [Payroll] Error generating payroll:", err);
+      handleApiError(err, "generating payroll", toast);
     } finally {
       setIsProcessing(false);
       setSelectedEmployee(null);
@@ -587,22 +704,14 @@ export default function PayrollManagement() {
 
       toast({
         title: "Batch Processing Complete",
-        description: `Successfully generated payroll for ${successCount} employees. ${
-          errorCount > 0 ? `${errorCount} employees had errors.` : ""
-        }`,
+        description: `Successfully generated payroll for ${successCount} employees. ${errorCount > 0 ? `${errorCount} employees had errors.` : ""
+          }`,
         status: successCount > 0 ? "success" : "warning",
         duration: 5000,
         isClosable: true,
       });
     } catch (err: any) {
-      toast({
-        title: "Batch Processing Failed",
-        description:
-          err.message || "Failed to process batch payroll generation.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      handleApiError(err, "batch payroll generation", toast);
     } finally {
       setBatchProcessing(false);
     }
@@ -639,54 +748,54 @@ export default function PayrollManagement() {
           updatedSettings.tax_rate !== undefined
             ? updatedSettings.tax_rate
             : settings?.tax_rate !== undefined
-            ? settings.tax_rate
-            : 0.2,
+              ? settings.tax_rate
+              : 0.2,
 
         // Overtime settings
         overtime_multiplier:
           updatedSettings.overtime_multiplier !== undefined
             ? updatedSettings.overtime_multiplier
             : settings?.overtime_multiplier !== undefined
-            ? settings.overtime_multiplier
-            : 1.5,
+              ? settings.overtime_multiplier
+              : 1.5,
 
         overtime_threshold:
           updatedSettings.overtime_threshold !== undefined
             ? updatedSettings.overtime_threshold
             : settings?.overtime_threshold !== undefined
-            ? settings.overtime_threshold
-            : 40,
+              ? settings.overtime_threshold
+              : 40,
 
         // Pay day
         pay_day:
           updatedSettings.pay_day !== undefined
             ? updatedSettings.pay_day
             : settings?.pay_day !== undefined
-            ? settings.pay_day
-            : 15,
+              ? settings.pay_day
+              : 15,
 
         // Auto process
         auto_process:
           updatedSettings.auto_process !== undefined
             ? updatedSettings.auto_process
             : settings?.auto_process !== undefined
-            ? settings.auto_process
-            : false,
+              ? settings.auto_process
+              : false,
 
         // Benefits settings
         include_benefits:
           updatedSettings.include_benefits !== undefined
             ? updatedSettings.include_benefits
             : settings?.include_benefits !== undefined
-            ? settings.include_benefits
-            : false,
+              ? settings.include_benefits
+              : false,
 
         benefits_rate:
           updatedSettings.benefits_rate !== undefined
             ? updatedSettings.benefits_rate
             : settings?.benefits_rate !== undefined
-            ? settings.benefits_rate
-            : 0.05,
+              ? settings.benefits_rate
+              : 0.05,
 
         // Timestamps
         created_at: settings?.created_at || new Date().toISOString(),
@@ -725,13 +834,7 @@ export default function PayrollManagement() {
       });
     } catch (err: any) {
       console.error("❌ [Payroll Settings] ERROR:", err);
-      toast({
-        title: "Error",
-        description: err.message || "Failed to update payroll settings.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      handleApiError(err, "updating payroll settings", toast);
     }
   };
 
@@ -788,13 +891,30 @@ export default function PayrollManagement() {
     [payrolls, employees, payrollPeriod.start]
   );
 
-  // Check if employee has timesheet data for the period
+  // Replace the current hasTimesheetData function with this:
   const hasTimesheetData = (employeeId: string) => {
-    return payrolls.some(
+    // Check if there are any timesheet entries for this employee in the current period
+    const hasEntries = payrolls.some(
       (p) =>
         p.employee_id === employeeId &&
         isSameDay(p.pay_period_start, payrollPeriod.start)
     );
+
+    // Also check if we have actual timesheet data from the backend
+    // This ensures we're not just checking payroll records but actual clock-in/out data
+    const employeeTimesheets = timesheets.filter(
+      (entry: any) =>
+        entry.employee_id === employeeId &&
+        entry.clock_in &&
+        new Date(entry.clock_in) >= new Date(payrollPeriod.start) &&
+        new Date(entry.clock_in) <= new Date(payrollPeriod.end)
+    );
+
+    console.log(
+      `Employee ${employeeId} timesheets:`,
+      employeeTimesheets.length
+    );
+    return hasEntries || employeeTimesheets.length > 0;
   };
 
   if (isLoading) {
@@ -1048,6 +1168,21 @@ export default function PayrollManagement() {
 
                     const hasTimesheets = hasTimesheetData(employee.id);
 
+                    // Debug each employee
+                    if (!hasTimesheets && !hasPayroll) {
+                      console.log(`Missing data for ${employee.first_name}:`, {
+                        employeeId: employee.id,
+                        hasTimesheets,
+                        hasPayroll,
+                        period: payrollPeriod,
+                        timesheetCount: timesheets.filter((ts: any) =>
+                          ts.employee_id === employee.id &&
+                          new Date(ts.clock_in) >= new Date(payrollPeriod.start) &&
+                          new Date(ts.clock_in) <= new Date(payrollPeriod.end)
+                        ).length
+                      });
+                    }
+
                     return (
                       <Tr key={employee.id}>
                         <Td>
@@ -1059,8 +1194,7 @@ export default function PayrollManagement() {
                             </Text>
                             {employee?.job_title_id && (
                               <Badge colorScheme="blue" fontSize="xs">
-                                {jobTitleMap.get(employee.job_title_id) ||
-                                  employee.job_title_id}
+                                {jobTitleMap.get(employee.job_title_id) || employee.job_title_id}
                               </Badge>
                             )}
                           </VStack>
@@ -1093,8 +1227,7 @@ export default function PayrollManagement() {
                               colorScheme="green"
                               onClick={() => handleGeneratePayroll(employee)}
                               isLoading={
-                                isProcessing &&
-                                selectedEmployee?.id === employee.id
+                                isProcessing && selectedEmployee?.id === employee.id
                               }
                               leftIcon={<FaCalculator />}
                               isDisabled={hasPayroll || !hasTimesheets}

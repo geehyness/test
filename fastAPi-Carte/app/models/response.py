@@ -1,8 +1,14 @@
 # app/models/response.py - COMPLETE FIXED VERSION
 from typing import List, Optional, Any, Dict, Union, Generic, TypeVar
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, validator
 from datetime import datetime, date
 from bson import ObjectId
+
+# Create a common encoder dictionary
+COMMON_ENCODERS = {
+    ObjectId: str,
+    datetime: lambda dt: dt.isoformat(), # 💡 Add here as well
+}
 
 # Generic type variable for the data payload
 T = TypeVar('T')
@@ -11,7 +17,7 @@ class StandardResponse(BaseModel, Generic[T]):
     """Standard response format for all API endpoints"""
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS # Use the common encoders
     )
     
     code: int = 200
@@ -22,7 +28,7 @@ class PaginatedResponse(BaseModel, Generic[T]):
     """Standard response for paginated data"""
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     code: int = 200
@@ -34,7 +40,7 @@ class ErrorResponse(BaseModel):
     """Standard error response format"""
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     code: int
@@ -45,7 +51,7 @@ class ErrorResponse(BaseModel):
 class RecipeItemResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -58,7 +64,7 @@ class RecipeItemResponse(BaseModel):
 class FoodResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -66,7 +72,7 @@ class FoodResponse(BaseModel):
     description: str
     price: float
     category_id: str
-    image_url: Optional[str] = None
+    image_urls: Optional[List[str]] = []  # CHANGE to plural
     preparation_time: Optional[int] = None
     allergens: Optional[List[str]] = []
     tenant_id: str
@@ -78,7 +84,7 @@ class FoodResponse(BaseModel):
 class StoreFoodResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     food_id: str
@@ -88,7 +94,7 @@ class StoreFoodResponse(BaseModel):
 class OrderItemResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -104,7 +110,7 @@ class OrderItemResponse(BaseModel):
 class OrderResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -127,18 +133,19 @@ class OrderResponse(BaseModel):
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
     name: str
     description: Optional[str] = None
+    image_url: Optional[str] = None  # KEEP singular
     store_id: Optional[str] = None
 
 class InvCategoryResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -149,7 +156,7 @@ class InvCategoryResponse(BaseModel):
 class CustomerResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -163,7 +170,7 @@ class CustomerResponse(BaseModel):
 class TableResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -177,7 +184,7 @@ class TableResponse(BaseModel):
 class AccessRoleResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -190,7 +197,7 @@ class AccessRoleResponse(BaseModel):
 class PersonalDetailsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     citizenship: str
@@ -201,7 +208,7 @@ class PersonalDetailsResponse(BaseModel):
 class ContactDetailsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     cell_phone: str
@@ -212,7 +219,7 @@ class ContactDetailsResponse(BaseModel):
 class EmploymentDetailsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     job_title: str
@@ -223,7 +230,7 @@ class EmploymentDetailsResponse(BaseModel):
 class EmployeeStatusResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     current_status: str
@@ -305,7 +312,7 @@ class EmployeeResponse(BaseModel):
 class ReservationResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -321,7 +328,7 @@ class ReservationResponse(BaseModel):
 class ShiftResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -340,7 +347,7 @@ class ShiftResponse(BaseModel):
 class TimesheetResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     timesheet_id: str
@@ -354,7 +361,7 @@ class TimesheetResponse(BaseModel):
 class TimesheetEntryResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -368,7 +375,7 @@ class TimesheetEntryResponse(BaseModel):
 class TaxDetailsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     tax_year: str
@@ -378,7 +385,7 @@ class TaxDetailsResponse(BaseModel):
 class CompanyMetricsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     total_employees: int
@@ -393,7 +400,7 @@ class CompanyMetricsResponse(BaseModel):
 class EmployeeInvitesResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     sent: int
@@ -403,7 +410,7 @@ class EmployeeInvitesResponse(BaseModel):
 class CompanyResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     company_id: str
@@ -415,7 +422,7 @@ class CompanyResponse(BaseModel):
 class StoreResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -432,7 +439,7 @@ class StoreResponse(BaseModel):
 class PayrollDeductionResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -444,13 +451,13 @@ class PayrollDeductionResponse(BaseModel):
 class PayrollResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
     employee_id: str
-    pay_period_start: str
-    pay_period_end: str
+    pay_period_start: datetime  # Keep as datetime
+    pay_period_end: datetime    # Keep as datetime
     payment_cycle: str
     gross_pay: float
     tax_deductions: float
@@ -466,7 +473,7 @@ class PayrollResponse(BaseModel):
 class PayrollSettingsResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -486,17 +493,34 @@ class PayrollDeductionPreviewResponse(PayrollDeductionResponse):
     id: Optional[str] = None # Allows id to be None during calculation
 
 # 2. Main Payroll Preview
-class PayrollPreviewResponse(PayrollResponse):
+class PayrollPreviewResponse(BaseModel):
     """Schema for a Payroll *preview* from the /calculate endpoint."""
-    id: Optional[str] = None # Allows id to be None during calculation
-    # Ensure nested deductions also use the Preview schema
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    id: Optional[str] = None
+    employee_id: str
+    employee_name: Optional[str] = None  # Add this field
+    pay_period_start: datetime
+    pay_period_end: datetime
+    payment_cycle: str
+    hourly_rate: Optional[float] = None  # Add this field
+    gross_pay: float
+    tax_deductions: float
+    net_pay: float
+    status: str
+    hours_worked: float
+    overtime_hours: float
+    overtime_rate: float
     deductions: Optional[List[PayrollDeductionPreviewResponse]] = []
+    store_id: str
 
-# Other Entities
 class TenantResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS  # Use the common encoders
     )
     
     id: str
@@ -506,11 +530,34 @@ class TenantResponse(BaseModel):
     remember_token: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    customer_page_settings: Optional[dict] = None
+    created_at: Optional[datetime] = None  # Use datetime like other entities
+    updated_at: Optional[datetime] = None  # Use datetime like other entities
+    
+    @validator('customer_page_settings', pre=True)
+    def validate_customer_page_settings(cls, v):
+        if v is None:
+            return {}
+        return v
+
+class PayrollDeductionPreviewResponse(BaseModel):
+    """Schema for a Payroll Deduction *before* it is saved."""
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    id: Optional[str] = None
+    payroll_id: str
+    type: str
+    description: str
+    amount: float
+    rate: Optional[float] = None  # Add rate field for calculation display
 
 class DomainResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -521,7 +568,7 @@ class DomainResponse(BaseModel):
 class JobResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -535,7 +582,7 @@ class JobResponse(BaseModel):
 class FailedJobResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -549,7 +596,7 @@ class FailedJobResponse(BaseModel):
 class PasswordResetResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     email: str
@@ -559,7 +606,7 @@ class PasswordResetResponse(BaseModel):
 class UserResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -580,7 +627,7 @@ class UserResponse(BaseModel):
 class PaymentResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -594,7 +641,7 @@ class PaymentResponse(BaseModel):
 class StockResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -608,7 +655,7 @@ class StockResponse(BaseModel):
 class StockAdjustmentResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -620,7 +667,7 @@ class StockAdjustmentResponse(BaseModel):
 class TaxResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -643,7 +690,7 @@ class JobTitleResponse(BaseModel):
 class PaymentMethodResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -654,7 +701,7 @@ class PaymentMethodResponse(BaseModel):
 class BrandResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -664,7 +711,7 @@ class BrandResponse(BaseModel):
 class UnitResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -674,7 +721,7 @@ class UnitResponse(BaseModel):
 class SupplierResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -687,7 +734,7 @@ class SupplierResponse(BaseModel):
 class ContactMessageResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -699,7 +746,7 @@ class ContactMessageResponse(BaseModel):
 class InventoryProductResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -720,7 +767,7 @@ class InventoryProductResponse(BaseModel):
 class PayrollDeductionResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -729,16 +776,17 @@ class PayrollDeductionResponse(BaseModel):
     description: str
     amount: float
 
+# Update PayrollResponse to match timesheet pattern
 class PayrollResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
     employee_id: str
-    pay_period_start: str
-    pay_period_end: str
+    pay_period_start: datetime  # Changed from str to datetime (like TimesheetEntryResponse)
+    pay_period_end: datetime    # Changed from str to datetime (like TimesheetEntryResponse)
     payment_cycle: str
     gross_pay: float
     tax_deductions: float
@@ -750,11 +798,35 @@ class PayrollResponse(BaseModel):
     deductions: Optional[List[PayrollDeductionResponse]] = []
     store_id: str
 
+# Update PayrollPreviewResponse similarly
+class PayrollPreviewResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    id: Optional[str] = None
+    employee_id: str
+    employee_name: Optional[str] = None
+    pay_period_start: datetime  # Changed from str to datetime
+    pay_period_end: datetime    # Changed from str to datetime
+    payment_cycle: str
+    hourly_rate: Optional[float] = None
+    gross_pay: float
+    tax_deductions: float
+    net_pay: float
+    status: str
+    hours_worked: float
+    overtime_hours: float
+    overtime_rate: float
+    deductions: Optional[List[PayrollDeductionPreviewResponse]] = []
+    store_id: str
+
 # Purchase Order and Goods Receipt
 class PurchaseOrderItemResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     inventory_product_id: str
@@ -767,7 +839,7 @@ class PurchaseOrderItemResponse(BaseModel):
 class PurchaseOrderResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -785,7 +857,7 @@ class PurchaseOrderResponse(BaseModel):
 class GoodsReceiptItemResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     inventory_product_id: str
@@ -798,7 +870,7 @@ class GoodsReceiptItemResponse(BaseModel):
 class GoodsReceiptResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -815,7 +887,7 @@ class GoodsReceiptResponse(BaseModel):
 class SiteResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -827,7 +899,7 @@ class SiteResponse(BaseModel):
 class SuccessResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     message: str
@@ -836,7 +908,7 @@ class SuccessResponse(BaseModel):
 class HealthResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     status: str
@@ -846,7 +918,7 @@ class HealthResponse(BaseModel):
 class LoginResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     access_token: str
@@ -856,7 +928,7 @@ class LoginResponse(BaseModel):
 class ReportResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str}
+        json_encoders=COMMON_ENCODERS
     )
     
     id: str
@@ -866,4 +938,4 @@ class ReportResponse(BaseModel):
     attempted_path: str
     attempts: int
     last_attempt_at: str
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None

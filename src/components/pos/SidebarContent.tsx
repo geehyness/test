@@ -11,14 +11,21 @@ import {
   Link,
   VStack,
   Collapse,
+  Avatar,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  HStack,
 } from "@chakra-ui/react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import {
   FiCompass,
   FiSettings,
   FiChevronDown,
   FiChevronUp,
+  FiLogOut,
 } from "react-icons/fi";
 import {
   FaUserTie,
@@ -42,6 +49,7 @@ import {
 import { IconType } from "react-icons";
 import NextLink from "next/link";
 import { usePOSStore } from "@/lib/usePOSStore";
+import { Image as ChakraImage } from "@chakra-ui/react";
 
 interface NavItemProps {
   icon?: IconType;
@@ -191,12 +199,6 @@ const managementSections = [
         roles: ["admin", "manager"],
       },
       {
-        name: "Reservations",
-        path: "/pos/management/reservations",
-        icon: FaCalendarAlt,
-        roles: ["admin", "manager"],
-      },
-      {
         name: "Tables",
         path: "/pos/management/tables",
         icon: FaListAlt,
@@ -229,20 +231,14 @@ const managementSections = [
     roles: ["admin"],
     entities: [
       {
-        name: "Access Roles",
-        path: "/pos/management/access_roles",
-        icon: FaIdCard,
-        roles: ["admin"],
-      },
-      {
-        name: "Payment Methods",
-        path: "/pos/management/payment_methods",
-        icon: FaCreditCard,
-        roles: ["admin"],
-      },
-      {
         name: "Stores",
         path: "/pos/management/stores",
+        icon: FaStore,
+        roles: ["admin"],
+      },
+      {
+        name: "Customer Menu Configuration",
+        path: "/pos/management/tenant_settings",
         icon: FaStore,
         roles: ["admin"],
       },
@@ -253,7 +249,13 @@ const managementSections = [
 const SidebarContent = ({ onClose, ...rest }: any) => {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
-  const { currentStaff } = usePOSStore();
+  const { currentStaff, logoutStaff, _hasHydrated } = usePOSStore();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logoutStaff();
+    router.push("/");
+  };
 
   // Get user role, defaulting to an empty string if not available
   const userRole = useMemo(() => {
@@ -289,19 +291,27 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
     }));
   };
 
+  const displayStoreName = () => {
+    if (!_hasHydrated) {
+      return "Loading...";
+    }
+    return currentStaff?.storeName ?? "Restaurant Name";
+  };
+
   return (
     <Box
       transition="3s ease"
       bg={"white"}
       borderRight="1px"
       borderRightColor={useColorModeValue("gray.200", "gray.200")}
-      w={{ base: "full", md: 280 }} // Increased from 200px to 280px
+      w={{ base: "full", md: 280 }}
       pos="fixed"
       h="full"
-      overflow="hidden" // Changed from overflowY="auto" to overflow="hidden"
+      display="flex"
+      flexDirection="column"
       {...rest}
     >
-      {/* Fixed Header */}
+      {/* Fixed Header with Logo and Restaurant Name */}
       <Box
         position="sticky"
         top={0}
@@ -309,51 +319,89 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
         zIndex={10}
         borderBottom="1px"
         borderBottomColor={useColorModeValue("gray.200", "gray.200")}
+        p={8}
       >
         <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
-          <Text
-            fontSize="2xl"
-            fontFamily="monospace"
-            fontWeight="bold"
-            color="var(--primary-green)"
-          >
-            Resto Admin
-          </Text>
+          <Flex alignItems="center">
+            <ChakraImage
+              src="/c2.png"
+              alt="Carte Logo"
+              width="100%"
+              height="auto"
+              objectFit="contain"
+              mr={3}
+            />
+
+          </Flex>
+        </Flex>
+
+
+        <Flex h="8" alignItems="center" mx="8" justifyContent="space-between"><Text
+          fontSize="m"
+          fontFamily="monospace"
+          fontWeight="bold"
+          color="#333"
+        >
+          Resto Admin
+        </Text>
           <CloseButton
             display={{ base: "flex", md: "none" }}
             onClick={onClose}
           />
         </Flex>
 
-        {/* User Info */}
+        <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+          <Flex alignItems="center">
+            <Text
+              fontSize="xl"
+              fontWeight="bold"
+              color="var(--primary-green)"
+            >
+              {displayStoreName()}
+            </Text>
+          </Flex>
+          <CloseButton
+            display={{ base: "flex", md: "none" }}
+            onClick={onClose}
+          />
+        </Flex>
+
+        {/* User Info 
         {currentStaff && (
           <Box px="4" py="2" mb="4">
-            <Text fontSize="sm" fontWeight="bold" color="gray.600">
-              {currentStaff.first_name} {currentStaff.last_name}
-            </Text>
-            <Text fontSize="xs" color="gray.500">
-              {currentStaff.mainAccessRole?.name}
-            </Text>
+            <Flex alignItems="center">
+              <Avatar size={"sm"} src={"/pic.png"} mr={3} />
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" color="gray.600">
+                  {currentStaff.first_name} {currentStaff.last_name}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  {currentStaff.mainAccessRole?.name}
+                </Text>
+              </Box>
+            </Flex>
           </Box>
-        )}
+        )}*/}
       </Box>
 
-      {/* Scrollable Content - Now with proper scroll containment */}
+      {/* Scrollable Content */}
       <Box
+        flex="1"
         overflowY="auto"
         overflowX="hidden"
-        h="calc(100vh - 160px)" // Calculate height to fit between header and footer
         css={{
           "&::-webkit-scrollbar": {
-            width: "4px",
+            width: "6px",
           },
           "&::-webkit-scrollbar-track": {
-            width: "6px",
             background: "transparent",
           },
           "&::-webkit-scrollbar-thumb": {
-            background: "gray.300",
+            background: "gray.400",
             borderRadius: "24px",
+          },
+          "&::-webkit-scrollbar-thumb:hover": {
+            background: "gray.500",
           },
         }}
       >
@@ -429,7 +477,7 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
         </VStack>
       </Box>
 
-      {/* Fixed Footer */}
+      {/* Fixed Footer with Logout */}
       <Box
         position="sticky"
         bottom={0}
@@ -439,7 +487,35 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
         borderTopColor={useColorModeValue("gray.200", "gray.200")}
         p={4}
       >
-        <Text fontSize="xs" color="gray.500" textAlign="center">
+        <Menu>
+          <MenuButton
+            as={Box}
+            cursor="pointer"
+            _hover={{ bg: "gray.50" }}
+            borderRadius="md"
+            p={2}
+          >
+            <HStack spacing={3}>
+              <Avatar size={"sm"} src={"/pic.png"} />
+              <VStack spacing={0} align="start" flex="1">
+                <Text fontSize="sm" fontWeight="medium" color="gray.700">
+                  {currentStaff ? `${currentStaff.first_name} ${currentStaff.last_name}` : "User"}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  {currentStaff?.mainAccessRole?.name || "No Role"}
+                </Text>
+              </VStack>
+              <Icon as={FiChevronDown} color="gray.500" />
+            </HStack>
+          </MenuButton>
+          <MenuList>
+            <MenuItem icon={<FiLogOut />} onClick={handleLogout}>
+              Sign out
+            </MenuItem>
+          </MenuList>
+        </Menu>
+
+        <Text fontSize="xs" color="gray.500" textAlign="center" mt={3}>
           © {new Date().getFullYear()} Resto Admin
         </Text>
       </Box>

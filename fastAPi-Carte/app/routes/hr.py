@@ -893,17 +893,13 @@ async def get_payroll_entries(
     """Retrieve payroll entries, optionally filtered by employee_id or status."""
     try:
         payroll_collection = get_collection("payroll")
-        query = {}
-        if employee_id:
-            query["employee_id"] = employee_id
-        if status:
-            query["status"] = status
+        query = {"store_id": store_id} if store_id else {}
+        
+        payroll_list = []
+        # FIXED: Use async for loop instead of to_list()
+        async for payroll in payroll_collection.find(query):
+            payroll_list.append(Payroll.from_mongo(payroll))
             
-        entries = []
-        # FIXED: Use await and iterate
-        entry_docs = await payroll_collection.find(query)
-        for entry in entry_docs:
-            entries.append(Payroll.from_mongo(entry))
         return success_response(data=entries)
     except Exception as e:
         return handle_generic_exception(e)
@@ -915,7 +911,8 @@ async def get_payroll_entry(payroll_id: str):
         payroll_collection = get_collection("payroll")
         entry = await payroll_collection.find_one({"_id": ObjectId(payroll_id)})
         if entry:
-            return success_response(data=Payroll.from_mongo(entry))
+            payroll_model = Payroll.from_mongo(entry)
+            return success_response(data=payroll_model)
         return error_response(message="Payroll entry not found", code=404)
     except Exception:
         return error_response(message="Invalid ID format for payroll entry", code=400)
@@ -1093,217 +1090,6 @@ async def update_payroll_settings(settings_id: str, settings: PayrollSettings):
     except Exception:
         return error_response(message="Invalid ID format for payroll settings", code=400)
 
-@router.post("/payroll/calculate", response_model=StandardResponse[PayrollPreviewResponse])
-async def calculate_payroll(
-    store_id: str = Body(..., embed=True),
-    employee_id: str = Body(..., embed=True),
-    period_start: str = Body(..., embed=True),
-    period_end: str = Body(..., embed=True)
-):
-    """
-    Calculates a payroll preview for a given employee and period using actual data.
-    """
-    try:
-        # --- 1. Fetch Necessary Data ---
-        employee_collection = get_collection("employees")
-        timesheet_collection = get_collection("timesheet_entries")
-        payroll_settings_collection = get_collection("payroll_settings")
-        
-        # Fetch employee data
-        employee = await employee_collection.find_one({"_id": ObjectId(employee_id)})
-        if not employee:
-            return error_response(message="Employee not found", code=404)
-        
-        # Fetch payroll settings with ALL fields
-        settings_doc = await payroll_settings_collection.find_one({"store_id": store_id})
-        if not settings_doc:
-            # Fallback to default settings if store-specific settings not found
-            settings_doc = await payroll_settings_collection.find_one({"store_id": "default"})
-            if not settings_doc:
-                # Create default settings with ALL fields
-                default_settings = PayrollSettings(
-                    store_id="default",
-                    default_payment_cycle="bi-weekly",
-                    tax_rate=0.20,
-                    overtime_multiplier=1.5,
-                    overtime_threshold=40,
-                    pay_day=15,
-                    auto_process=False,
-                    include_benefits=False,
-                    benefits_rate=0.05
-                )
-                settings_dict = to_mongo_dict(default_settings)
-                await payroll_settings_collection.insert_one(settings_dict)
-                settings_doc = settings_dict
-        
-        settings = PayrollSettings.from_mongo(settings_doc)
-        
-        # --- 2. Fetch and Process Timesheet Data ---
-        try:
-            start_dt = datetime.fromisoformat(period_start.replace('Z', '+00:00'))
-            end_dt = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
-        except ValueError:
-            return error_response(message="Invalid date format. Use ISO 8601 format.", code=400)
-        
-        # Query timesheet entries for the specified period and employee
-        timesheet_query = {
-            "employee_id": employee_id,
-            "clock_in": {
-                "$gte": start_dt.isoformat(),
-                "$lte": end_dt.isoformat()
-            },
-            "clock_out": {"$ne": None}  # Only include completed shifts
-        }
-        
-        # FIXED: Use await and iterate properly
-        entry_docs = await timesheet_collection.find(timesheet_query)
-        timesheet_entries = []
-        for entry in entry_docs:
-            timesheet_entries.append(TimesheetEntry.from_mongo(entry))
-        
-        if not timesheet_entries:
-            return error_response(message="No timesheet entries found for the specified period", code=404)
-        
-        # --- 3. Calculate Hours Worked ---
-        total_minutes = 0
-        regular_minutes = 0
-        overtime_minutes = 0
-        
-        # Group hours by week for proper overtime calculation
-        weekly_hours = {}
-        
-        for entry in timesheet_entries:
-            if entry.clock_in and entry.clock_out:
-                try:
-                    clock_in = datetime.fromisoformat(entry.clock_in.replace('Z', '+00:00'))
-                    clock_out = datetime.fromisoformat(entry.clock_out.replace('Z', '+00:00'))
-                    
-                    # Calculate duration in minutes
-                    duration_minutes = int((clock_out - clock_in).total_seconds() / 60)
-                    total_minutes += duration_minutes
-                    
-                    # Group by week for overtime calculation
-                    week_key = clock_in.isocalendar()[:2]  # (year, week)
-                    weekly_hours[week_key] = weekly_hours.get(week_key, 0) + (duration_minutes / 60)
-                    
-                except (ValueError, TypeError) as e:
-                    # Skip entries with invalid date formats
-                    continue
-        
-        # Calculate overtime based on weekly thresholds FROM SETTINGS
-        for week_key, week_hours in weekly_hours.items():
-            if week_hours > settings.overtime_threshold:
-                overtime_minutes += (week_hours - settings.overtime_threshold) * 60
-                regular_minutes += settings.overtime_threshold * 60
-            else:
-                regular_minutes += week_hours * 60
-        
-        # Convert minutes to hours
-        total_hours = total_minutes / 60
-        overtime_hours = overtime_minutes / 60
-        regular_hours = regular_minutes / 60
-        
-        # --- 4. Calculate Hourly Rate from Salary USING SETTINGS PAYMENT CYCLE ---
-        annual_salary = employee.get("salary", 0)
-        if annual_salary <= 0:
-            return error_response(message="Employee salary not set or invalid", code=400)
-        
-        # Calculate hourly rate based on payment cycle FROM SETTINGS
-        if settings.default_payment_cycle == "monthly":
-            # Assuming 12 months, 160 hours per month
-            hourly_rate = annual_salary / (12 * 160) if annual_salary > 0 else 0
-        elif settings.default_payment_cycle == "bi-weekly":
-            # 26 pay periods per year, 80 hours per period
-            hourly_rate = annual_salary / (26 * 80) if annual_salary > 0 else 0
-        else:  # weekly
-            # 52 weeks per year, 40 hours per week
-            hourly_rate = annual_salary / (52 * 40) if annual_salary > 0 else 0
-        
-        # --- 5. Calculate Payroll USING ALL SETTINGS ---
-        # Regular pay calculation
-        regular_pay = regular_hours * hourly_rate
-        
-        # Overtime pay calculation USING SETTINGS MULTIPLIER
-        overtime_pay = overtime_hours * hourly_rate * settings.overtime_multiplier
-        
-        # Gross pay
-        gross_pay = regular_pay + overtime_pay
-        
-        # Initial deductions (tax only)
-        tax_deductions = gross_pay * settings.tax_rate
-        additional_deductions = 0
-        
-        # Apply benefits deduction if enabled in settings
-        if settings.include_benefits:
-            additional_deductions = gross_pay * settings.benefits_rate
-        
-        total_deductions = tax_deductions + additional_deductions
-        net_pay = gross_pay - total_deductions
-        
-        # --- 6. Construct Payroll Preview Data ---
-        payroll_data = {
-            "id": None,  # Preview only - no database ID
-            "employee_id": employee_id,
-            "employee_name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip(),
-            "pay_period_start": period_start,
-            "pay_period_end": period_end,
-            "payment_cycle": settings.default_payment_cycle,  # FROM SETTINGS
-            "hourly_rate": round(hourly_rate, 2),
-            "gross_pay": round(gross_pay, 2),
-            "tax_deductions": round(tax_deductions, 2),
-            "additional_deductions": round(additional_deductions, 2),
-            "total_deductions": round(total_deductions, 2),
-            "net_pay": round(net_pay, 2),
-            "status": "preview",
-            "hours_worked": round(total_hours, 2),
-            "regular_hours": round(regular_hours, 2),
-            "overtime_hours": round(overtime_hours, 2),
-            "overtime_rate": settings.overtime_multiplier,  # FROM SETTINGS
-            "overtime_threshold": settings.overtime_threshold,  # FROM SETTINGS
-            "tax_rate": settings.tax_rate,  # FROM SETTINGS
-            "deductions": [
-                {
-                    "id": None,
-                    "payroll_id": "temp-preview",
-                    "type": "tax",
-                    "description": "Federal/State Tax Withholding",
-                    "amount": round(tax_deductions, 2),
-                    "rate": settings.tax_rate  # FROM SETTINGS
-                }
-            ],
-            "store_id": store_id,
-            "calculation_date": datetime.utcnow().isoformat(),
-            "entries_processed": len(timesheet_entries),
-            "weeks_processed": len(weekly_hours),
-            "settings_used": {  # DEBUG INFO - shows which settings were applied
-                "payment_cycle": settings.default_payment_cycle,
-                "overtime_threshold": settings.overtime_threshold,
-                "overtime_multiplier": settings.overtime_multiplier,
-                "tax_rate": settings.tax_rate,
-                "include_benefits": settings.include_benefits,
-                "benefits_rate": settings.benefits_rate if settings.include_benefits else 0
-            }
-        }
-        
-        # Add benefits deduction if enabled
-        if settings.include_benefits and additional_deductions > 0:
-            payroll_data["deductions"].append({
-                "id": None,
-                "payroll_id": "temp-preview",
-                "type": "benefits",
-                "description": "Benefits Deduction",
-                "amount": round(additional_deductions, 2),
-                "rate": settings.benefits_rate  # FROM SETTINGS
-            })
-        
-        # --- 7. Return Success ---
-        return success_response(
-            data=payroll_data,
-            message=f"Payroll calculated successfully for {payroll_data['employee_name']} using current settings"
-        )
-        
-    except Exception as e:
-        return handle_generic_exception(e)
         
 # Update this helper function in app/routes/hr.py
 async def get_or_create_payroll_settings(store_id: str) -> PayrollSettings:

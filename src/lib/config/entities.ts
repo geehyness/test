@@ -17,7 +17,7 @@ export interface Food {
   description: string;
   price: number;
   category_id: string;
-  image_url?: string;
+  image_urls?: string[];  // CHANGE: Single image_url -> Array of image_urls
   preparation_time?: number;
   allergens?: string[];
   tenant_id: string;
@@ -82,6 +82,7 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
+  image_url?: string;  // ADD THIS LINE
   created_at?: string;
   updated_at?: string;
 }
@@ -314,6 +315,51 @@ export interface Tenant {
   updated_at: string;
   phone?: string;
   address?: string;
+
+  // NEW: Customer page customization fields
+  customer_page_settings?: {
+    // Banner Settings
+    banner_image_url?: string;
+    banner_overlay_opacity?: number;
+    banner_text?: string;
+    banner_text_color?: string;
+    show_banner?: boolean;
+
+    // Logo & Branding
+    logo_url?: string;
+    logo_size?: 'small' | 'medium' | 'large';
+
+    // Color Scheme
+    primary_color?: string;
+    secondary_color?: string;
+    background_color?: string;
+    text_color?: string;
+    accent_color?: string;
+
+    // Typography
+    font_family?: string;
+    heading_font_size?: string;
+    body_font_size?: string;
+
+    // Layout
+    layout_option?: 'classic' | 'modern' | 'minimal' | 'custom';
+    card_style?: 'flat' | 'raised' | 'border' | 'gradient';
+    button_style?: 'rounded' | 'square' | 'pill';
+
+    // Features
+    show_search_bar?: boolean;
+    show_category_nav?: boolean;
+    enable_animations?: boolean;
+    dark_mode?: boolean;
+
+    // Social Media
+    social_links?: {
+      facebook?: string;
+      instagram?: string;
+      twitter?: string;
+      website?: string;
+    };
+  };
 }
 
 export interface Domain {
@@ -542,10 +588,12 @@ export interface PayrollSettings {
 }
 
 export const entities: { [key: string]: EntityConfig } = {
+
+
   // Core POS Entities
   payrolls: {
     label: "Payrolls",
-    endpoint: "/api/payrolls",
+    endpoint: "/api/payroll",
     fields: [
       "id",
       "employee_id",
@@ -564,7 +612,20 @@ export const entities: { [key: string]: EntityConfig } = {
       "store_id",
     ],
   },
-
+  tenant_settings: {
+    label: "Tenant Settings",
+    endpoint: "/api/tenants",
+    fields: [
+      "id",
+      "name",
+      "email",
+      "phone",
+      "address",
+      "customer_page_settings",
+      "created_at",
+      "updated_at"
+    ],
+  },
   payroll_settings: {
     label: "Payroll Settings",
     endpoint: "/api/payroll_settings",
@@ -668,7 +729,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "price",
       "category_id",
       "is_available",
-      "image_url",
+      "image_urls",
       "preparation_time",
       "allergens",
       "created_at",

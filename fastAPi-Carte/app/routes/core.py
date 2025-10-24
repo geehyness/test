@@ -568,25 +568,224 @@ async def update_tax(tax_id: str, tax: Tax):
 async def delete_tax(tax_id: str):
     return await _delete_item("taxes", tax_id)
 
-# Tenants Endpoints
+# ==================== TENANT ENDPOINTS ====================
+
 @router.get("/tenants", response_model=StandardResponse[List[TenantResponse]])
 async def get_tenants():
+    """Get all tenants (authenticated)"""
     return await _get_all_items("tenants", Tenant)
 
 @router.get("/tenants/{tenant_id}", response_model=StandardResponse[TenantResponse])
 async def get_tenant(tenant_id: str):
-    return await _get_item_by_id("tenants", tenant_id, Tenant)
+    """Get a specific tenant by ID (authenticated)"""
+    try:
+        collection = get_collection("tenants")
+        tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        
+        if not tenant:
+            return error_response(message="Tenant not found", code=404)
+            
+        response_data = {
+            "id": str(tenant["_id"]),
+            "name": tenant.get("name", ""),
+            "email": tenant.get("email", ""),
+            "phone": tenant.get("phone"),
+            "address": tenant.get("address"),
+            "customer_page_settings": tenant.get("customer_page_settings", {}),
+            "created_at": tenant.get("created_at"),
+            "updated_at": tenant.get("updated_at")
+        }
+        
+        return success_response(data=TenantResponse(**response_data))
+    except Exception as e:
+        return handle_generic_exception(e)
+
+@router.get("/tenants/domain/{domain}", response_model=StandardResponse[TenantResponse])
+async def get_tenant_by_domain(domain: str):
+    """Get tenant by domain (public endpoint)"""
+    try:
+        # First find the domain record
+        domains_collection = get_collection("domains")
+        domain_record = await domains_collection.find_one({"domain": domain, "is_primary": True})
+        
+        if not domain_record:
+            return error_response(message="Domain not found", code=404)
+            
+        # Then get the tenant
+        tenants_collection = get_collection("tenants")
+        tenant = await tenants_collection.find_one({"_id": ObjectId(domain_record["tenant_id"])})
+        
+        if not tenant:
+            return error_response(message="Tenant not found", code=404)
+            
+        response_data = {
+            "id": str(tenant["_id"]),
+            "name": tenant.get("name", ""),
+            "email": tenant.get("email", ""),
+            "phone": tenant.get("phone"),
+            "address": tenant.get("address"),
+            "customer_page_settings": tenant.get("customer_page_settings", {}),
+            "created_at": tenant.get("created_at"),
+            "updated_at": tenant.get("updated_at")
+        }
+        
+        return success_response(data=TenantResponse(**response_data))
+    except Exception as e:
+        return handle_generic_exception(e)
+
+@router.get("/tenants/{tenant_id}/public", response_model=StandardResponse[TenantResponse])
+async def get_tenant_public(tenant_id: str):
+    """Get tenant public info (no auth required)"""
+    try:
+        collection = get_collection("tenants")
+        tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        
+        if not tenant:
+            return error_response(message="Tenant not found", code=404)
+            
+        response_data = {
+            "id": str(tenant["_id"]),
+            "name": tenant.get("name", ""),
+            "email": tenant.get("email", ""),
+            "phone": tenant.get("phone"),
+            "address": tenant.get("address"),
+            "customer_page_settings": tenant.get("customer_page_settings", {}),
+            "created_at": tenant.get("created_at"),
+            "updated_at": tenant.get("updated_at")
+        }
+        
+        return success_response(data=TenantResponse(**response_data))
+    except Exception as e:
+        return handle_generic_exception(e)
 
 @router.post("/tenants", response_model=StandardResponse[TenantResponse])
 async def create_tenant(tenant: Tenant):
+    """Create a new tenant"""
     return await _create_item("tenants", tenant, TenantResponse)
 
 @router.put("/tenants/{tenant_id}", response_model=StandardResponse[TenantResponse])
-async def update_tenant(tenant_id: str, tenant: Tenant):
-    return await _update_item("tenants", tenant_id, tenant, TenantResponse)
+async def update_tenant(tenant_id: str, tenant_update: dict):
+    """Update tenant information"""
+    try:
+        collection = get_collection("tenants")
+        
+        # Validate tenant exists
+        existing_tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        if not existing_tenant:
+            return error_response(message="Tenant not found", code=404)
+        
+        # Prepare update data
+        update_data = {}
+        for key, value in tenant_update.items():
+            if value is not None:
+                update_data[key] = value
+        
+        # Always set updated_at
+        update_data["updated_at"] = datetime.utcnow().isoformat()
+        
+        result = await collection.update_one(
+            {"_id": ObjectId(tenant_id)},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0 and result.matched_count == 0:
+            return error_response(message="No changes made", code=400)
+            
+        # Return updated tenant
+        updated_tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        
+        response_data = {
+            "id": str(updated_tenant["_id"]),
+            "name": updated_tenant.get("name", ""),
+            "email": updated_tenant.get("email", ""),
+            "phone": updated_tenant.get("phone"),
+            "address": updated_tenant.get("address"),
+            "customer_page_settings": updated_tenant.get("customer_page_settings", {}),
+            "created_at": updated_tenant.get("created_at"),
+            "updated_at": updated_tenant.get("updated_at")
+        }
+        
+        return success_response(
+            data=TenantResponse(**response_data),
+            message="Tenant updated successfully"
+        )
+    except Exception as e:
+        return handle_generic_exception(e)
+
+@router.get("/tenants/{tenant_id}/settings", response_model=StandardResponse[TenantResponse])
+async def get_tenant_settings(tenant_id: str):
+    """Get tenant settings including customer page customization"""
+    try:
+        collection = get_collection("tenants")
+        tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        
+        if not tenant:
+            return error_response(message="Tenant not found", code=404)
+            
+        response_data = {
+            "id": str(tenant["_id"]),
+            "name": tenant.get("name", ""),
+            "email": tenant.get("email", ""),
+            "phone": tenant.get("phone"),
+            "address": tenant.get("address"),
+            "customer_page_settings": tenant.get("customer_page_settings", {}),
+            "created_at": tenant.get("created_at"),
+            "updated_at": tenant.get("updated_at")
+        }
+        
+        return success_response(data=TenantResponse(**response_data))
+    except Exception as e:
+        return handle_generic_exception(e)
+
+@router.put("/tenants/{tenant_id}/settings", response_model=StandardResponse[TenantResponse])
+async def update_tenant_settings(tenant_id: str, settings_update: dict):
+    """Update tenant customer page settings"""
+    try:
+        collection = get_collection("tenants")
+        
+        # Validate tenant exists
+        tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        if not tenant:
+            return error_response(message="Tenant not found", code=404)
+        
+        # Update only the customer_page_settings field
+        update_data = {
+            "customer_page_settings": settings_update,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        result = await collection.update_one(
+            {"_id": ObjectId(tenant_id)},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0 and result.matched_count == 0:
+            return error_response(message="No changes made", code=400)
+            
+        # Return updated tenant
+        updated_tenant = await collection.find_one({"_id": ObjectId(tenant_id)})
+        
+        response_data = {
+            "id": str(updated_tenant["_id"]),
+            "name": updated_tenant.get("name", ""),
+            "email": updated_tenant.get("email", ""),
+            "phone": updated_tenant.get("phone"),
+            "address": updated_tenant.get("address"),
+            "customer_page_settings": updated_tenant.get("customer_page_settings", {}),
+            "created_at": updated_tenant.get("created_at"),
+            "updated_at": updated_tenant.get("updated_at")
+        }
+        
+        return success_response(
+            data=TenantResponse(**response_data),
+            message="Tenant settings updated successfully"
+        )
+    except Exception as e:
+        return handle_generic_exception(e)
 
 @router.delete("/tenants/{tenant_id}", response_model=StandardResponse[dict])
 async def delete_tenant(tenant_id: str):
+    """Delete a tenant"""
     return await _delete_item("tenants", tenant_id)
 
 # ----------------------------------------------------
@@ -847,3 +1046,133 @@ async def create_failed_job(job: FailedJob):
 @router.delete("/failed_jobs/{job_id}", response_model=StandardResponse[dict])
 async def delete_failed_job(job_id: str):
     return await _delete_item("failed_jobs", job_id)
+
+
+# Add to core.py - Dependency checking endpoint
+@router.get("/check_dependencies/{entity_name}/{entity_id}")
+async def check_dependencies(entity_name: str, entity_id: str):
+    """Check if an entity has dependencies before deletion"""
+    try:
+        dependencies = []
+        
+        if entity_name == "categories":
+            # Check if category is used by any foods
+            foods_collection = get_collection("foods")
+            foods_using_category = await foods_collection.find({"category_id": entity_id}).to_list(length=1)
+            if foods_using_category:
+                dependencies.append(f"{len(foods_using_category)} food item(s)")
+                
+        elif entity_name == "foods":
+            # Check if food is used in any orders
+            orders_collection = get_collection("orders")
+            orders_with_food = await orders_collection.find({"items.food_id": entity_id}).to_list(length=1)
+            if orders_with_food:
+                dependencies.append(f"{len(orders_with_food)} order(s)")
+                
+        elif entity_name == "employees":
+            # Check if employee is assigned to orders, shifts, or payroll
+            orders_collection = get_collection("orders")
+            orders_with_employee = await orders_collection.find({"employee_id": entity_id}).to_list(length=1)
+            if orders_with_employee:
+                dependencies.append(f"{len(orders_with_employee)} order(s)")
+                
+            shifts_collection = get_collection("shifts")
+            shifts_with_employee = await shifts_collection.find({"employee_id": entity_id}).to_list(length=1)
+            if shifts_with_employee:
+                dependencies.append(f"{len(shifts_with_employee)} shift(s)")
+                
+        elif entity_name == "inventory_products":
+            # Check if inventory product is used in any food recipes
+            foods_collection = get_collection("foods")
+            foods_using_product = await foods_collection.find({"recipes.inventory_product_id": entity_id}).to_list(length=1)
+            if foods_using_product:
+                dependencies.append(f"{len(foods_using_product)} food recipe(s)")
+                
+            # Check if used in purchase orders
+            po_collection = get_collection("purchase_orders")
+            po_using_product = await po_collection.find({"items.inventory_product_id": entity_id}).to_list(length=1)
+            if po_using_product:
+                dependencies.append(f"{len(po_using_product)} purchase order(s)")
+                
+        elif entity_name == "suppliers":
+            # Check if supplier is used by any inventory products
+            inventory_collection = get_collection("inventory_products")
+            products_with_supplier = await inventory_collection.find({"supplier_id": entity_id}).to_list(length=1)
+            if products_with_supplier:
+                dependencies.append(f"{len(products_with_supplier)} inventory product(s)")
+                
+        elif entity_name == "tables":
+            # Check if table has active orders or reservations
+            orders_collection = get_collection("orders")
+            active_orders = await orders_collection.find({
+                "table_id": entity_id,
+                "status": {"$in": ["new", "preparing", "served"]}
+            }).to_list(length=1)
+            if active_orders:
+                dependencies.append(f"{len(active_orders)} active order(s)")
+                
+            reservations_collection = get_collection("reservations")
+            upcoming_reservations = await reservations_collection.find({
+                "table_id": entity_id,
+                "status": "confirmed"
+            }).to_list(length=1)
+            if upcoming_reservations:
+                dependencies.append(f"{len(upcoming_reservations)} upcoming reservation(s)")
+                
+        elif entity_name == "customers":
+            # Check if customer has orders or reservations
+            orders_collection = get_collection("orders")
+            customer_orders = await orders_collection.find({"customer_id": entity_id}).to_list(length=1)
+            if customer_orders:
+                dependencies.append(f"{len(customer_orders)} order(s)")
+                
+            reservations_collection = get_collection("reservations")
+            customer_reservations = await reservations_collection.find({"customer_id": entity_id}).to_list(length=1)
+            if customer_reservations:
+                dependencies.append(f"{len(customer_reservations)} reservation(s)")
+                
+        elif entity_name == "users":
+            # Check if user is linked to an employee
+            employees_collection = get_collection("employees")
+            employee_with_user = await employees_collection.find({"user_id": entity_id}).to_list(length=1)
+            if employee_with_user:
+                dependencies.append("1 employee record")
+        
+        return success_response(
+            data={
+                "hasDependencies": len(dependencies) > 0,
+                "dependencies": dependencies,
+                "message": f"Cannot delete - used by: {', '.join(dependencies)}" if dependencies else "Safe to delete"
+            }
+        )
+        
+    except Exception as e:
+        return handle_generic_exception(e)
+
+
+# Add detailed health check endpoint
+@router.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health check for debugging"""
+    try:
+        # Test database connection
+        from app.database import get_database
+        db = get_database()
+        await db.command("ping")
+        db_status = "healthy"
+        
+        # Test collections
+        collections = await db.list_collection_names()
+        
+        return success_response(data={
+            "status": "healthy",
+            "database": db_status,
+            "collections": collections,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+    except Exception as e:
+        return error_response(
+            message="Health check failed",
+            code=503,
+            details={"error": str(e)}
+        )

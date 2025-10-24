@@ -587,7 +587,7 @@ export default function POSDashboardPage() {
                           >
                             <Image
                               src={
-                                item.image_url ||
+                                item.image_urls?.at(0) ||
                                 `https://placehold.co/150x100/E0E0E0/333333?text=${
                                   item.name.split(" ")[0]
                                 }`
