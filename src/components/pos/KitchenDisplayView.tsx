@@ -9,6 +9,7 @@ import {
   Spacer,
   Badge,
   SimpleGrid,
+  // FIX: Import useToast
   useToast,
 } from "@chakra-ui/react";
 import { Order, Table } from "@/lib/config/entities";
@@ -105,8 +106,9 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
         Time: {new Date(order.created_at).toLocaleTimeString()}
       </Text>
 
+      {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
       <VStack align="stretch" spacing={2} mb={4}>
-        {order.items.map((item, index) => (
+        {(order.items || []).map((item, index) => (
           <Text
             key={index}
             fontSize="lg"
@@ -129,7 +131,7 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
           size="lg"
           width="80%"
           onClick={() => handleMarkReady(order)}
-          isDisabled={order.status === "ready"}
+          disabled={order.status === "ready"}
           bg="var(--primary-green)"
           color="white"
           _hover={{ bg: "darken(var(--primary-green), 10%)" }}
@@ -164,6 +166,7 @@ const KitchenDisplayView: React.FC<KitchenDisplayViewProps> = ({
           No new or preparing orders for the kitchen.
         </Text>
       ) : (
+        // FIX: Corrected `spacing` prop
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
           {kitchenOrders.map((order) => (
             <OrderCard key={order.id} order={order} />

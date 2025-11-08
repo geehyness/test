@@ -6,15 +6,18 @@ import {
     Flex,
     Spinner,
     Alert,
+    // FIX: Import Alert sub-components
     AlertIcon,
     AlertTitle,
     AlertDescription,
     Text,
+    Center
 } from "@chakra-ui/react";
 import ServerView from "../../../components/pos/ServerView";
 import { usePOSStore } from "../../../lib/usePOSStore";
 import { fetchData } from "@/lib/api";
-import { Order, Table, Food, Category } from "@/lib/config/entities";
+import { Order, Table } from "@/lib/config/entities";
+import { useRouter } from "next/navigation";
 
 export default function ServerPage() {
     const {
@@ -24,34 +27,25 @@ export default function ServerPage() {
         setTables,
         setMenuItems,
         setCategories,
+        currentStaff,
+        _hasHydrated,
     } = usePOSStore();
 
+    const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Function to update an order, now correctly placed in the page component
-    const updateOrder = async (orderId: string, updatedOrder: Partial<Order>) => {
-        try {
-            await fetchData("orders", orderId, updatedOrder, "PUT");
-            console.log(
-                `LOG: API call to update order #${orderId} with data:`,
-                updatedOrder
-            );
-
-            // Update the order in the Zustand store
-            usePOSStore.setState((state) => ({
-                activeOrders: state.activeOrders.map((o) =>
-                    o.id === orderId ? { ...o, ...updatedOrder } : o
-                ),
-            }));
-            console.log(`LOG: Order #${orderId} updated in store.`);
-        } catch (error: any) {
-            console.error(`ERROR: Error updating order #${orderId}:`, error);
-            // You might want to add a toast message here as well
-        }
-    };
-
     useEffect(() => {
+        if (!_hasHydrated) return;
+
+        const userRole = currentStaff?.mainAccessRole?.name?.toLowerCase();
+        const allowedRoles = ['admin', 'manager', 'server', 'waiter'];
+
+        if (!userRole || !allowedRoles.some(role => userRole.includes(role))) {
+            router.replace(currentStaff?.mainAccessRole?.landing_page || '/pos/login');
+            return;
+        }
+
         const loadData = async () => {
             try {
                 setLoading(true);
@@ -63,13 +57,11 @@ export default function ServerPage() {
                         fetchData("categories"),
                     ]);
 
-                const active = (fetchedOrders || []).filter(
+                const readyForServer = (fetchedOrders || []).filter(
                     (order: Order) =>
-                        order.status !== "paid" &&
-                        order.status !== "cancelled" &&
-                        order.status !== "served"
+                        order.status === "ready"
                 );
-                setActiveOrders(active);
+                setActiveOrders(readyForServer);
                 setTables(fetchedTables || []);
                 setMenuItems(fetchedFoods || []);
                 setCategories(fetchedCategories || []);
@@ -82,16 +74,29 @@ export default function ServerPage() {
         };
 
         loadData();
-    }, [setActiveOrders, setTables, setMenuItems, setCategories]);
+    }, [_hasHydrated, currentStaff, router, setActiveOrders, setTables, setMenuItems, setCategories]);
+
+    const updateOrder = async (orderId: string, updatedOrder: Partial<Order>) => {
+        try {
+            await fetchData("orders", orderId, updatedOrder, "PUT");
+            usePOSStore.setState((state) => ({
+                activeOrders: state.activeOrders.map((o) =>
+                    o.id === orderId ? { ...o, ...updatedOrder } : o
+                ),
+            }));
+        } catch (error: any) {
+            console.error(`ERROR: Error updating order #${orderId}:`, error);
+        }
+    };
 
     if (loading) {
         return (
-            <Flex justify="center" align="center" minH="calc(100vh - 80px)">
+            <Center minH="calc(100vh - 80px)">
                 <Spinner size="xl" color="var(--primary-green)" />
                 <Text ml={4} fontSize="xl" color="var(--dark-gray-text)">
                     Loading server view...
                 </Text>
-            </Flex>
+            </Center>
         );
     }
 

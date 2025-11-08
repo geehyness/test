@@ -3,13 +3,14 @@
 
 import React from "react";
 import {
+  // FIX: Import Modal and its parts
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalCloseButton,
   ModalBody,
   ModalFooter,
+  ModalCloseButton,
   Button,
   VStack,
   Text,
@@ -101,7 +102,7 @@ const CurrentOrderDetailsModal: React.FC<CurrentOrderDetailsModalProps> = ({
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          {currentOrder.items.length === 0 ? (
+          {(currentOrder.items || []).length === 0 ? (
             <Text textAlign="center" py={10} color="var(--medium-gray-text)">
               No items in the current order. Add items from the menu.
             </Text>

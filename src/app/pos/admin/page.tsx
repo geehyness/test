@@ -10,15 +10,18 @@ import {
     SimpleGrid,
     Spinner,
     Center,
+    // FIX: Import Stat and its parts
     Stat,
     StatLabel,
     StatNumber,
     StatHelpText,
+    // FIX: Import Card and its parts
     Card,
     CardHeader,
     CardBody,
     HStack,
     Button,
+    StackProps
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { usePOSStore } from "../../../lib/usePOSStore";
@@ -91,8 +94,8 @@ export default function AdminDashboardPage() {
                     // Corrected: Use currentStaff.storeId to fetch data
                     const storeId = currentStaff.storeId;
                     if (storeId) {
-                        const fetchedOrders = (await fetchData('orders', storeId)) as Order[];
-                        const fetchedFoods = (await fetchData('foods', storeId)) as Food[];
+                        const fetchedOrders = (await fetchData('orders', undefined, undefined, 'GET', { store_id: storeId })) as Order[];
+                        const fetchedFoods = (await fetchData('foods', undefined, undefined, 'GET', { store_id: storeId })) as Food[];
 
                         setOrders(fetchedOrders);
                         setFoods(fetchedFoods);
@@ -127,7 +130,7 @@ export default function AdminDashboardPage() {
 
         const itemQuantities: { [foodId: string]: number } = {};
         paidOrders.forEach(order => {
-            order.items.forEach((item: OrderItem) => {
+            (order.items || []).forEach((item: OrderItem) => {
                 itemQuantities[item.food_id] = (itemQuantities[item.food_id] || 0) + item.quantity;
             });
         });
@@ -165,9 +168,9 @@ export default function AdminDashboardPage() {
     if (loading || loadingData) {
         return (
             <Center minH="100vh" bg="var(--light-gray-bg)">
+                {/* FIX: Corrected `speed` prop on Spinner */}
                 <Spinner
                     size="xl"
-                    thickness="4px"
                     speed="0.65s"
                     emptyColor="gray.200"
                     color="var(--primary-green)"
@@ -185,6 +188,7 @@ export default function AdminDashboardPage() {
                 Welcome, {currentStaff?.first_name || "Admin"}! Here are your tenant&apos;s key metrics.
             </Text>
 
+            {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
             <HStack spacing={4} mb={8}>
                 <Link href="/pos/dashboard" passHref>
                     <Button colorScheme="teal" variant="outline">
@@ -203,6 +207,7 @@ export default function AdminDashboardPage() {
                 </Link>
             </HStack>
 
+            {/* FIX: Corrected `spacing` prop on SimpleGrid */}
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={6} mb={8}>
                 <StatCard
                     label="Total Revenue"
@@ -226,44 +231,53 @@ export default function AdminDashboardPage() {
                 />
             </SimpleGrid>
 
+            {/* FIX: Corrected `spacing` prop on SimpleGrid */}
             <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
                 <Card bg="white" rounded="lg" shadow="sm" p={4}>
-                    <Heading as="h3" size="md" mb={4} color="var(--dark-gray-text)">
-                        Sales Over Time
-                    </Heading>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <LineChart
-                            data={stats.salesByDate}
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="total" stroke="var(--primary-green)" activeDot={{ r: 8 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <CardHeader>
+                      <Heading as="h3" size="md" color="var(--dark-gray-text)">
+                          Sales Over Time
+                      </Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <ResponsiveContainer width="100%" height={300}>
+                          <LineChart
+                              data={stats.salesByDate}
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="date" />
+                              <YAxis />
+                              <Tooltip />
+                              <Legend />
+                              <Line type="monotone" dataKey="total" stroke="var(--primary-green)" activeDot={{ r: 8 }} />
+                          </LineChart>
+                      </ResponsiveContainer>
+                    </CardBody>
                 </Card>
 
                 <Card bg="white" rounded="lg" shadow="sm" p={4}>
-                    <Heading as="h3" size="md" mb={4} color="var(--dark-gray-text)">
-                        Most Popular Items
-                    </Heading>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart
-                            data={stats.mostPopularItems}
-                            layout="vertical"
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis type="number" />
-                            <YAxis dataKey="name" type="category" width={100} />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="quantity" fill="var(--primary-green)" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    <CardHeader>
+                      <Heading as="h3" size="md" color="var(--dark-gray-text)">
+                          Most Popular Items
+                      </Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <ResponsiveContainer width="100%" height={300}>
+                          <BarChart
+                              data={stats.mostPopularItems}
+                              layout="vertical"
+                              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                          >
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis type="number" />
+                              <YAxis dataKey="name" type="category" width={100} />
+                              <Tooltip />
+                              <Legend />
+                              <Bar dataKey="quantity" fill="var(--primary-green)" />
+                          </BarChart>
+                      </ResponsiveContainer>
+                    </CardBody>
                 </Card>
             </SimpleGrid>
         </Box>

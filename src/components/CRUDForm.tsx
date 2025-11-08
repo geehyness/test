@@ -4,18 +4,19 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  FormControl,
-  FormLabel,
   Input,
   VStack,
   HStack,
   Switch, // For boolean fields
   Textarea, // For larger text inputs
-  NumberInput, // For number inputs
+  // FIX: Import NumberInput and its parts
+  NumberInput,
   NumberInputField,
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
 
 interface CRUDFormProps {
@@ -65,7 +66,7 @@ export default function CRUDForm({
   const handleNumberInputChange = (valueAsString: string, valueAsNumber: number, name: string) => {
     setFormData((prevData) => ({
       ...prevData,
-      [name]: valueAsNumber,
+      [name]: isNaN(valueAsNumber) ? '' : valueAsNumber,
     }));
   };
 
@@ -99,6 +100,7 @@ export default function CRUDForm({
 
   return (
     <Box as="form" onSubmit={handleSubmit} p={6} borderWidth="1px" borderRadius="lg" shadow="md" bg="white">
+      {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
       <VStack spacing={4} align="stretch">
         {fields.map((field) => {
           // Skip 'id' field for 'new' mode, but allow it for 'edit' mode if it's part of initialData
@@ -160,6 +162,7 @@ export default function CRUDForm({
         })}
       </VStack>
 
+      {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
       <HStack spacing={4} mt={8} justifyContent="flex-end"> {/* Align buttons to the right */}
         <Button colorScheme="gray" variant="outline" onClick={() => history.back()}>
           Cancel

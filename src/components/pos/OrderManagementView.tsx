@@ -9,6 +9,7 @@ import {
   Spacer,
   Badge,
   HStack,
+  // FIX: Import useToast
   useToast,
   SimpleGrid,
 } from "@chakra-ui/react";

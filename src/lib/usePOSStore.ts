@@ -19,7 +19,7 @@ import {
   Shift as ShiftDetails,
   TimesheetEntry,
 } from "@/lib/config/entities";
-import { fetchData, updateShiftStatus } from "@/lib/api";
+import { fetchData, updateShiftStatus, deleteItem as deleteShiftApi } from "@/lib/api";
 
 // --- Types for Shift Management ---
 
@@ -33,7 +33,7 @@ export interface Employee {
   color?: string;
 }
 
-export interface Shift {
+export interface Shift extends ShiftDetails {
   id: string;
   employee_id: string;
   start: Date;
@@ -75,7 +75,7 @@ interface POSState {
 }
 
 interface POSActions {
-  loginStaff: (staff: EmployeeDetails) => Promise<void>;
+  loginStaff: (staff: EmployeeDetails) => Promise<CurrentStaff>;
   logoutStaff: () => void;
   setMenuItems: (items: Food[]) => void;
   setCategories: (categories: Category[]) => void;
@@ -115,7 +115,7 @@ interface POSActions {
   setShifts: (shifts: Shift[]) => void;
   addShift: (newShift: Shift) => void;
   updateShift: (shiftId: string, updates: Partial<Shift>) => void;
-  deleteShift: (shiftId: string) => void;
+  deleteShift: (shiftId: string) => Promise<{ success: boolean, error?: string }>;
   setCurrentTimesheetId: (id: string | null) => void;
   setKioskUserId: (id: string | null) => void;
 }
@@ -133,7 +133,6 @@ export const usePOSStore = create<POSState & POSActions>()(
       currentOrder: {
         id: "new-order",
         store_id: "default-store",
-        tenant_id: "tenant-231",
         table_id: null,
         customer_id: null,
         total_amount: 0,
@@ -195,45 +194,32 @@ export const usePOSStore = create<POSState & POSActions>()(
         }));
       },
 
-      // Update deleteShift to handle recurrence properly
-      deleteShift: async (shiftId: string) => {
+      deleteShift: async (shiftId: string): Promise<{ success: boolean; error?: string }> => {
         try {
-          const shift = get().shifts.find((s) => s.id === shiftId);
+            const shift = get().shifts.find((s) => s.id === shiftId);
 
-          if (shift?.recurring) {
-            // For recurring shifts, set recurrence_end_date instead of deleting
-            await updateShiftStatus(shiftId, false);
-            set((state) => ({
-              shifts: state.shifts.map((s) =>
-                s.id === shiftId
-                  ? {
-                      ...s,
-                      active: false,
-                      recurrence_end_date: new Date(
-                        s.start.getTime() - 7 * 24 * 60 * 60 * 1000
-                      ), // One week before
-                    }
-                  : s
-              ),
-            }));
-          } else {
-            // For non-recurring shifts, delete normally
-            await updateShiftStatus(shiftId, false);
-            set((state) => ({
-              shifts: state.shifts.map((s) =>
-                s.id === shiftId ? { ...s, active: false } : s
-              ),
-            }));
-          }
-
-          return { success: true };
+            if (shift?.recurring) {
+                // For recurring shifts, mark as inactive instead of deleting
+                await updateShiftStatus(shiftId, false);
+                set((state) => ({
+                    shifts: state.shifts.map((s) =>
+                        s.id === shiftId
+                            ? { ...s, active: false }
+                            : s
+                    ),
+                }));
+            } else {
+                // For non-recurring shifts, delete from the database
+                await deleteShiftApi("shifts", shiftId);
+                set((state) => ({
+                    shifts: state.shifts.filter((s) => s.id !== shiftId),
+                }));
+            }
+            return { success: true };
         } catch (error: any) {
-          return {
-            success: false,
-            error: error.message || "An error occurred.",
-          };
+            return { success: false, error: error.message || "An error occurred." };
         }
-      },
+    },
 
       logAccessAttempt: (userId, userName, userRole, attemptedPath) => {
         set((state) => {
@@ -299,8 +285,7 @@ export const usePOSStore = create<POSState & POSActions>()(
 
           if (!mainAccessRole) {
             console.error("Main access role not found for staff:", staff);
-            set({ currentStaff: null });
-            return;
+            throw new Error("Main access role not found for staff.");
           }
 
           const staffWithRoles: CurrentStaff = {
@@ -346,9 +331,12 @@ export const usePOSStore = create<POSState & POSActions>()(
               tables: updatedTables,
             };
           });
+
+          return staffWithRoles;
         } catch (error) {
           console.error("Error during staff login:", error);
           set({ currentStaff: null });
+          throw error;
         }
       },
 
@@ -498,7 +486,6 @@ export const usePOSStore = create<POSState & POSActions>()(
             currentOrder: {
               id: "new-order",
               store_id: currentStaff?.storeId || "default-store",
-              tenant_id: "tenant-231",
               table_id: null,
               customer_id: null,
               total_amount: 0,
@@ -560,7 +547,7 @@ export const usePOSStore = create<POSState & POSActions>()(
           const subtotal = state.currentOrder.subtotal_amount;
           let discount = 0;
           if (type === "percentage") {
-            discount = subtotal * (value / 100);
+            discount = subtotal * value;
           } else {
             discount = value;
           }
@@ -625,7 +612,6 @@ export const usePOSStore = create<POSState & POSActions>()(
             currentOrder: {
               id: "new-order",
               store_id: get().currentStaff?.storeId || "default-store",
-              tenant_id: "tenant-231",
               table_id: null,
               customer_id: null,
               total_amount: 0,

@@ -1,155 +1,210 @@
 // src/app/payment/success/page.tsx
 "use client";
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import {
-	Box,
-	Container,
-	Heading,
-	Text,
-	VStack,
-	Button,
-	Alert,
-	AlertIcon,
-	Spinner,
-	Card,
-	CardBody,
-	Icon
+    Box,
+    Container,
+    Heading,
+    Text,
+    VStack,
+    Button,
+    // FIX: Import Alert sub-components
+    Alert,
+    AlertIcon,
+    AlertTitle,
+    AlertDescription,
+    Spinner,
+    // FIX: Import Card and its sub-components
+    Card,
+    CardBody,
+    Icon,
+    StackProps,
+    ButtonProps
 } from '@chakra-ui/react';
-import { FaCheckCircle, FaShoppingCart, FaHome } from 'react-icons/fa';
+import { FaCheckCircle, FaHome, FaTimesCircle } from 'react-icons/fa';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function PaymentSuccess() {
-	const searchParams = useSearchParams();
-	const router = useRouter();
-	const [isLoading, setIsLoading] = useState(true);
-	const [orderDetails, setOrderDetails] = useState<any>(null);
+function PaymentStatus() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'failed'>('verifying');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [orderDetails, setOrderDetails] = useState<any>(null);
 
-	const orderId = searchParams.get('order_id');
-	const pfPaymentId = searchParams.get('pf_payment_id');
-	const paymentStatus = searchParams.get('payment_status');
+    const reference = searchParams.get('reference');
+    const trxref = searchParams.get('trxref'); // Paystack also uses trxref
 
-	useEffect(() => {
-		// Simulate loading order details
-		const loadOrderDetails = async () => {
-			try {
-				// In a real app, you would fetch order details from your API
-				await new Promise(resolve => setTimeout(resolve, 2000));
+    useEffect(() => {
+        const verifyPayment = async () => {
+            const paystackRef = reference || trxref;
+            if (!paystackRef) {
+                setVerificationStatus('failed');
+                setErrorMessage('No payment reference found in the URL. Your payment might not have been processed correctly.');
+                return;
+            }
 
-				setOrderDetails({
-					id: orderId,
-					total: 150.00, // This would come from your API
-					items: 3, // This would come from your API
-					estimatedTime: '20-30 minutes'
-				});
-			} catch (error) {
-				console.error('Error loading order details:', error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+            try {
+                // Call our own backend endpoint for verification
+                const response = await fetch(`/api/paystack/verify?reference=${paystackRef}`);
+                const result = await response.json();
 
-		loadOrderDetails();
-	}, [orderId]);
+                if (response.ok && result.status === 'success') {
+                    // Payment is successful and verified on the backend
+                    setVerificationStatus('success');
+                    const orderIdFromResult = result.data?.metadata?.custom_fields?.find(
+                        (f: any) => f.variable_name === 'order_id'
+                    )?.value;
+                    setOrderDetails({
+                        id: orderIdFromResult,
+                        total: result.data.amount / 100, // Convert from kobo/cents
+                        reference: result.data.reference
+                    });
+                    
+                    // You can optionally update your main backend order status here if needed
+                    // await fetch(`http://127.0.0.1:8000/api/orders/${orderIdFromResult}`, { method: 'PUT', ... });
 
-	const handleBackToMenu = () => {
-		router.push('/');
-	};
+                } else {
+                    // Verification failed on the backend
+                    setVerificationStatus('failed');
+                    setErrorMessage(result.message || 'Payment verification failed. Please contact support.');
+                }
+            } catch (error) {
+                // Network or other errors during verification
+                setVerificationStatus('failed');
+                setErrorMessage('An error occurred while verifying your payment. Please contact support if you have been charged.');
+            }
+        };
 
-	const handleViewOrder = () => {
-		if (orderId) {
-			router.push(`/orders/${orderId}`);
-		}
-	};
+        verifyPayment();
+    }, [reference, trxref]);
 
-	return (
-		<Container maxW="container.md" py={10}>
-			<VStack spacing={6} textAlign="center">
-				{/* Success Icon */}
-				<Icon as={FaCheckCircle} w={20} h={20} color="green.500" />
+    const handleBackToMenu = () => {
+        // This should ideally redirect back to the specific customer menu
+        // For now, we'll redirect to a generic page
+        router.push('/'); 
+    };
 
-				{/* Main Heading */}
-				<Heading as="h1" size="2xl" color="green.600">
-					Payment Successful!
-				</Heading>
+    const handleViewOrder = () => {
+        if (orderDetails?.id) {
+            // Redirect to an order status page if you have one
+            // router.push(`/order-status/${orderDetails.id}`);
+        }
+    };
 
-				{/* Subtitle */}
-				<Text fontSize="xl" color="gray.600">
-					Thank you for your order
-				</Text>
+    return (
+        // FIX: Removed redundant `as` prop
+        <VStack spacing={6} textAlign="center">
+            {verificationStatus === 'verifying' && (
+                <>
+                    {/* FIX: Removed incorrect `thickness` prop */}
+                    <Spinner size="xl" color="blue.500" />
+                    <Heading as="h1" size="xl" color="gray.700">
+                        Verifying Payment...
+                    </Heading>
+                    <Text fontSize="lg" color="gray.500">
+                        Please wait while we securely confirm your transaction. Do not close this page.
+                    </Text>
+                </>
+            )}
 
-				{isLoading ? (
-					<VStack spacing={4}>
-						<Spinner size="xl" color="green.500" />
-						<Text>Loading your order details...</Text>
-					</VStack>
-				) : (
-					<Card w="100%" maxW="400px">
-						<CardBody>
-							<VStack spacing={4}>
-								<Text fontWeight="bold" fontSize="lg">
-									Order #{orderId}
-								</Text>
+            {verificationStatus === 'success' && (
+                <>
+                    <Icon as={FaCheckCircle} w={20} h={20} color="green.500" />
+                    <Heading as="h1" size="2xl" color="green.600">
+                        Payment Successful!
+                    </Heading>
+                    <Text fontSize="xl" color="gray.600">
+                        Thank you for your order.
+                    </Text>
+                    {/* FIX: Use Card directly */}
+                    <Card w="100%" maxW="400px" variant="outline">
+                        {/* FIX: Use CardBody directly */}
+                        <CardBody>
+                            {/* FIX: Removed redundant `as` prop */}
+                            <VStack spacing={4}>
+                                <Text fontWeight="bold" fontSize="lg">
+                                    Order #{orderDetails?.id || 'N/A'}
+                                </Text>
+                                {orderDetails?.reference && (
+                                    <Text fontSize="sm" color="gray.600">
+                                        Payment Reference: {orderDetails.reference}
+                                    </Text>
+                                )}
+                                {orderDetails?.total && (
+                                    <Text>
+                                        Total: <strong>R {orderDetails.total.toFixed(2)}</strong>
+                                    </Text>
+                                )}
+                            </VStack>
+                        </CardBody>
+                    </Card>
+                    {/* FIX: Use Alert directly */}
+                    <Alert status="success" borderRadius="md">
+                        {/* FIX: Use AlertIcon directly */}
+                        <AlertIcon />
+                        Your payment has been processed successfully and your order is being prepared.
+                    </Alert>
+                    {/* FIX: Removed redundant `as` prop */}
+                    <VStack spacing={3} w="100%" maxW="300px">
+                        {/* FIX: Removed redundant `as` prop and fixed leftIcon prop */}
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            w="100%"
+                            leftIcon={<FaHome />}
+                            onClick={handleBackToMenu}
+                        >
+                            Back to Menu
+                        </Button>
+                    </VStack>
+                </>
+            )}
 
-								{pfPaymentId && (
-									<Text fontSize="sm" color="gray.600">
-										Payment Reference: {pfPaymentId}
-									</Text>
-								)}
+            {verificationStatus === 'failed' && (
+                <>
+                    <Icon as={FaTimesCircle} w={20} h={20} color="red.500" />
+                    <Heading as="h1" size="2xl" color="red.600">
+                        Payment Verification Failed
+                    </Heading>
+                    {/* FIX: Use Alert directly */}
+                    <Alert status="error" borderRadius="md">
+                        {/* FIX: Use AlertIcon directly */}
+                        <AlertIcon />
+                        <Box>
+                            {/* FIX: Use AlertTitle directly */}
+                            <AlertTitle>Verification Error</AlertTitle>
+                            {/* FIX: Use AlertDescription directly */}
+                            <AlertDescription>
+                                {errorMessage || 'We could not confirm your payment. Please contact support if you have been charged.'}
+                            </AlertDescription>
+                        </Box>
+                    </Alert>
+                    {/* FIX: Removed redundant `as` prop */}
+                    <VStack spacing={3} w="100%" maxW="300px">
+                        {/* FIX: Removed redundant `as` prop and fixed leftIcon prop */}
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            w="100%"
+                            leftIcon={<FaHome />}
+                            onClick={handleBackToMenu}
+                        >
+                            Back to Menu
+                        </Button>
+                    </VStack>
+                </>
+            )}
+        </VStack>
+    );
+}
 
-								{orderDetails && (
-									<>
-										<Text>
-											Total: <strong>R {orderDetails.total.toFixed(2)}</strong>
-										</Text>
-										<Text>
-											Items: <strong>{orderDetails.items}</strong>
-										</Text>
-										<Text>
-											Estimated Preparation Time: <strong>{orderDetails.estimatedTime}</strong>
-										</Text>
-									</>
-								)}
-							</VStack>
-						</CardBody>
-					</Card>
-				)}
-
-				{/* Success Alert */}
-				<Alert status="success" borderRadius="md">
-					<AlertIcon />
-					Your payment has been processed successfully. You will receive a confirmation email shortly.
-				</Alert>
-
-				{/* Action Buttons */}
-				<VStack spacing={3} w="100%" maxW="300px">
-					<Button
-						colorScheme="green"
-						size="lg"
-						w="100%"
-						leftIcon={<FaShoppingCart />}
-						onClick={handleViewOrder}
-						isDisabled={!orderId}
-					>
-						View Order Details
-					</Button>
-
-					<Button
-						variant="outline"
-						size="lg"
-						w="100%"
-						leftIcon={<FaHome />}
-						onClick={handleBackToMenu}
-					>
-						Back to Menu
-					</Button>
-				</VStack>
-
-				{/* Additional Info */}
-				<Text fontSize="sm" color="gray.500" mt={4}>
-					If you have any questions about your order, please contact our support team.
-				</Text>
-			</VStack>
-		</Container>
-	);
+export default function PaymentSuccessPage() {
+    return (
+        <Container maxW="container.md" py={10}>
+            <Suspense fallback={<Spinner />}>
+                <PaymentStatus />
+            </Suspense>
+        </Container>
+    );
 }

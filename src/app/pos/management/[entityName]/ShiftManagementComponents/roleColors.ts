@@ -1,13 +1,5 @@
-// Shared role color utilities for consistent coloring across components
-
-export interface Employee {
-  id: string;
-  name?: string;
-  role: string;
-  color?: string;
-  first_name: string;
-  last_name: string;
-}
+// src/app/pos/management/[entityName]/ShiftManagementComponents/roleColors.ts
+import { Employee } from '../ShiftManagement';
 
 // Generate consistent colors based on role names
 export const generateRoleColors = (employees: Employee[]): Record<string, string> => {
@@ -35,9 +27,8 @@ export const generateRoleColors = (employees: Employee[]): Record<string, string
   ];
 
   // Assign colors to roles
-  uniqueRoles.forEach((role, index) => {
+  uniqueRoles.sort().forEach((role, index) => {
     if (role) {
-      // Use predefined color if available, otherwise generate from palette
       roleColors[role] = colorPalette[index % colorPalette.length];
     }
   });

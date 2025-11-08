@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
+    // FIX: Import Modal and its parts
     Modal,
     ModalOverlay,
     ModalContent,
@@ -13,10 +14,13 @@ import {
     VStack,
     Text,
     useToast,
+    // FIX: Import Alert and its parts
     Alert,
     AlertIcon,
 } from "@chakra-ui/react";
 import { Table } from "@/lib/config/entities";
+import QRCodeModal from "./QRCodeModal"; // Import the new component
+import { usePOSStore } from "@/lib/usePOSStore";
 
 interface TableActionModalProps {
     isOpen: boolean;
@@ -26,95 +30,63 @@ interface TableActionModalProps {
     onViewOrder: (orderId: string) => void;
 }
 
-const TableActionModal: React.FC<TableActionModalProps> = ({
+export default function TableActionModal({
     isOpen,
     onClose,
     table,
     onMarkTableFree,
     onViewOrder,
-}) => {
-    const toast = useToast();
+}: TableActionModalProps) {
+    const { currentStaff } = usePOSStore();
+    const tenantDomain = currentStaff?.tenant_id;
+    const shopId = currentStaff?.storeId;
 
-    const handleFreeTable = async () => {
-        if (!table) return;
-
-        try {
-            await onMarkTableFree(table.id);
-            toast({
-                title: "Table Freed",
-                description: `Table ${table.name} has been marked as free.`,
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-            });
-            onClose();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: "Failed to free the table.",
-                status: "error",
-                duration: 3000,
-                isClosable: true,
-            });
-        }
-    };
+    const [isQrModalOpen, setQrModalOpen] = useState(false);
 
     if (!table) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="md">
-            <ModalOverlay />
-            <ModalContent>
-                <ModalHeader>Table {table.name} - Actions</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody>
-                    <VStack spacing={4} align="stretch">
-                        <Text fontWeight="bold">Status: {table.status}</Text>
-                        <Text>Capacity: {table.capacity} seats</Text>
-
-                        {table.status === "occupied" && table.current_order_id && (
-                            <>
-                                <Alert status="info">
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} isCentered>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Actions for {table.name}</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <VStack spacing={4}>
+                            {table.status === 'occupied' && table.current_order_id ? (
+                                <>
+                                    <Button colorScheme="blue" onClick={() => onViewOrder(table.current_order_id!)} width="full">
+                                        View/Edit Order #{table.current_order_id}
+                                    </Button>
+                                    <Button colorScheme="orange" onClick={() => onMarkTableFree(table.id)} width="full">
+                                        Mark as Free (Clear Order)
+                                    </Button>
+                                </>
+                            ) : (
+                                <Alert status="success">
                                     <AlertIcon />
-                                    This table is currently occupied with order #{table.current_order_id}
+                                    This table is currently available.
                                 </Alert>
-                                <Button
-                                    colorScheme="blue"
-                                    onClick={() => {
-                                        onViewOrder(table.current_order_id!);
-                                        onClose();
-                                    }}
-                                >
-                                    View Order
-                                </Button>
-                            </>
-                        )}
-
-                        {table.status === "occupied" && (
-                            <Button
-                                colorScheme="green"
-                                onClick={handleFreeTable}
-                            >
-                                Mark Table as Free
+                            )}
+                            <Button onClick={() => setQrModalOpen(true)} width="full" variant="outline">
+                                Generate QR Code
                             </Button>
-                        )}
+                        </VStack>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button onClick={onClose}>Close</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
 
-                        {table.status === "free" && (
-                            <Alert status="success">
-                                <AlertIcon />
-                                This table is currently available
-                            </Alert>
-                        )}
-                    </VStack>
-                </ModalBody>
-                <ModalFooter>
-                    <Button variant="ghost" onClick={onClose}>
-                        Close
-                    </Button>
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
+            <QRCodeModal
+                isOpen={isQrModalOpen}
+                onClose={() => setQrModalOpen(false)}
+                table={{id: table.id, name: table.name}}
+                shopId={shopId}
+                tenantDomain={tenantDomain}
+            />
+        </>
     );
-};
-
-export default TableActionModal;
+}

@@ -3,12 +3,13 @@
 
 import { usePOSStore } from "@/lib/usePOSStore";
 import { clockIn, clockOut } from "@/lib/api";
+// FIX: Import useToast
 import { Button, useToast, Center, Spinner, Text, Box } from "@chakra-ui/react";
 import React, { useState } from "react";
 import { FaClock, FaSignOutAlt } from "react-icons/fa";
 
 export default function ClockInOutButton() {
-    const { currentStaff, currentTimesheetId, setCurrentTimesheetId, loginStaff } = usePOSStore();
+    const { currentStaff, currentTimesheetId, setCurrentTimesheetId } = usePOSStore();
     const toast = useToast();
     const [isLoading, setIsLoading] = useState(false);
 
@@ -25,10 +26,10 @@ export default function ClockInOutButton() {
     const handleClockIn = async () => {
         if (!currentStaff) {
             toast({
-                title: "Not Logged In",
-                description: "You must be logged in to clock in.",
+                title: "Error",
+                description: "No employee selected. Please log in as an employee.",
                 status: "error",
-                duration: 3000,
+                duration: 5000,
                 isClosable: true,
             });
             return;
@@ -41,15 +42,16 @@ export default function ClockInOutButton() {
             sessionStorage.setItem('currentTimesheetId', newTimesheet.id);
             toast({
                 title: "Clocked In",
-                description: `You have successfully clocked in at ${new Date().toLocaleTimeString()}.`,
+                description: `Successfully clocked in at ${new Date().toLocaleTimeString()}.`,
                 status: "success",
-                duration: 5000,
+                duration: 3000,
                 isClosable: true,
             });
         } catch (error) {
+            console.error("Failed to clock in", error);
             toast({
-                title: "Clock In Failed",
-                description: `An error occurred: ${error instanceof Error ? error.message : String(error)}`,
+                title: "Error",
+                description: "Failed to clock in. Please try again.",
                 status: "error",
                 duration: 5000,
                 isClosable: true,
@@ -78,15 +80,16 @@ export default function ClockInOutButton() {
             sessionStorage.removeItem('currentTimesheetId');
             toast({
                 title: "Clocked Out",
-                description: `You have successfully clocked out at ${new Date().toLocaleTimeString()}.`,
+                description: `Successfully clocked out at ${new Date().toLocaleTimeString()}.`,
                 status: "success",
                 duration: 5000,
                 isClosable: true,
             });
         } catch (error) {
+            console.error("Failed to clock out", error);
             toast({
-                title: "Clock Out Failed",
-                description: `An error occurred: ${error instanceof Error ? error.message : String(error)}`,
+                title: "Error",
+                description: "Failed to clock out. Please try again.",
                 status: "error",
                 duration: 5000,
                 isClosable: true,
@@ -109,12 +112,14 @@ export default function ClockInOutButton() {
                             {isClockedIn ? "Clocked In" : "Clocked Out"}
                         </Text>
                     </Text>
+                    {/* FIX: Corrected button props */}
                     <Button
-                        colorScheme={isClockedIn ? "red" : "green"}
+                        colorScheme={isClockedIn ? 'red' : 'green'}
                         leftIcon={isClockedIn ? <FaSignOutAlt /> : <FaClock />}
                         onClick={isClockedIn ? handleClockOut : handleClockIn}
                         isLoading={isLoading}
                         size="lg"
+                        isDisabled={!currentStaff}
                     >
                         {isClockedIn ? "Clock Out" : "Clock In"}
                     </Button>

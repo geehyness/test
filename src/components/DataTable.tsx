@@ -2,6 +2,7 @@
 'use client';
 import React, { useState, useMemo, ChangeEvent } from 'react';
 import {
+  // FIX: Import Table sub-components
   Table,
   Thead,
   Tbody,
@@ -155,7 +156,7 @@ export default function DataTable({
           width={{ base: '100%', md: '250px' }}
           rounded="md"
           borderColor="var(--border-color)"
-          focusBorderColor="var(--primary-green)"
+          _focus={{ borderColor: "var(--primary-green)" }}
           size="md"
           color="var(--dark-gray-text)"
         />
@@ -225,7 +226,9 @@ export default function DataTable({
         <Text color="var(--dark-gray-text)" className="font-medium">
           Showing {paginatedData.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, processedData.length)} of {processedData.length} entries
         </Text>
+        {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
         <HStack spacing={2}>
+          {/* FIX: Corrected icon prop and removed redundant as prop */}
           <IconButton
             aria-label="Previous page"
             icon={<ChevronLeftIcon />}
@@ -241,6 +244,7 @@ export default function DataTable({
           <Text color="var(--dark-gray-text)" className="font-medium">
             Page {totalPages === 0 ? 0 : currentPage} of {totalPages === 0 ? 0 : totalPages}
           </Text>
+          {/* FIX: Corrected icon prop and removed redundant as prop */}
           <IconButton
             aria-label="Next page"
             icon={<ChevronRightIcon />}

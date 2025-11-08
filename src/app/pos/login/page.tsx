@@ -1,19 +1,20 @@
 // src/app/pos/login/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Flex,
-  FormControl,
-  FormLabel,
-  Input,
   Button,
   Heading,
   Text,
   Image as ChakraImage,
   VStack,
-  useToast
+  Input,
+  FormControl,
+  FormLabel,
+  useToast,
+  StackProps
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { usePOSStore } from '../../../lib/usePOSStore';
@@ -25,7 +26,14 @@ export default function POSLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
   const router = useRouter();
-  const { loginStaff } = usePOSStore();
+  const { loginStaff, currentStaff, _hasHydrated } = usePOSStore();
+
+  // This effect handles users who are already logged in and land on this page.
+  useEffect(() => {
+    if (_hasHydrated && currentStaff?.mainAccessRole?.landing_page) {
+      router.replace(currentStaff.mainAccessRole.landing_page);
+    }
+  }, [_hasHydrated, currentStaff, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +53,25 @@ export default function POSLoginPage() {
     }
 
     try {
-      console.log('Attempting login with:', { email, password });
+      console.log('Attempting login with:', { email });
       const employee = await loginEmployee(email, password);
-      console.log('Login successful, employee:', employee);
+      console.log('Login successful, employee data received:', employee);
 
-      await loginStaff(employee);
+      const staffWithRoles = await loginStaff(employee);
+
+      if (staffWithRoles?.mainAccessRole?.landing_page) {
+        router.replace(staffWithRoles.mainAccessRole.landing_page);
+      } else {
+        // Fallback redirection if landing_page is not defined
+        toast({
+          title: 'Configuration Warning',
+          description: 'No landing page set for your role. Redirecting to dashboard.',
+          status: 'warning',
+          duration: 4000,
+          isClosable: true,
+        });
+        router.replace('/pos/dashboard');
+      }
 
     } catch (error) {
       console.error('Login failed:', error);
@@ -108,7 +130,7 @@ export default function POSLoginPage() {
                   size="lg"
                   rounded="md"
                   borderColor="var(--border-color)"
-                  focusBorderColor="var(--primary-green)"
+                  _focus={{ borderColor: "var(--primary-green)"}}
                   color="var(--dark-gray-text)"
                   autoComplete="username"
                 />
@@ -124,7 +146,7 @@ export default function POSLoginPage() {
                   size="lg"
                   rounded="md"
                   borderColor="var(--border-color)"
-                  focusBorderColor="var(--primary-green)"
+                  _focus={{ borderColor: "var(--primary-green)"}}
                   color="var(--dark-gray-text)"
                   autoComplete="current-password"
                 />

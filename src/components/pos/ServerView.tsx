@@ -9,6 +9,7 @@ import {
   Spacer,
   Badge,
   SimpleGrid,
+  // FIX: Import useToast
   useToast,
   HStack,
 } from "@chakra-ui/react";
@@ -84,7 +85,7 @@ const ServerView: React.FC<ServerViewProps> = ({
         </Text>
       </Flex>
       <VStack align="stretch" spacing={2} mb={4}>
-        {order.items.map((item, index) => (
+        {(order.items || []).map((item, index) => (
           <Text
             key={index}
             fontSize="lg"

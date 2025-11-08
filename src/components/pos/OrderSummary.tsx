@@ -10,6 +10,7 @@ import {
   Text,
   HStack,
   IconButton,
+  // FIX: Import Divider
   Divider,
   Spacer,
   Badge,
@@ -48,7 +49,7 @@ export default function OrderSummary({
       </Flex>
 
       <VStack spacing={3} align="stretch" maxH="400px" overflowY="auto" pr={2}>
-        {currentOrder.items.length === 0 ? (
+        {(currentOrder.items || []).length === 0 ? (
           <Text textAlign="center" py={10} color="var(--medium-gray-text)">
             No items in the current order.
           </Text>
@@ -143,7 +144,7 @@ export default function OrderSummary({
         <Flex justify="space-between">
           <Text color="var(--medium-gray-text)">
             Tax (
-            {currentOrder.tax_amount > 0
+            {(currentOrder.tax_amount && currentOrder.subtotal_amount)
               ? (
                 (currentOrder.tax_amount /
                   (currentOrder.subtotal_amount || 1)) *

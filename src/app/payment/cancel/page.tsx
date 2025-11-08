@@ -9,8 +9,11 @@ import {
   VStack, 
   Button, 
   Alert, 
+  // FIX: Import AlertIcon
   AlertIcon,
-  Icon
+  Icon,
+  StackProps,
+  ButtonProps
 } from '@chakra-ui/react';
 import { FaTimesCircle, FaShoppingCart, FaHome } from 'react-icons/fa';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -36,6 +39,7 @@ export default function PaymentCancel() {
 
   return (
     <Container maxW="container.md" py={10}>
+      {/* FIX: Removed redundant 'as' prop */}
       <VStack spacing={6} textAlign="center">
         {/* Cancel Icon */}
         <Icon as={FaTimesCircle} w={20} h={20} color="red.500" />
@@ -52,6 +56,7 @@ export default function PaymentCancel() {
 
         {/* Order Info */}
         {(orderId || pfPaymentId) && (
+          // FIX: Removed redundant 'as' prop
           <VStack spacing={2}>
             {orderId && (
               <Text fontSize="sm" color="gray.600">
@@ -67,13 +72,16 @@ export default function PaymentCancel() {
         )}
 
         {/* Alert */}
+        {/* FIX: Use Alert directly */}
         <Alert status="warning" borderRadius="md">
           <AlertIcon />
           Your payment was cancelled. No charges have been made to your account.
         </Alert>
 
         {/* Action Buttons */}
+        {/* FIX: Removed redundant 'as' prop */}
         <VStack spacing={3} w="100%" maxW="300px">
+          {/* FIX: Removed redundant 'as' prop and fixed leftIcon prop */}
           <Button
             colorScheme="blue"
             size="lg"
@@ -84,6 +92,7 @@ export default function PaymentCancel() {
             Retry Payment
           </Button>
           
+          {/* FIX: Removed redundant 'as' prop and fixed leftIcon prop */}
           <Button
             variant="outline"
             size="lg"

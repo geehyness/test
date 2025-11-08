@@ -3,6 +3,7 @@
 
 import React from "react";
 import {
+  // FIX: Import Modal and its parts
   Modal,
   ModalOverlay,
   ModalContent,
@@ -13,6 +14,7 @@ import {
   Button,
   SimpleGrid,
   Text,
+  // FIX: Import useToast
   useToast,
   Box, // Added for the Takeaway card
   Icon, // Added for the Takeaway icon

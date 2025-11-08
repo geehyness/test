@@ -7,6 +7,7 @@ import {
     Heading,
     Text,
     VStack,
+    // FIX: Import Table components
     Table,
     Thead,
     Tbody,
@@ -17,15 +18,18 @@ import {
     Spinner,
     Center,
     Alert,
+    // FIX: Import Alert sub-components
     AlertIcon,
     AlertTitle,
     AlertDescription,
     Input,
     InputGroup,
+    // FIX: Import Input sub-components
     InputLeftElement,
     Select,
     HStack,
     Spacer,
+    StackProps
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { usePOSStore } from "../../../../lib/usePOSStore";
@@ -92,10 +96,9 @@ export default function AccessReportsPage() {
     if (loading) {
         return (
             <Center minH="100vh" bg="var(--light-gray-bg)">
+                {/* FIX: Removed invalid `thickness` prop */}
                 <Spinner
                     size="xl"
-                    thickness="4px"
-                    speed="0.65s"
                     emptyColor="gray.200"
                     color="var(--primary-green)"
                 />
@@ -119,8 +122,10 @@ export default function AccessReportsPage() {
                 This report tracks attempts by employees to access pages they are not authorized for.
             </Text>
 
+            {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
             <HStack mb={6} spacing={4}>
                 <InputGroup flex="1">
+                    {/* FIX: Use InputLeftElement */}
                     <InputLeftElement pointerEvents="none">
                         <SearchIcon color="gray.300" />
                     </InputLeftElement>
@@ -130,7 +135,7 @@ export default function AccessReportsPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         rounded="md"
                         borderColor="var(--border-color)"
-                        focusBorderColor="var(--primary-green)"
+                        _focus={{ borderColor: "var(--primary-green)"}}
                         color="var(--dark-gray-text)"
                     />
                 </InputGroup>
@@ -141,7 +146,7 @@ export default function AccessReportsPage() {
                     width="200px"
                     rounded="md"
                     borderColor="var(--border-color)"
-                    focusBorderColor="var(--primary-green)"
+                    _focus={{ borderColor: "var(--primary-green)"}}
                     color="var(--dark-gray-text)"
                 >
                     <option value="all">All Roles</option>
@@ -152,6 +157,7 @@ export default function AccessReportsPage() {
             </HStack>
 
             {filteredReports.length === 0 ? (
+                // FIX: Use Alert sub-components
                 <Alert status="info" rounded="md" shadow="sm">
                     <AlertIcon />
                     <AlertTitle>No Matching Reports</AlertTitle>

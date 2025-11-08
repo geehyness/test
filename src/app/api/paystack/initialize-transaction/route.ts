@@ -1,15 +1,19 @@
 // src/app/api/paystack/initialize-transaction/route.ts
 
 import { NextResponse } from 'next/server';
-// You will need to install this library: npm install paystack-api
-import Paystack from 'paystack-api';
+import axios from 'axios';
 
-// Initialize the Paystack client with your secret key from .env.local
-// It's crucial to only use the Secret Key (sk_...) here, not the Public Key (pk_...).
 if (!process.env.PAYSTACK_SECRET_KEY) {
 	throw new Error("PAYSTACK_SECRET_KEY is not defined in environment variables.");
 }
-const paystack = Paystack(process.env.PAYSTACK_SECRET_KEY);
+
+const paystackAxios = axios.create({
+    baseURL: 'https://api.paystack.co',
+    headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+    },
+});
 
 export async function POST(request: Request) {
 	try {
@@ -19,8 +23,7 @@ export async function POST(request: Request) {
 			return NextResponse.json({ message: 'Missing required fields: amount, email, currency, orderId, or callbackUrl' }, { status: 400 });
 		}
 
-		// Initialize transaction with Paystack API
-		const transaction = await paystack.transaction.initialize({
+		const body = {
 			amount: amount, // Must be in the lowest currency unit (Kobo/Cents), e.g., ZAR * 100
 			email: email,
 			currency: currency, // Should be "ZAR"
@@ -35,7 +38,9 @@ export async function POST(request: Request) {
 					},
 				],
 			},
-		});
+		};
+
+		const { data: transaction } = await paystackAxios.post('/transaction/initialize', body);
 
 		if (transaction.status === true) {
 			// Return the authorization URL to the client for redirection
@@ -47,6 +52,9 @@ export async function POST(request: Request) {
 
 	} catch (error) {
 		console.error('Error initializing Paystack transaction:', error);
+        if (axios.isAxiosError(error)) {
+            return NextResponse.json({ message: error.response?.data?.message || 'Paystack API error' }, { status: error.response?.status || 500 });
+        }
 		return NextResponse.json({ message: 'Internal server error while initializing payment' }, { status: 500 });
 	}
 }

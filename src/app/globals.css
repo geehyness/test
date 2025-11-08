@@ -267,3 +267,12 @@ a {
 .rbc-addons-dnd-resize-ew-anchor:hover {
   background-color: rgba(0, 0, 0, 0.4) !important;
 }
+
+.scrollable-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollable-tabs {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

@@ -10,15 +10,19 @@ import {
     Center,
     VStack,
     InputGroup,
-    Input,
+    // FIX: Import Input sub-components
     InputLeftElement,
+    InputRightElement,
+    Input,
     Flex,
     Button,
-    useToast,
+    // FIX: Import Tag
     Tag,
     HStack,
     Spacer,
-    InputRightElement,
+    // FIX: Import useToast
+    useToast,
+    StackProps
 } from "@chakra-ui/react";
 import { FaUser, FaSearch } from "react-icons/fa";
 import { usePOSStore } from "@/lib/usePOSStore";
@@ -46,7 +50,7 @@ const ClockInOutPage: React.FC = () => {
         try {
             const [fetchedEmployees, fetchedTimesheets] = await Promise.all([
                 getEmployees(),
-                setTimesheetEntries(),
+                getTimesheets(),
             ]);
             setEmployees(fetchedEmployees);
             setTimesheetEntries(fetchedTimesheets);
@@ -83,7 +87,7 @@ const ClockInOutPage: React.FC = () => {
         return employees.filter(
             (emp) =>
                 emp.first_name.toLowerCase().includes(lowerCaseQuery) ||
-                emp.last_name.toLowerCase().includes(lowerCaseQuery)
+                (emp.last_name && emp.last_name.toLowerCase().includes(lowerCaseQuery))
         );
     }, [employees, searchQuery]);
 
@@ -100,7 +104,7 @@ const ClockInOutPage: React.FC = () => {
         try {
             if (currentEntry) {
                 // Clock Out
-                await clockOut(currentEntry.id);
+                await clockOut(currentEntry.id, currentStaff?.store_id);
                 toast({
                     title: "Clocked Out",
                     description: "You have been successfully clocked out.",
@@ -110,7 +114,7 @@ const ClockInOutPage: React.FC = () => {
                 });
             } else {
                 // Clock In
-                await clockIn(employeeId);
+                await clockIn(employeeId, currentStaff?.store_id || '');
                 toast({
                     title: "Clocked In",
                     description: "You have been successfully clocked in.",
@@ -145,6 +149,7 @@ const ClockInOutPage: React.FC = () => {
 
     return (
         <Box p={8} bg="var(--light-gray-bg)" minH="100vh">
+            {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
             <VStack spacing={6} align="stretch" maxW="lg" mx="auto">
                 <Heading as="h1" size="xl" textAlign="center" color="var(--dark-gray-text)">
                     Employee Kiosk
@@ -156,14 +161,16 @@ const ClockInOutPage: React.FC = () => {
                 <InputGroup size="lg" shadow="md">
                     <InputLeftElement
                         pointerEvents="none"
-                        children={<FaSearch color="var(--medium-gray-text)" />}
-                    />
+                    >
+                        <FaSearch color="var(--medium-gray-text)" />
+                    </InputLeftElement>
                     <Input
                         type="text"
                         placeholder="Search for your name"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        variant="filled"
+                        // FIX: Changed `variant` to a valid value
+                        variant="outline"
                         bg="white"
                         borderRadius="md"
                         _focus={{ borderColor: "var(--primary-green)", boxShadow: "0 0 0 1px var(--primary-green)" }}
@@ -177,6 +184,7 @@ const ClockInOutPage: React.FC = () => {
                     )}
                 </InputGroup>
 
+                {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
                 <VStack spacing={4} align="stretch">
                     {filteredEmployees.length > 0 ? (
                         filteredEmployees.map((employee) => {
@@ -190,6 +198,7 @@ const ClockInOutPage: React.FC = () => {
                                     bg="white"
                                     shadow="sm"
                                 >
+                                    {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
                                     <HStack spacing={4} align="center">
                                         <Box flex="1">
                                             <Flex align="center">

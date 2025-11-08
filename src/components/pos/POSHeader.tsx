@@ -2,11 +2,13 @@
 "use client";
 
 import {
+  // FIX: Import Avatar
   Avatar,
   Box,
   Flex,
   HStack,
   IconButton,
+  // FIX: Import Menu and its parts
   Menu,
   MenuButton,
   MenuDivider,
@@ -14,6 +16,7 @@ import {
   MenuList,
   Text,
   VStack,
+  // FIX: Import useColorModeValue
   useColorModeValue,
   Image as ChakraImage,
 } from "@chakra-ui/react";

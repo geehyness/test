@@ -209,8 +209,8 @@ export interface Reservation {
 export interface Shift {
   id: string;
   employee_id: string;
-  start: Date; // ISO string
-  end: Date; // ISO string
+  start: string; // ISO string
+  end: string; // ISO string
   title?: string;
   employee_name?: string;
   color?: string;
@@ -219,22 +219,6 @@ export interface Shift {
   recurring?: boolean;
   updated_at?: string;
   created_at?: string;
-  isDraft?: boolean;
-}
-
-// New interfaces for enhanced draft management
-export interface DraftShift extends Omit<Shift, "id"> {
-  id: string; // Can be draft IDs
-  isDraft: boolean;
-  published?: boolean;
-  original_shift_id?: string; // For tracking which published shift this draft modifies
-  marked_for_deletion?: boolean; // For tracking shifts to delete
-}
-
-export interface LocalStorageShifts {
-  draftShifts: DraftShift[];
-  lastSaved: string;
-  version: string;
 }
 
 export interface Timesheet {
@@ -315,51 +299,6 @@ export interface Tenant {
   updated_at: string;
   phone?: string;
   address?: string;
-
-  // NEW: Customer page customization fields
-  customer_page_settings?: {
-    // Banner Settings
-    banner_image_url?: string;
-    banner_overlay_opacity?: number;
-    banner_text?: string;
-    banner_text_color?: string;
-    show_banner?: boolean;
-
-    // Logo & Branding
-    logo_url?: string;
-    logo_size?: 'small' | 'medium' | 'large';
-
-    // Color Scheme
-    primary_color?: string;
-    secondary_color?: string;
-    background_color?: string;
-    text_color?: string;
-    accent_color?: string;
-
-    // Typography
-    font_family?: string;
-    heading_font_size?: string;
-    body_font_size?: string;
-
-    // Layout
-    layout_option?: 'classic' | 'modern' | 'minimal' | 'custom';
-    card_style?: 'flat' | 'raised' | 'border' | 'gradient';
-    button_style?: 'rounded' | 'square' | 'pill';
-
-    // Features
-    show_search_bar?: boolean;
-    show_category_nav?: boolean;
-    enable_animations?: boolean;
-    dark_mode?: boolean;
-
-    // Social Media
-    social_links?: {
-      facebook?: string;
-      instagram?: string;
-      twitter?: string;
-      website?: string;
-    };
-  };
 }
 
 export interface Domain {
@@ -399,7 +338,7 @@ export interface PasswordReset {
 
 export interface User {
   id: string;
-  // name?: string;
+  name: string;
   email: string;
   email_verified_at: string | null;
   password: string;
@@ -578,22 +517,15 @@ export interface PayrollSettings {
   default_payment_cycle: "weekly" | "bi-weekly" | "monthly";
   tax_rate: number;
   overtime_multiplier: number;
-  overtime_threshold: number;
-  pay_day?: number;
-  auto_process: boolean;
-  include_benefits: boolean;
-  benefits_rate: number;
   created_at: string;
   updated_at: string;
 }
 
 export const entities: { [key: string]: EntityConfig } = {
-
-
   // Core POS Entities
   payrolls: {
     label: "Payrolls",
-    endpoint: "/api/payroll",
+    endpoint: "/api/payrolls",
     fields: [
       "id",
       "employee_id",
@@ -612,20 +544,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "store_id",
     ],
   },
-  tenant_settings: {
-    label: "Tenant Settings",
-    endpoint: "/api/tenants",
-    fields: [
-      "id",
-      "name",
-      "email",
-      "phone",
-      "address",
-      "customer_page_settings",
-      "created_at",
-      "updated_at"
-    ],
-  },
+
   payroll_settings: {
     label: "Payroll Settings",
     endpoint: "/api/payroll_settings",
@@ -635,11 +554,6 @@ export const entities: { [key: string]: EntityConfig } = {
       "default_payment_cycle",
       "tax_rate",
       "overtime_multiplier",
-      "overtime_threshold", // NEW
-      "pay_day", // NEW
-      "auto_process", // NEW
-      "include_benefits", // NEW
-      "benefits_rate", // NEW
       "created_at",
       "updated_at",
     ],
@@ -763,6 +677,7 @@ export const entities: { [key: string]: EntityConfig } = {
       "id",
       "name",
       "description",
+      "image_url",
       "created_at",
       "updated_at",
       "store_id",

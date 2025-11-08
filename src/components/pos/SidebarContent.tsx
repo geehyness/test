@@ -5,13 +5,17 @@ import {
   Box,
   CloseButton,
   Flex,
+  // FIX: Import useColorModeValue
   useColorModeValue,
   Text,
   Icon,
   Link,
   VStack,
+  // FIX: Import Collapse
   Collapse,
+  // FIX: Import Avatar
   Avatar,
+  // FIX: Import Menu and its parts
   Menu,
   MenuButton,
   MenuList,

@@ -234,7 +234,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                   onChange={(e) => setSearchTerm(e.target.value)}
                   rounded="md"
                   borderColor="var(--border-color)"
-                  focusBorderColor="var(--primary-green)"
+                  _focus={{ borderColor: "var(--primary-green)" }}
                   color="var(--dark-gray-text)"
                 />
               </InputGroup>
@@ -265,7 +265,7 @@ const NewOrderMenuModal: React.FC<NewOrderMenuModalProps> = ({
                   >
                     <Image
                       src={
-                        item.image_url ||
+                        (item.image_urls && item.image_urls[0]) ||
                         `https://placehold.co/150x100/E0E0E0/333333?text=${item.name.split(" ")[0]
                         }`
                       }
