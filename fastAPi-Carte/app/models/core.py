@@ -7,6 +7,20 @@ from .base import MongoModel, PyObjectId
 from .response import COMMON_ENCODERS           # <-- ADDED COMMON_ENCODERS import
 # ...
 
+
+# Payment Attempt Model
+class PaymentAttempt(MongoModel):
+    order_id: str
+    payment_gateway: str
+    amount: float
+    reference: str
+    status: str
+    payment_data: Optional[Dict[str, Any]] = None
+    created_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    cancelled_at: Optional[str] = None
+    cancellation_reason: Optional[str] = None
+
 # Recipe model for embedded recipes
 class RecipeItem(MongoModel):
     id: Optional[str] = None
@@ -57,7 +71,7 @@ class StoreFood(MongoModel):
     is_available: bool = True
 
 class OrderItem(MongoModel):
-    id: Optional[str] = None
+    id: Optional[str] = None  # Make this truly optional
     order_id: str
     food_id: str
     quantity: int
@@ -82,6 +96,7 @@ class Order(MongoModel):
     order_type: Optional[str] = None  # "dine-in" | "takeaway"
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
+    stock_warnings: Optional[List[str]] = None  # ADD THIS LINE
 
 class Category(MongoModel):
     name: str

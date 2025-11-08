@@ -1,4 +1,4 @@
-# app/main.py - FIXED VERSION
+# app/main.py - UPDATED WITH PAYFAST
 from fastapi import FastAPI, HTTPException
 from app.routes import core, hr, inventory, auth
 from app.database import client
@@ -11,6 +11,9 @@ import os
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from bson import ObjectId
+
+# Import the PayFast ITN router
+from app.routes.payfast_itn import router as payfast_itn_router
 
 # Setup logging
 setup_logging()
@@ -41,8 +44,9 @@ app.include_router(core.router)
 app.include_router(hr.router) 
 app.include_router(inventory.router)
 app.include_router(auth.router)
-app.include_router(payroll_router)  # Make sure this is included
+app.include_router(payroll_router)
 app.include_router(log_router)
+app.include_router(payfast_itn_router)  # ADD PAYFAST ITN ROUTER
 
 @app.on_event("startup")
 async def startup_event():

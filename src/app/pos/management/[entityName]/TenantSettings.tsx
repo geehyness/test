@@ -1263,11 +1263,12 @@ export default function TenantSettings() {
 							</Center>
 						)}
 
+
 						{/* Actual Customer Page Preview - Using iframe with zoom */}
 						<Box position="absolute" top={0} left={0} width="100%" height="100%">
 							<iframe
 								key={iframeKey}
-								src={`/customer-menu?preview=true`} // Remove tenantId, use logged-in user's tenant
+								src={`/customer-menu/${tenant?.name?.toLowerCase().replace(/\s+/g, '-') || 'preview'}?preview=true&shop_id=${getCurrentSessionContext()?.store_id || 'default'}`}
 								width="100%"
 								height="100%"
 								style={{

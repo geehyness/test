@@ -4,7 +4,7 @@ from typing import List, Optional
 from app.database import get_collection
 from app.models.core import (
     Food, Order, Category, Customer, Table, Store, PurchaseOrder, GoodsReceipt, 
-    Reservation, Tenant, Domain, Site, PaymentMethod, Tax, Payment, Brand, ContactMessage, User, Report, PasswordReset, Job, FailedJob
+    Reservation, Tenant, Domain, Site, PaymentMethod, Tax, Payment, Brand, ContactMessage, User, Report, PasswordReset, Job, FailedJob, PaymentAttempt
 )
 from app.models.inventory import InventoryProduct
 from app.models.response import (
@@ -13,13 +13,15 @@ from app.models.response import (
     GoodsReceiptResponse, ReservationResponse,
     InventoryProductResponse, TenantResponse, DomainResponse, 
     SiteResponse, PaymentMethodResponse, TaxResponse, PaymentResponse, 
-    BrandResponse, ContactMessageResponse, UserResponse, ReportResponse, PasswordResetResponse, JobResponse, FailedJobResponse
+    BrandResponse, ContactMessageResponse, UserResponse, ReportResponse, PasswordResetResponse, PaymentAttemptResponse, JobResponse, FailedJobResponse
 )
 from app.utils.response_helpers import success_response, error_response, handle_http_exception, handle_generic_exception
 from app.utils.mongo_helpers import to_mongo_dict, to_mongo_update_dict
 from bson import ObjectId
 from datetime import datetime
 import math
+
+
 
 router = APIRouter(prefix="/api", tags=["core"])
 
@@ -159,6 +161,27 @@ async def get_orders(store_id: Optional[str] = Query(None), status: Optional[str
         query["status"] = status
     return await _get_all_items("orders", Order, query)
 
+
+# Payment Attempts Endpoints
+@router.post("/payment_attempts", response_model=StandardResponse[PaymentAttemptResponse])
+async def create_payment_attempt(attempt: PaymentAttempt):
+    return await _create_item("payment_attempts", attempt, PaymentAttemptResponse)
+
+@router.put("/payment_attempts/{attempt_id}", response_model=StandardResponse[PaymentAttemptResponse])
+async def update_payment_attempt(attempt_id: str, attempt: PaymentAttempt):
+    return await _update_item("payment_attempts", attempt_id, attempt, PaymentAttemptResponse)
+
+@router.get("/payment_attempts/order/{order_id}", response_model=StandardResponse[PaymentAttemptResponse])
+async def get_payment_attempt_by_order(order_id: str):
+    try:
+        collection = get_collection("payment_attempts")
+        attempt = await collection.find_one({"order_id": order_id})
+        if attempt:
+            return success_response(data=PaymentAttempt.from_mongo(attempt))
+        return error_response(message="Payment attempt not found", code=404)
+    except Exception as e:
+        return handle_generic_exception(e)
+
 @router.get("/orders/{order_id}", response_model=StandardResponse[OrderResponse])
 async def get_order(order_id: str):
     return await _get_item_by_id("orders", order_id, Order)
@@ -168,6 +191,11 @@ async def create_order(order: Order):
     try:
         orders_collection = get_collection("orders")
         inventory_collection = get_collection("inventory_products")
+        
+        # Generate IDs for order items that don't have them
+        for item in order.items:
+            if not item.id:
+                item.id = str(ObjectId())
         
         order_dict = to_mongo_dict(order)
         
@@ -201,18 +229,19 @@ async def create_order(order: Order):
         new_order = await orders_collection.find_one({"_id": result.inserted_id})
         order_response = Order.from_mongo(new_order)
         
-        # Add stock warnings to response if any
+        # Add stock warnings to response if any - FIXED: Convert to dict first
+        order_response_dict = order_response.model_dump()
         if stock_warnings:
-            order_response.stock_warnings = stock_warnings
+            order_response_dict["stock_warnings"] = stock_warnings
         
         return success_response(
-            data=OrderResponse.model_validate(order_response.model_dump()),
+            data=OrderResponse.model_validate(order_response_dict),
             message="Order created successfully",
             code=201
         )
     except Exception as e:
         return handle_generic_exception(e)
-
+        
 @router.put("/orders/{order_id}", response_model=StandardResponse[OrderResponse])
 async def update_order(order_id: str, order: Order):
     return await _update_item("orders", order_id, order, OrderResponse)

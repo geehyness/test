@@ -10,6 +10,7 @@ COMMON_ENCODERS = {
     datetime: lambda dt: dt.isoformat(), # 💡 Add here as well
 }
 
+
 # Generic type variable for the data payload
 T = TypeVar('T')
 
@@ -46,6 +47,26 @@ class ErrorResponse(BaseModel):
     code: int
     message: str
     details: Optional[Dict[str, Any]] = None
+
+# Add to response.py
+class PaymentAttemptResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    id: str
+    order_id: str
+    payment_gateway: str
+    amount: float
+    reference: str
+    status: str
+    payment_data: Optional[Dict[str, Any]] = None
+    created_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    cancelled_at: Optional[str] = None
+    cancellation_reason: Optional[str] = None
+
 
 # Recipe Item Response
 class RecipeItemResponse(BaseModel):
@@ -97,7 +118,7 @@ class OrderItemResponse(BaseModel):
         json_encoders=COMMON_ENCODERS
     )
     
-    id: str
+    id: Optional[str] = None  # Make optional here too
     order_id: str
     food_id: str
     quantity: int
@@ -129,6 +150,7 @@ class OrderResponse(BaseModel):
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
     stock_warnings: Optional[List[str]] = None
+    stock_warnings: Optional[List[str]] = None  # ADD THIS LINE
 
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(

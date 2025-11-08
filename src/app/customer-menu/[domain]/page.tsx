@@ -1,4 +1,4 @@
-// src/app/customer-menu/[domain]/page.tsx - UPDATED VERSION
+// src/app/customer-menu/[domain]/page.tsx - CORRECTED VERSION
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -67,8 +67,10 @@ import {
   FaChevronRight,
   FaExclamationTriangle,
 } from "react-icons/fa";
-import { fetchData, getTenantSettings, getTenantByDomain } from "@/lib/api";
+import { fetchData, getTenantSettings, getTenantByDomain, fetchDataWithContext } from "@/lib/api";
 import { Table, Food, Category } from "@/lib/config/entities";
+import { PaymentService } from "@/lib/payment-service";
+import { payfastService } from "@/lib/payfast";
 
 // Define a new interface for displaying food items, extending the base Food entity
 interface DisplayFoodItem extends Food {
@@ -90,6 +92,21 @@ interface CartItem extends DisplayFoodItem {
 interface OrderedMeal extends CartItem {
   status: "Preparing" | "Ready" | "Served";
   orderTime: string;
+}
+
+// Extend CSSProperties to include custom CSS variables
+interface TenantCSSProperties extends React.CSSProperties {
+  '--primary-green'?: string;
+  '--secondary-color'?: string;
+  '--background-color-light'?: string;
+  '--card-background-color'?: string;
+  '--dark-gray-text'?: string;
+  '--medium-gray-text'?: string;
+  '--accent-color'?: string;
+  '--border-color'?: string;
+  '--font-family'?: string;
+  '--navbar-main-item-hover-bg'?: string;
+  '--navbar-main-item-inactive-text'?: string;
 }
 
 interface TenantSettings {
@@ -158,6 +175,24 @@ interface PageProps {
     preview?: string;
   }>;
 }
+
+// Helper function to convert tenant styles to Chakra-compatible colors
+const getChakraColor = (value: string | number | undefined, fallback: string): string => {
+  if (value === undefined || value === null) return fallback;
+
+  // If it's a number, convert to string
+  if (typeof value === 'number') {
+    return fallback;
+  }
+
+  // If it's a CSS variable, ensure it's wrapped in var()
+  if (typeof value === 'string' && value.startsWith('--')) {
+    return `var(${value})`;
+  }
+
+  // If it's already a valid color, return as is
+  return value;
+};
 
 const NavItem: React.FC<NavItemProps> = ({
   icon,
@@ -305,7 +340,7 @@ const MenuItemCard: React.FC<{
             width="full"
             rounded={tenantSettings?.customer_page_settings?.button_style === 'pill' ? 'full' :
               tenantSettings?.customer_page_settings?.button_style === 'square' ? 'none' : 'lg'}
-            onClick={(e) => {
+            onClick={(e: { stopPropagation: () => void; }) => {
               e.stopPropagation();
               onAddToCart(item);
             }}
@@ -324,7 +359,7 @@ const MenuItemCard: React.FC<{
               aria-label={`Decrease quantity of ${item.name}`}
               icon={<MinusIcon />}
               size="md"
-              onClick={(e) => {
+              onClick={(e: { stopPropagation: () => void; }) => {
                 e.stopPropagation();
                 // This will be handled by parent
               }}
@@ -347,7 +382,7 @@ const MenuItemCard: React.FC<{
               aria-label={`Increase quantity of ${item.name}`}
               icon={<AddIcon />}
               size="md"
-              onClick={(e) => {
+              onClick={(e: { stopPropagation: () => void; }) => {
                 e.stopPropagation();
                 // This will be handled by parent
               }}
@@ -370,8 +405,8 @@ const MenuSkeleton: React.FC = () => (
         <Skeleton height="200px" />
         <CardBody p={4}>
           <VStack spacing={2} align="stretch">
-            <SkeletonText noOfLines={2} />
-            <SkeletonText noOfLines={2} />
+            <Skeleton height="15px" width="90%" />
+            <Skeleton height="15px" width="70%" />
             <Skeleton height="20px" width="80px" />
           </VStack>
         </CardBody>
@@ -383,7 +418,7 @@ const MenuSkeleton: React.FC = () => (
   </SimpleGrid>
 );
 
-const CustomerMenuPage: React.FC<PageProps> = (props) => {
+const CustomerMenuPage: React.FC<PageProps> = (props: { params: any; searchParams: any; }) => {
   const router = useRouter();
 
   // State declarations
@@ -398,9 +433,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderedMeals, setOrderedMeals] = useState<OrderedMeal[]>([]);
   const [tenantSettings, setTenantSettings] = useState<TenantSettings | null>(null);
-  const [tenantStyles, setTenantStyles] = useState<React.CSSProperties>({});
-  const [resolvedParams, setResolvedParams] = useState<{ domain: string } | null>(null);
-  const [resolvedSearchParams, setResolvedSearchParams] = useState<{ shop_id?: string; table_id?: string; preview?: string } | null>(null);
+  const [tenantStyles, setTenantStyles] = useState<TenantCSSProperties>({});
 
   const {
     isOpen: isCartOpen,
@@ -423,19 +456,145 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("cash");
 
-  // Resolve params and searchParams on client side
+  const handlePayFastPayment = async () => {
+    if (cartItems.length === 0) {
+      setError('Your cart is empty');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Generate a temporary order ID for the items
+      const tempOrderId = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Create order data with ALL required fields including stock_warnings
+      const orderData = {
+        store_id: shopId || 'default-store',
+        table_id: tableId || null,
+        total_amount: totalCartPrice,
+        status: 'pending',
+        notes: 'Order placed via customer menu',
+        items: cartItems.map((item: { id: any; quantity: number; displayPrice: number; name: any; }) => ({
+          food_id: item.id,
+          quantity: item.quantity,
+          price: item.displayPrice,
+          sub_total: item.displayPrice * item.quantity,
+          name: item.name,
+          order_id: tempOrderId,
+          price_at_sale: item.displayPrice,
+        })),
+        subtotal_amount: totalCartPrice,
+        tax_amount: 0,
+        discount_amount: 0,
+        order_type: tableId ? 'dine-in' : 'takeaway',
+        payment_method: 'payfast',
+        payment_status: 'pending',
+        customer_info: {
+          name: 'Customer',
+          email: 'customer@example.com'
+        },
+        // Add the missing field that backend expects
+
+      };
+      // Use direct fetch for better error handling
+      const response = await fetch('http://127.0.0.1:8000/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const responseText = await response.text();
+      console.log('📄 Raw response:', responseText);
+
+      let result;
+      try {
+        result = responseText ? JSON.parse(responseText) : null;
+      } catch (parseError) {
+        console.error('❌ Failed to parse response:', parseError);
+        throw new Error('Invalid JSON response from server');
+      }
+
+      console.log('🔍 Parsed response:', result);
+
+      if (!response.ok) {
+        // Handle specific backend errors
+        if (result?.message) {
+          if (result.message.includes('stock_warnings')) {
+            throw new Error('Backend configuration issue. Please contact support.');
+          }
+          throw new Error(result.message);
+        }
+        throw new Error(`Order creation failed with status: ${response.status}`);
+      }
+
+      // Check if we have valid response structure
+      if (!result || typeof result !== 'object') {
+        throw new Error('Invalid response from server');
+      }
+
+      // Handle different response structures
+      let orderId;
+      if (result.data && result.data.id) {
+        orderId = result.data.id;
+      } else if (result.id) {
+        orderId = result.id;
+      } else {
+        console.error('❌ No order ID found in response:', result);
+        throw new Error('Order was created but no order ID was returned');
+      }
+
+      console.log('✅ Order created successfully with ID:', orderId);
+
+      // Prepare order object for PayFast
+      const createdOrder = {
+        id: orderId,
+        store_id: shopId || 'default-store',
+        table_id: tableId || null,
+        total_amount: totalCartPrice,
+        ...result.data || result
+      };
+
+      // Initiate PayFast payment
+      const paymentResult = await PaymentService.initiatePayFastPayment(
+        createdOrder,
+        {
+          firstName: 'Customer',
+          email: 'customer@example.com'
+        }
+      );
+
+      if (!paymentResult.success || !paymentResult.paymentData) {
+        throw new Error(paymentResult.error || 'Payment initiation failed');
+      }
+
+      console.log('💰 Submitting to PayFast...');
+
+      // Submit to PayFast - this will redirect the user
+      await payfastService.submitPayment(paymentResult.paymentData);
+
+    } catch (error) {
+      console.error('❌ PayFast payment initiation failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Payment initiation failed. Please try again.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  // SINGLE useEffect for params resolution - FIXED
   useEffect(() => {
-    const resolveParams = async () => {
+    const resolveAndSetParams = async () => {
       try {
         const [params, searchParams] = await Promise.all([
           props.params,
           props.searchParams
         ]);
 
-        setResolvedParams(params);
-        setResolvedSearchParams(searchParams);
-
-        // Set initial state from resolved params
         const previewParam = searchParams.preview;
         const shopIdParam = searchParams.shop_id;
         const tableIdParam = searchParams.table_id;
@@ -464,14 +623,14 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
       }
     };
 
-    resolveParams();
+    resolveAndSetParams();
   }, [props.params, props.searchParams]);
 
-  // Apply tenant settings to CSS variables
+  // Apply tenant settings to CSS variables - FIXED TYPE
   const applyTenantSettings = useCallback((settings: TenantSettings['customer_page_settings']) => {
     if (!settings) return {};
 
-    const styles: React.CSSProperties = {
+    const styles: TenantCSSProperties = {
       '--primary-green': settings.primary_color || '#38A169',
       '--secondary-color': settings.secondary_color || '#2D3748',
       '--background-color-light': settings.background_color || '#FFFFFF',
@@ -484,7 +643,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
       '--navbar-main-item-hover-bg': settings.primary_color ? `${settings.primary_color}10` : '#38A16910',
       '--navbar-main-item-inactive-text': settings.text_color ? `${settings.text_color}80` : '#2D374880',
       fontFamily: settings.font_family || 'Inter, sans-serif',
-    } as React.CSSProperties;
+    };
 
     return styles;
   }, []);
@@ -770,13 +929,13 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
     }
   }, [fetchDataWithRetry, shopId]);
 
-  // Update the data initialization
+  // Update the data initialization - FIXED
   useEffect(() => {
     let isMounted = true;
 
     const initializeData = async () => {
       try {
-        if (isMounted && resolvedParams && resolvedSearchParams) {
+        if (isMounted) {
           setLoading(true);
           await fetchTenantSettings();
           await fetchTableData();
@@ -794,15 +953,15 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
       }
     };
 
-    // Only initialize if we have resolved params and a domain or are in preview mode
-    if (resolvedParams && (tenantDomain || isPreview)) {
+    // Only initialize if we have a domain or are in preview mode
+    if (tenantDomain || isPreview) {
       initializeData();
     }
 
     return () => {
       isMounted = false;
     };
-  }, [fetchTenantSettings, fetchTableData, fetchFoodsAndCategories, tenantDomain, isPreview, resolvedParams, resolvedSearchParams]);
+  }, [fetchTenantSettings, fetchTableData, fetchFoodsAndCategories, tenantDomain, isPreview]);
 
   // Rest of your component functions remain the same...
   const openDetailsModal = (food: DisplayFoodItem) => {
@@ -819,19 +978,19 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
 
   const nextImage = () => {
     if (!selectedFood?.image_urls) return;
-    setCurrentImageIndex(prev =>
+    setCurrentImageIndex((prev: number) =>
       prev === selectedFood.image_urls!.length - 1 ? 0 : prev + 1
     );
   };
 
   const prevImage = () => {
     if (!selectedFood?.image_urls) return;
-    setCurrentImageIndex(prev =>
+    setCurrentImageIndex((prev: number) =>
       prev === 0 ? selectedFood.image_urls!.length - 1 : prev - 1
     );
   };
 
-  const filteredFoods = foods.filter((food) => {
+  const filteredFoods = foods.filter((food: { name: string; description: string; categoryName: string; }) => {
     const matchesSearch =
       food.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (food.description &&
@@ -855,13 +1014,13 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
     });
   } else {
     const selectedCat = dynamicCategories.find(
-      (cat) => cat.id === selectedCategory
+      (cat: { id: any; }) => cat.id === selectedCategory
     );
     if (selectedCat) {
       groupedFoods.push({
         ...selectedCat,
         items: filteredFoods.filter(
-          (food) =>
+          (food: { categoryName: string; }) =>
             food.categoryName &&
             food.categoryName.toLowerCase() === selectedCategory.toLowerCase()
         ),
@@ -870,12 +1029,12 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
   }
 
   const addToCart = (item: DisplayFoodItem) => {
-    setCartItems((prevItems) => {
+    setCartItems((prevItems: any[]) => {
       const existingItem = prevItems.find(
-        (cartItem) => cartItem.id === item.id
+        (cartItem: { id: string; }) => cartItem.id === item.id
       );
       if (existingItem) {
-        return prevItems.map((cartItem) =>
+        return prevItems.map((cartItem: { id: string; quantity: number; }) =>
           cartItem.id === item.id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
@@ -887,53 +1046,115 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
   };
 
   const updateCartItemQuantity = (itemId: string, quantity: number) => {
-    setCartItems((prevItems) => {
+    setCartItems((prevItems: any[]) => {
       if (quantity <= 0) {
-        return prevItems.filter((item) => item.id !== itemId);
+        return prevItems.filter((item: { id: string; }) => item.id !== itemId);
       }
-      return prevItems.map((item) =>
+      return prevItems.map((item: { id: string; }) =>
         item.id === itemId ? { ...item, quantity: quantity } : item
       );
     });
   };
 
   const removeCartItem = (itemId: string) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+    setCartItems((prevItems: any[]) => prevItems.filter((item: { id: string; }) => item.id !== itemId));
   };
 
   const getCartItemQuantity = (itemId: string) => {
-    const item = cartItems.find((cartItem) => cartItem.id === itemId);
+    const item = cartItems.find((cartItem: { id: string; }) => cartItem.id === itemId);
     return item ? item.quantity : 0;
   };
 
   const totalCartItems = cartItems.reduce(
-    (total, item) => total + item.quantity,
+    (total: any, item: { quantity: any; }) => total + item.quantity,
     0
   );
   const totalCartPrice = cartItems.reduce(
-    (total, item) => total + item.displayPrice * item.quantity,
+    (total: number, item: { displayPrice: number; quantity: number; }) => total + item.displayPrice * item.quantity,
     0
   );
   const activeOrdersCount = orderedMeals.filter(
-    (meal) => meal.status !== "Served"
+    (meal: { status: string; }) => meal.status !== "Served"
   ).length;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cartItems.length > 0) {
-      const newOrderedMeals: OrderedMeal[] = cartItems.map((item) => ({
-        ...item,
-        status: "Preparing",
-        orderTime: new Date().toLocaleString(),
-      }));
-      setOrderedMeals((prev) => [...prev, ...newOrderedMeals]);
-      setCartItems([]);
+      if (selectedPaymentMethod === 'cash') {
+        try {
+          setLoading(true);
 
-      console.log(
-        `Order placed for ${selectedTable?.name || "Takeaway"}! ` +
-        `Shop: ${shopId || "Default"}, Table: ${tableId || "N/A"}, ` +
-        `Total: R ${totalCartPrice.toFixed(2)}`
-      );
-      onCartClose();
+          // Generate a temporary order ID
+          const tempOrderId = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+          // Create order for cash payment with required fields
+          const orderData = {
+            store_id: shopId || 'default-store',
+            table_id: tableId || null,
+            total_amount: totalCartPrice,
+            status: 'pending',
+            notes: 'Cash order placed via customer menu',
+            items: cartItems.map((item: { id: any; quantity: number; displayPrice: number; name: any; }) => ({
+              food_id: item.id,
+              quantity: item.quantity,
+              price: item.displayPrice,
+              sub_total: item.displayPrice * item.quantity,
+              name: item.name,
+              order_id: tempOrderId, // ADD THIS
+              price_at_sale: item.displayPrice, // ADD THIS
+            })),
+            subtotal_amount: totalCartPrice,
+            tax_amount: 0,
+            discount_amount: 0,
+            order_type: tableId ? 'dine-in' : 'takeaway',
+            payment_method: 'cash',
+            payment_status: 'pending',
+            customer_info: {
+              name: 'Customer',
+              email: 'customer@example.com'
+            },
+          };
+
+          // Create order in your system
+          const createdOrder = await fetchDataWithContext(
+            'orders',
+            undefined,
+            orderData,
+            'POST'
+          );
+
+          if (createdOrder && createdOrder.id) {
+            console.log('✅ Cash order created:', createdOrder.id);
+
+            // Update local state only if order creation was successful
+            const newOrderedMeals: OrderedMeal[] = cartItems.map((item: any) => ({
+              ...item,
+              status: "Preparing",
+              orderTime: new Date().toLocaleString(),
+            }));
+            setOrderedMeals((prev: any) => [...prev, ...newOrderedMeals]);
+            setCartItems([]);
+            onCartClose();
+
+            console.log('💵 Cash order placed:', {
+              table: selectedTable?.name,
+              amount: totalCartPrice,
+              items: cartItems.length,
+              orderId: createdOrder.id
+            });
+          } else {
+            throw new Error('Failed to create cash order');
+          }
+
+        } catch (error) {
+          console.error('❌ Cash order creation failed:', error);
+          setError('Failed to create cash order. Please try again.');
+        } finally {
+          setLoading(false);
+        }
+      } else if (selectedPaymentMethod === 'card') {
+        // Use PayFast for card payments
+        handlePayFastPayment();
+      }
     }
   };
 
@@ -954,11 +1175,13 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
     fetchFoodsAndCategories();
   }, [fetchFoodsAndCategories]);
 
-  // Get styles from tenant settings
-  const getTenantStyle = (key: string, fallback: string) => {
-    return tenantStyles[key as keyof React.CSSProperties] || fallback;
+  // Safe getter for tenant styles - FIXED
+  const getTenantStyle = (key: keyof TenantCSSProperties, fallback: string): string => {
+    const value = tenantStyles[key];
+    return getChakraColor(value, fallback);
   };
 
+  // Use the helper functions directly
   const primaryGreen = getTenantStyle('--primary-green', '#38A169');
   const textColor = getTenantStyle('--dark-gray-text', '#2D3748');
   const cardBg = getTenantStyle('--card-background-color', '#FFFFFF');
@@ -966,6 +1189,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
   const modalContentBg = getTenantStyle('--background-color-light', '#FFFFFF');
   const topBarBg = getTenantStyle('--background-color-light', '#FFFFFF');
   const accentColor = getTenantStyle('--accent-color', '#ED8936');
+  const fontFamily = getTenantStyle('--font-family', 'Inter, sans-serif');
 
   // Get card styles based on tenant settings
   const getCardStyles = () => {
@@ -1245,8 +1469,8 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
     );
   };
 
-  // Show loading state while resolving params
-  if (!resolvedParams || !resolvedSearchParams) {
+  // Show loading state while initializing
+  if (loading && foods.length === 0) {
     return (
       <Flex justify="center" align="center" minH="80vh" bg={getTenantStyle('--background-color-light', '#F7FAFC')}>
         <Spinner size="xl" color={primaryGreen} />
@@ -1372,9 +1596,9 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
             <Text
               fontSize="sm"
               color="var(--medium-gray-text)"
-              fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+              fontFamily={fontFamily}
             >
-              {tenantDomain ? `Restaurant: ${tenantDomain.replace(/_/g, ' ')}` : 'Preview Mode'}
+              {tenantDomain ? `Restaurant: ${tenantDomain.replace(/_/g, ' ').toUpperCase()}` : 'Preview Mode'}
             </Text>
             {(shopId || tableId) && (
               <HStack spacing={4}>
@@ -1424,19 +1648,11 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                 size="xl"
                 color={textColor}
                 mb={2}
-                fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                fontFamily={fontFamily}
                 fontWeight="extrabold"
               >
                 Our Delicious Menu
               </Heading>
-              <Text
-                fontSize="lg"
-                color="var(--medium-gray-text)"
-                fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
-                lineHeight="short"
-              >
-                Discover a wide variety of culinary delights.
-              </Text>
             </Box>
           </Flex>
 
@@ -1451,11 +1667,12 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                   type="text"
                   placeholder="Search dishes..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: { target: { value: any; }; }) => setSearchTerm(e.target.value)}
                   rounded="lg"
+                  color={textColor}
                   borderColor="#333"
                   focusBorderColor={primaryGreen}
-                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                  fontFamily={fontFamily}
                   px={5}
                   py={3}
                   boxShadow="sm"
@@ -1483,7 +1700,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
               py={2}
               px={{ base: 4, md: 8 }}
             >
-              {dynamicCategories.map((category) => (
+              {dynamicCategories.map((category: { id: any; icon: any; name: any; }) => (
                 <NavItem
                   key={category.id}
                   icon={category.icon}
@@ -1522,7 +1739,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                   borderColor={primaryGreen}
                   pb={2}
                   display="inline-block"
-                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                  fontFamily={fontFamily}
                 >
                   {group.name} ({group.items.length})
                 </Heading>
@@ -1532,7 +1749,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                     color="gray.500"
                     textAlign="center"
                     py={8}
-                    fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                    fontFamily={fontFamily}
                   >
                     No items found in this category.
                   </Text>
@@ -1541,7 +1758,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                     columns={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }}
                     spacing={6}
                   >
-                    {group.items.map((item) => (
+                    {group.items.map((item: { id: string; }) => (
                       <MenuItemCard
                         key={item.id}
                         item={item}
@@ -1555,7 +1772,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                   </SimpleGrid>
                 )}
 
-                {/* Enhanced View Full Menu Button */}
+                {/* Enhanced View Full Menu Button 
                 <Button
                   w="full"
                   mt={6}
@@ -1577,7 +1794,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                   title={isPreview ? "Full menu navigation disabled in preview" : "View full menu"}
                 >
                   {isPreview ? "Preview Mode" : "View Full Menu"} ({foods.length} items)
-                </Button>
+                </Button>*/}
               </Box>
             ))
           )}
@@ -1603,7 +1820,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
               borderBottomWidth="1px"
               borderColor={borderColor}
               color={textColor}
-              fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+              fontFamily={fontFamily}
               pb={3}
             >
               {selectedFood?.name}
@@ -1662,7 +1879,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                 <Text
                   fontSize="md"
                   color="var(--medium-gray-text)"
-                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                  fontFamily={fontFamily}
                 >
                   {selectedFood?.description}
                 </Text>
@@ -1670,7 +1887,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                   color={primaryGreen}
                   fontSize="2xl"
                   fontWeight="extrabold"
-                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                  fontFamily={fontFamily}
                 >
                   R {selectedFood?.displayPrice.toFixed(2)}
                 </Text>
@@ -1705,7 +1922,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                         fontSize="lg"
                         bg={primaryGreen}
                         _hover={{ bg: "green.600", shadow: "md" }}
-                        fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                        fontFamily={fontFamily}
                       >
                         Add to Cart
                       </Button>
@@ -1731,7 +1948,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                           fontWeight="bold"
                           fontSize="xl"
                           color={textColor}
-                          fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                          fontFamily={fontFamily}
                         >
                           {getCartItemQuantity(selectedFood.id)}
                         </Text>
@@ -1778,7 +1995,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
               borderBottomWidth="1px"
               borderColor={borderColor}
               color={textColor}
-              fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+              fontFamily={fontFamily}
               mt={8}
             >
               <Flex justifyContent="space-between" alignItems="center">
@@ -1794,7 +2011,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                 variant="enclosed"
                 colorScheme="green"
                 index={activeTabIndex}
-                onChange={(index) => setActiveTabIndex(index)}
+                onChange={(index: any) => setActiveTabIndex(index)}
               >
                 <TabList mb="1em">
                   <Tab
@@ -1803,7 +2020,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                       borderColor: primaryGreen,
                       borderBottomColor: "transparent",
                     }}
-                    fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                    fontFamily={fontFamily}
                   >
                     Your Order
                   </Tab>
@@ -1813,13 +2030,13 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                       borderColor: primaryGreen,
                       borderBottomColor: "transparent",
                     }}
-                    fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                    fontFamily={fontFamily}
                   >
                     Order Progress
                     {orderedMeals.length > 0 && (
                       <Badge ml={2} colorScheme="orange" rounded="full" px={2}>
                         {
-                          orderedMeals.filter((meal) => meal.status !== "Served")
+                          orderedMeals.filter((meal: { status: string; }) => meal.status !== "Served")
                             .length
                         }
                       </Badge>
@@ -1847,7 +2064,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                         <Text
                           fontSize="lg"
                           color="gray.500"
-                          fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                          fontFamily={fontFamily}
                         >
                           Your cart is empty.
                         </Text>
@@ -1855,7 +2072,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                           fontSize="md"
                           color="gray.500"
                           mt={2}
-                          fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                          fontFamily={fontFamily}
                         >
                           Add some delicious items from the menu!
                         </Text>
@@ -1863,7 +2080,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                     ) : (
                       <VStack>
                         <VStack spacing={4} align="stretch">
-                          {cartItems.map((item) => (
+                          {cartItems.map((item: { id: string; image: any; name: any; displayPrice: number; quantity: number; }) => (
                             <Flex
                               key={item.id}
                               p={3}
@@ -1889,14 +2106,14 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                                   fontWeight="semibold"
                                   color={textColor}
                                   noOfLines={1}
-                                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                                  fontFamily={fontFamily}
                                 >
                                   {item.name}
                                 </Text>
                                 <Text
                                   fontSize="sm"
                                   color="var(--medium-gray-text)"
-                                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                                  fontFamily={fontFamily}
                                 >
                                   R {item.displayPrice.toFixed(2)} x{" "}
                                   {item.quantity}
@@ -1904,7 +2121,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                                 <Text
                                   fontWeight="bold"
                                   color={primaryGreen}
-                                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                                  fontFamily={fontFamily}
                                 >
                                   R{" "}
                                   {(item.displayPrice * item.quantity).toFixed(2)}
@@ -1929,7 +2146,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                                 <Text
                                   fontWeight="bold"
                                   color={textColor}
-                                  fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                                  fontFamily={fontFamily}
                                 >
                                   {item.quantity}
                                 </Text>
@@ -1983,14 +2200,14 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                         <Text
                           fontSize="lg"
                           color="gray.500"
-                          fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                          fontFamily={fontFamily}
                         >
                           No active orders. Place an order to see its progress!
                         </Text>
                       </Flex>
                     ) : (
                       <VStack spacing={4} align="stretch">
-                        {orderedMeals.map((meal, index) => (
+                        {orderedMeals.map((meal: { name: any; quantity: any; status: string; orderTime: any; }, index: any) => (
                           <Card
                             key={index}
                             p={4}
@@ -2003,7 +2220,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                               <Text
                                 fontWeight="semibold"
                                 color={textColor}
-                                fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                                fontFamily={fontFamily}
                               >
                                 {meal.name} x {meal.quantity}
                               </Text>
@@ -2015,7 +2232,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                                       ? "blue"
                                       : "green"
                                 }
-                                fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                                fontFamily={fontFamily}
                               >
                                 {meal.status}
                               </Badge>
@@ -2023,7 +2240,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                             <Text
                               fontSize="sm"
                               color="var(--medium-gray-text)"
-                              fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                              fontFamily={fontFamily}
                             >
                               Ordered: {meal.orderTime}
                             </Text>
@@ -2044,7 +2261,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                       size="sm"
                       mb={2}
                       color={textColor}
-                      fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                      fontFamily={fontFamily}
                     >
                       Payment Method
                     </Heading>
@@ -2144,7 +2361,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                       fontSize="xl"
                       fontWeight="bold"
                       color={textColor}
-                      fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                      fontFamily={fontFamily}
                     >
                       Total:
                     </Text>
@@ -2152,7 +2369,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                       fontSize="xl"
                       fontWeight="bold"
                       color={primaryGreen}
-                      fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                      fontFamily={fontFamily}
                     >
                       R {totalCartPrice.toFixed(2)}
                     </Text>
@@ -2167,7 +2384,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props) => {
                     onClick={handlePlaceOrder}
                     isDisabled={cartItems.length === 0}
                     fontWeight="semibold"
-                    fontFamily={getTenantStyle('--font-family', 'Inter, sans-serif')}
+                    fontFamily={fontFamily}
                     rounded={tenantSettings?.customer_page_settings?.button_style === 'pill' ? 'full' :
                       tenantSettings?.customer_page_settings?.button_style === 'square' ? 'none' : 'lg'}
                   >

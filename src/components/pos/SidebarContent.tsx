@@ -319,7 +319,7 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
         zIndex={10}
         borderBottom="1px"
         borderBottomColor={useColorModeValue("gray.200", "gray.200")}
-        p={8}
+        p={2}
       >
         <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
           <Flex alignItems="center">
@@ -350,10 +350,10 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
           />
         </Flex>
 
-        <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
+        <Flex alignItems="center" mx="8" justifyContent="space-between">
           <Flex alignItems="center">
             <Text
-              fontSize="xl"
+              fontSize="s"
               fontWeight="bold"
               color="var(--primary-green)"
             >
