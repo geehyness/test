@@ -1128,4 +1128,34 @@ export const entities: { [key: string]: EntityConfig } = {
     endpoint: "sites",
     fields: ["id", "name", "address", "type", "created_at", "updated_at"],
   },
+
+
+  departments: {
+    label: "Departments",
+    endpoint: "/api/departments",
+    fields: [
+      "id",
+      "name",
+      "description",
+      "created_at",
+      "updated_at",
+    ],
+  }, // Add these missing entities
+  timesheet_entries: {
+    label: "Timesheet Entries",
+    endpoint: "/api/timesheet_entries",
+    fields: [
+      "id",
+      "employee_id",
+      "clock_in",
+      "clock_out",
+      "duration_minutes",
+      "store_id",
+      "created_at",
+      "updated_at",
+    ],
+  },
+
+
+
 };

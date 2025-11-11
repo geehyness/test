@@ -1,4 +1,4 @@
-// src/app/pos/management/[entityName]/page.tsx - CORRECTED
+// src/app/pos/management/[entityName]/page.tsx - ENHANCED
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -165,6 +165,184 @@ interface Company {
   };
 }
 
+// Enhanced function to handle foreign key relationships
+const getForeignKeyOptions = async (fieldName: string): Promise<any[]> => {
+  const foreignKeyMappings: { [key: string]: string } = {
+    // Core POS entities
+    category_id: 'categories',
+    inv_category_id: 'inv_categories',
+    supplier_id: 'suppliers',
+    employee_id: 'employees',
+    job_title_id: 'job_titles',
+    access_role_id: 'access_roles',
+    department_id: 'departments',
+    site_id: 'sites',
+    store_id: 'stores',
+    tenant_id: 'tenants',
+    user_id: 'users',
+    unit_id: 'units',
+    food_id: 'foods',
+    inventory_product_id: 'inventory_products',
+    purchase_order_id: 'purchase_orders',
+    customer_id: 'customers',
+    table_id: 'tables',
+    payment_method_id: 'payment_methods',
+    tax_id: 'taxes',
+    brand_id: 'brands',
+
+    // HR Management - Added missing mappings
+    main_access_role_id: 'access_roles',
+    access_role_ids: 'access_roles',
+    other_access_roles: 'access_roles',
+    
+    // Shift Management
+    shift_id: 'shifts',
+    
+    // Timesheet Management
+    timesheet_id: 'timesheets',
+    timesheet_entry_id: 'timesheet_entries',
+    
+    // Payroll Management
+    payroll_id: 'payrolls',
+    payroll_settings_id: 'payroll_settings',
+    
+    // Recipe Management
+    recipe_id: 'recipes',
+    recipe_item_id: 'recipe_items',
+    
+    // Order Management
+    order_id: 'orders',
+    order_item_id: 'order_items',
+    
+    // Inventory Management
+    stock_id: 'stocks',
+    stock_adjustment_id: 'stock_adjustments',
+    
+    // Reservation Management
+    reservation_id: 'reservations',
+    
+    // Payment Management
+    payment_id: 'payments',
+    
+    // Goods Receipt Management
+    goods_receipt_id: 'goods_receipts',
+    receiving_bin_id: 'receiving_bins',
+    
+    // Domain Management
+    domain_id: 'domains',
+    
+    // Job Management
+    job_id: 'jobs',
+    failed_job_id: 'failed_jobs',
+    
+    // Password Reset
+    password_reset_token: 'password_resets',
+    
+    // Contact Messages
+    contact_message_id: 'contact_messages',
+    
+    // Store Foods
+    store_food_id: 'store_foods',
+    
+    // Report Management
+    report_id: 'reports',
+  };
+
+  const entityName = foreignKeyMappings[fieldName];
+  
+  if (entityName) {
+    try {
+      const data = await fetchData(entityName);
+      console.log(`✅ Loaded ${entityName} for field ${fieldName}:`, data?.length || 0, 'items');
+      return data || [];
+    } catch (error: any) {
+      console.error(`❌ Failed to fetch ${entityName} for field ${fieldName}:`, error.message);
+      
+      // Provide helpful fallbacks for common entities
+      if (entityName === 'access_roles') {
+        console.log('🔄 Using fallback access roles data');
+        return [
+          { id: 'admin', name: 'Administrator' },
+          { id: 'manager', name: 'Manager' },
+          { id: 'staff', name: 'Staff' },
+          { id: 'cashier', name: 'Cashier' },
+        ];
+      }
+      
+      if (entityName === 'job_titles') {
+        console.log('🔄 Using fallback job titles data');
+        return [
+          { id: 'manager', title: 'Manager' },
+          { id: 'chef', title: 'Chef' },
+          { id: 'waiter', title: 'Waiter' },
+          { id: 'cashier', title: 'Cashier' },
+        ];
+      }
+      
+      return [];
+    }
+  }
+
+  // Special handling for array fields that might not end with _id
+  if (fieldName.includes('role') || fieldName.includes('category') || fieldName.includes('access')) {
+    console.log(`🔍 Field ${fieldName} might need special handling`);
+    
+    // Try common patterns
+    if (fieldName.includes('access_role')) {
+      return getForeignKeyOptions('access_role_id');
+    }
+    if (fieldName.includes('category')) {
+      return getForeignKeyOptions('category_id');
+    }
+    if (fieldName.includes('job_title')) {
+      return getForeignKeyOptions('job_title_id');
+    }
+  }
+
+  console.warn(`⚠️ No mapping found for foreign key field: ${fieldName}`);
+  console.log(`💡 Available mappings:`, Object.keys(foreignKeyMappings).sort());
+  
+  return [];
+};
+
+// Enhanced version with better debugging and array field support
+const getForeignKeyOptionsEnhanced = async (fieldName: string): Promise<any[]> => {
+  console.group(`🔄 Loading foreign key options for: ${fieldName}`);
+  
+  try {
+    const result = await getForeignKeyOptions(fieldName);
+    
+    if (result.length === 0) {
+      console.warn(`📭 No data returned for field: ${fieldName}`);
+      
+      // Provide minimal fallback data for critical fields
+      const criticalFallbacks: { [key: string]: any[] } = {
+        'main_access_role_id': [{ id: 'default', name: 'Default Role' }],
+        'access_role_ids': [{ id: 'default', name: 'Default Role' }],
+        'job_title_id': [{ id: 'default', title: 'Default Title' }],
+        'store_id': [{ id: 'default', name: 'Default Store' }],
+      };
+      
+      if (criticalFallbacks[fieldName]) {
+        console.log(`🔄 Using critical fallback for: ${fieldName}`);
+        return criticalFallbacks[fieldName];
+      }
+    }
+    
+    console.log(`✅ Successfully loaded ${result.length} options for: ${fieldName}`);
+    return result;
+    
+  } catch (error: any) {
+    console.error(`💥 Error loading options for ${fieldName}:`, error.message);
+    return [];
+  } finally {
+    console.groupEnd();
+  }
+};
+
+// Export both versions
+export { getForeignKeyOptions, getForeignKeyOptionsEnhanced };
+
 export default function DynamicEntityManagementPage() {
   const params = useParams();
   const router = useRouter();
@@ -184,13 +362,15 @@ export default function DynamicEntityManagementPage() {
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [inventoryProducts, setInventoryProducts] = useState<
-    InventoryProduct[]
-  >([]);
+  const [inventoryProducts, setInventoryProducts] = useState<InventoryProduct[]>([]);
   const [foodCategories, setFoodCategories] = useState<any[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [currentRecipes, setCurrentRecipes] = useState<RecipeItem[]>([]);
   const [allEmployees, setAllEmployees] = useState<any[]>([]); // For HR entity relationships
+
+
+  // Add state for foreign key options
+  const [foreignKeyOptions, setForeignKeyOptions] = useState<{ [key: string]: any[] }>({});
 
   // If the entity is shifts, render the special shift management component
   if (entityName === "shifts") {
@@ -273,6 +453,7 @@ export default function DynamicEntityManagementPage() {
     return null;
   };
 
+  // Update the refreshData function - FIXED VERSION
   const refreshData = useCallback(async () => {
     if (!entityConfig) return;
     setIsLoading(true);
@@ -280,48 +461,69 @@ export default function DynamicEntityManagementPage() {
     try {
       const promises = [fetchData(entityConfig.endpoint)];
 
-      // Add necessary data for different entities
-      if (entityName === "employees") {
-        promises.push(fetchData("access_roles"));
-        promises.push(fetchData("job_titles"));
-        promises.push(fetchData("departments"));
-        promises.push(fetchData("users"));
-      } else if (entityName === "foods" || entityName === "recipes") {
-        promises.push(fetchData("inventory_products"));
-        promises.push(fetchData("categories"));
-        promises.push(fetchData("units"));
-      } else if (["payrolls", "timesheets"].includes(entityName)) {
-        // For HR entities, we need employee data
-        promises.push(fetchData("employees"));
+      // Load all necessary related data based on entity
+      const relatedDataPromises: Promise<any>[] = [];
+
+      // Define foreignKeyFields properly
+      const foreignKeyFields = entityConfig.fields.filter(field =>
+        field.endsWith('_id') && field !== 'tenant_id' && field !== 'store_id'
+      );
+
+      if (foreignKeyFields.length > 0) {
+        foreignKeyFields.forEach(field => {
+          relatedDataPromises.push(getForeignKeyOptions(field));
+        });
       }
 
-      const results = await Promise.all(promises);
-
-      const fetchedEntityData = results[0];
-      let fetchedAccessRoles: any,
-        fetchedJobTitles: any,
-        fetchedDepartments: any,
-        fetchedUsers: any;
-      let fetchedInventoryProducts, fetchedFoodCategories, fetchedUnits;
-      let fetchedEmployees: any;
-
+      // Special cases for specific entities
       if (entityName === "employees") {
-        [
+        relatedDataPromises.push(
+          fetchData("access_roles"),
+          fetchData("job_titles"),
+          fetchData("departments"),
+          fetchData("users")
+        );
+      } else if (["foods", "recipes"].includes(entityName)) {
+        relatedDataPromises.push(
+          fetchData("inventory_products"),
+          fetchData("categories"),
+          fetchData("units")
+        );
+      } else if (["inventory_products"].includes(entityName)) {
+        relatedDataPromises.push(
+          fetchData("suppliers"),
+          fetchData("inv_categories")
+        );
+      } else if (["purchase_orders"].includes(entityName)) {
+        relatedDataPromises.push(
+          fetchData("suppliers"),
+          fetchData("sites")
+        );
+      }
+
+      const results = await Promise.all([...promises, ...relatedDataPromises]);
+      const fetchedEntityData = results[0];
+
+      // Process the rest of the results
+      let resultIndex = 1;
+
+      // Process foreign key options
+      const options: { [key: string]: any[] } = {};
+      foreignKeyFields.forEach(field => {
+        options[field] = results[resultIndex] || [];
+        resultIndex++;
+      });
+      setForeignKeyOptions(options);
+
+      // Process special entity data
+      if (entityName === "employees") {
+        const [
           fetchedAccessRoles,
           fetchedJobTitles,
           fetchedDepartments,
           fetchedUsers,
-        ] = results.slice(1);
-      } else if (entityName === "foods" || entityName === "recipes") {
-        [fetchedInventoryProducts, fetchedFoodCategories, fetchedUnits] =
-          results.slice(1);
-      } else if (["payrolls", "timesheets"].includes(entityName)) {
-        fetchedEmployees = results[1];
-        setAllEmployees(fetchedEmployees || []);
-      }
+        ] = results.slice(resultIndex, resultIndex + 4);
 
-      // Process data based on entity type
-      if (entityName === "employees") {
         const combinedData = (fetchedEntityData || []).map((employee: any) => {
           const user = (fetchedUsers || []).find(
             (u: any) => u.id === employee.user_id
@@ -346,7 +548,11 @@ export default function DynamicEntityManagementPage() {
         setJobTitles(fetchedJobTitles || []);
         setDepartments(fetchedDepartments || []);
         setUsers(fetchedUsers || []);
+
       } else if (entityName === "foods" || entityName === "recipes") {
+        const [fetchedInventoryProducts, fetchedFoodCategories, fetchedUnits] =
+          results.slice(resultIndex, resultIndex + 3);
+
         const foodsWithCategories = (fetchedEntityData || []).map(
           (food: Food) => {
             const category = (fetchedFoodCategories || []).find(
@@ -362,8 +568,9 @@ export default function DynamicEntityManagementPage() {
         setInventoryProducts(fetchedInventoryProducts || []);
         setFoodCategories(fetchedFoodCategories || []);
         setUnits(fetchedUnits || []);
+
       } else if (["timesheets", "payrolls"].includes(entityName)) {
-        // Add employee names to HR entities
+        const fetchedEmployees = results[resultIndex];
         const dataWithEmployeeNames = (fetchedEntityData || []).map(
           (item: any) => {
             const employee = (fetchedEmployees || []).find(
@@ -378,12 +585,15 @@ export default function DynamicEntityManagementPage() {
           }
         );
         setData(dataWithEmployeeNames);
+        setAllEmployees(fetchedEmployees || []);
+
       } else {
+        // Generic entity handling
         setData(fetchedEntityData || []);
       }
     } catch (err: any) {
       setError(err.message || "Failed to fetch data.");
-      handleApiError(err, "fetching data");
+      handleApiError(err, "fetching data", toast);
     } finally {
       setIsLoading(false);
     }
@@ -550,7 +760,7 @@ export default function DynamicEntityManagementPage() {
         if (entityName === "foods" || entityName === "recipes") {
           employeeData.recipes = currentRecipes;
         }
-        
+
         await fetchData(entityConfig.endpoint, selectedItem.id, employeeData, "PUT");
 
         toast({
@@ -574,13 +784,13 @@ export default function DynamicEntityManagementPage() {
           // Prepare employee payload with the new user_id, removing user object
           payload = { ...employeeData, user_id: createdUser.id };
         }
-        
+
         if (entityName === "foods" || entityName === "recipes") {
           payload.recipes = currentRecipes;
         }
-        
+
         await fetchData(entityConfig.endpoint, undefined, payload, "POST");
-        
+
         toast({
           title: "Added",
           description: `${entityConfig.label} added successfully.`,
@@ -594,8 +804,7 @@ export default function DynamicEntityManagementPage() {
     } catch (err: any) {
       handleApiError(
         err,
-        `${
-          isEditing ? "updating" : "adding"
+        `${isEditing ? "updating" : "adding"
         } ${entityConfig.label.toLowerCase()}`
       );
     } finally {
@@ -1146,44 +1355,67 @@ export default function DynamicEntityManagementPage() {
     </>
   );
 
+  // Enhanced generic form fields with foreign key support
   const renderGenericFormFields = () => (
     <>
       {entityConfig?.fields
         .filter((field) => !excludedFields.includes(field))
-        .map((field) => (
-          <FormControl
-            key={field}
-            isRequired={
-              !field.includes("description") && !field.includes("notes")
-            }
-          >
-            <FormLabel>
-              {field
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (c) => c.toUpperCase())}
-            </FormLabel>
-            {field.includes("description") || field.includes("notes") ? (
-              <Textarea
-                value={selectedItem?.[field] || ""}
-                onChange={(e) => handleItemChange(field, e.target.value)}
-                placeholder={`Enter ${field.replace(/_/g, " ")}`}
-              />
-            ) : (
-              <Input
-                value={selectedItem?.[field] || ""}
-                onChange={(e) => handleItemChange(field, e.target.value)}
-                placeholder={`Enter ${field.replace(/_/g, " ")}`}
-                type={
-                  field.includes("email")
-                    ? "email"
-                    : field.includes("date")
-                    ? "date"
-                    : "text"
-                }
-              />
-            )}
-          </FormControl>
-        ))}
+        .map((field) => {
+          const isForeignKey = field.endsWith('_id');
+          const options = foreignKeyOptions[field] || [];
+
+          return (
+            <FormControl
+              key={field}
+              isRequired={
+                !field.includes("description") &&
+                !field.includes("notes") &&
+                !field.includes("optional")
+              }
+            >
+              <FormLabel>
+                {field
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+              </FormLabel>
+
+              {isForeignKey && options.length > 0 ? (
+                <Select
+                  value={selectedItem?.[field] || ""}
+                  onChange={(e) => handleItemChange(field, e.target.value)}
+                  placeholder={`Select ${field.replace(/_id$/, '').replace(/_/g, ' ')}`}
+                >
+                  {options.map((option: any) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name || option.title || option.first_name || option.email || `ID: ${option.id}`}
+                    </option>
+                  ))}
+                </Select>
+              ) : field.includes("description") || field.includes("notes") ? (
+                <Textarea
+                  value={selectedItem?.[field] || ""}
+                  onChange={(e) => handleItemChange(field, e.target.value)}
+                  placeholder={`Enter ${field.replace(/_/g, " ")}`}
+                />
+              ) : (
+                <Input
+                  value={selectedItem?.[field] || ""}
+                  onChange={(e) => handleItemChange(field, e.target.value)}
+                  placeholder={`Enter ${field.replace(/_/g, " ")}`}
+                  type={
+                    field.includes("email")
+                      ? "email"
+                      : field.includes("date")
+                        ? "date"
+                        : field.includes("password")
+                          ? "password"
+                          : "text"
+                  }
+                />
+              )}
+            </FormControl>
+          );
+        })}
     </>
   );
 
@@ -1211,9 +1443,8 @@ export default function DynamicEntityManagementPage() {
         <ModalContent as="form" onSubmit={handleSubmit}>
           <ModalHeader>
             {isEditing
-              ? `Edit ${
-                  entityName === "recipes" ? "Food Recipe" : entityConfig.label
-                }`
+              ? `Edit ${entityName === "recipes" ? "Food Recipe" : entityConfig.label
+              }`
               : `Add ${entityName === "recipes" ? "Food" : entityConfig.label}`}
           </ModalHeader>
           <ModalCloseButton />
@@ -1222,10 +1453,10 @@ export default function DynamicEntityManagementPage() {
               {entityName === "employees"
                 ? renderEmployeeFormFields()
                 : entityName === "foods" || entityName === "recipes"
-                ? renderFoodFormFields()
-                : ["timesheets", "payrolls", "companies"].includes(entityName)
-                ? renderHRFormFields()
-                : renderGenericFormFields()}
+                  ? renderFoodFormFields()
+                  : ["timesheets", "payrolls", "companies"].includes(entityName)
+                    ? renderHRFormFields()
+                    : renderGenericFormFields()}
             </VStack>
           </ModalBody>
           <ModalFooter>

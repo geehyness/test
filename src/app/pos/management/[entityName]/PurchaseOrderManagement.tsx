@@ -44,6 +44,7 @@ import {
   getGoodsReceipts,
   getSuppliers,
   getSites,
+  getInventoryProducts
 } from "@/lib/api";
 import PurchaseOrderModal from "./PurchaseOrderComponents/PurchaseOrderModal";
 import PurchaseOrderTable from "./PurchaseOrderComponents/PurchaseOrderTable";
@@ -101,34 +102,53 @@ export default function PurchaseOrderManagement() {
     fetchData();
   }, []);
 
+  // Update the fetchData function to load all required data
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [orders, receipts, supplierList, siteList] = await Promise.all([
+
+      // Load all required data in parallel
+      const [orders, receipts, supplierList, siteList, inventoryProducts] = await Promise.all([
         getPurchaseOrders(),
         getGoodsReceipts(),
         getSuppliers(),
         getSites(),
+        getInventoryProducts() // Add this to load inventory products
       ]);
 
-      // Enrich orders with supplier and site names
-      const enrichedOrders = orders.map((order) => ({
-        ...order,
-        supplier_name:
-          supplierList.find((s) => s.id === order.supplier_id)?.name ||
-          "Unknown",
-        site_name:
-          siteList.find((s) => s.id === order.site_id)?.name || "Unknown",
-      }));
+      // Enrich orders with supplier, site, and product names
+      const enrichedOrders = orders.map((order: any) => {
+        const supplier = supplierList.find((s: any) => s.id === order.supplier_id);
+        const site = siteList.find((s: any) => s.id === order.site_id);
+
+        // Enrich order items with product names
+        const enrichedItems = order.items?.map((item: any) => {
+          const product = inventoryProducts.find((p: any) => p.id === item.inventory_product_id);
+          return {
+            ...item,
+            product_name: product?.name,
+            product_sku: product?.sku
+          };
+        }) || [];
+
+        return {
+          ...order,
+          supplier_name: supplier?.name || "Unknown Supplier",
+          site_name: site?.name || "Unknown Site",
+          items: enrichedItems
+        };
+      });
 
       setPurchaseOrders(enrichedOrders);
       setGoodsReceipts(receipts);
       setSuppliers(supplierList);
       setSites(siteList);
-    } catch (error) {
+
+    } catch (error: any) {
+      console.error("Error loading purchase order data:", error);
       toast({
         title: "Error loading data",
-        description: "Failed to fetch purchase orders and related data",
+        description: error.message || "Failed to fetch purchase orders and related data",
         status: "error",
         duration: 5000,
         isClosable: true,

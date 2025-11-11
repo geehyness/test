@@ -60,6 +60,7 @@ import {
   getLowStockItems,
   getSuppliers,
   deleteInventoryProduct,
+  getInvCategories
 } from "@/lib/api";
 import { InventoryProduct } from "@/lib/config/entities";
 import InventoryModal from "./InventoryComponents/InventoryModal";
@@ -119,21 +120,24 @@ export default function InventoryManagement() {
     activeTab,
   ]);
 
+  // Update the fetchInventoryData function
   const fetchInventoryData = async () => {
     try {
       setIsLoading(true);
-      const [products, orders, lowStockItems, supplierList] = await Promise.all(
-        [
-          getInventoryProducts(),
-          getPurchaseOrders(),
-          getLowStockItems(),
-          getSuppliers(),
-        ]
-      );
+
+      // Load all required data in parallel
+      const [products, orders, lowStockItems, supplierList, categoryList] = await Promise.all([
+        getInventoryProducts(),
+        getPurchaseOrders(),
+        getLowStockItems(),
+        getSuppliers(),
+        getInvCategories() // Add this to load categories
+      ]);
 
       setInventoryProducts(products || []);
       setPurchaseOrders(orders || []);
       setSuppliers(supplierList || []);
+      setInvCategories(categoryList || []); // Add this state
 
     } catch (error: any) {
       toast({
@@ -148,6 +152,10 @@ export default function InventoryManagement() {
     }
   };
 
+  // Add this state to the component
+  const [invCategories, setInvCategories] = useState<any[]>([]);
+
+  // Update the filterProducts function to include better filtering
   const filterProducts = () => {
     let filtered = inventoryProducts;
 
@@ -156,12 +164,8 @@ export default function InventoryManagement() {
         (product) =>
           product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          product.description
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          product.location_in_warehouse
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.location_in_warehouse?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -183,8 +187,14 @@ export default function InventoryManagement() {
       );
     }
 
+    // Add stock status filtering
+    if (activeTab === 2) { // Out of stock tab
+      filtered = filtered.filter(product => product.quantity_in_stock === 0);
+    }
+
     setFilteredProducts(filtered);
   };
+
 
   const getInventoryStats = (): InventoryStats => {
     const totalItems = inventoryProducts.length;
@@ -427,7 +437,7 @@ export default function InventoryManagement() {
           </Tab>
         </TabList>
 
-        {activeTab !== 2 && activeTab !==3 && ( 
+        {activeTab !== 2 && activeTab !== 3 && (
           <Box mb={4} p={4} bg="white" borderRadius="md" shadow="sm">
             <Flex direction={{ base: "column", md: "row" }} gap={4}>
               <InputGroup flex={1}>
@@ -448,7 +458,11 @@ export default function InventoryManagement() {
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 >
-                  {/* Category options would be populated here */}
+                  {invCategories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </Select>
               </FormControl>
 

@@ -129,34 +129,42 @@ export default function TimesheetManagement() {
     return map;
   }, [jobTitles]);
 
+  // Update the fetchTimesheetData function
   const fetchTimesheetData = async () => {
     try {
       setIsLoading(true);
+
+      // Use Promise.allSettled to handle partial failures gracefully
       const [
         fetchedTimesheets,
         fetchedEmployees,
         fetchedJobTitles,
-        fetchedShifts,
-      ] = await Promise.all([
+        fetchedShifts
+      ] = await Promise.allSettled([
         getTimesheets(),
         getEmployees(),
         getJobTitles(),
-        getShifts(),
+        getShifts()
       ]);
 
-      setJobTitles(fetchedJobTitles);
-      setShifts(fetchedShifts);
+      // Handle results with error checking
+      const timesheetsResult = fetchedTimesheets.status === 'fulfilled' ? fetchedTimesheets.value : [];
+      const employeesResult = fetchedEmployees.status === 'fulfilled' ? fetchedEmployees.value : [];
+      const jobTitlesResult = fetchedJobTitles.status === 'fulfilled' ? fetchedJobTitles.value : [];
+      const shiftsResult = fetchedShifts.status === 'fulfilled' ? fetchedShifts.value : [];
+
+      setJobTitles(jobTitlesResult);
+      setShifts(shiftsResult);
 
       const employeesMap = new Map(
-        fetchedEmployees.map((emp) => [emp.id, emp])
+        employeesResult.map((emp: any) => [emp.id, emp])
       );
 
-      const timesheetsWithEmployees = fetchedTimesheets.map((ts) => {
+      const timesheetsWithEmployees = timesheetsResult.map((ts: any) => {
         const employee = employeesMap.get(ts.employee_id);
         const clockInTime = moment(ts.clock_in);
         const clockOutTime = ts.clock_out ? moment(ts.clock_out) : moment();
 
-        // Calculate duration in minutes
         let durationMinutes = ts.duration_minutes;
         if (!durationMinutes || durationMinutes === 0) {
           durationMinutes = Math.round(
@@ -173,18 +181,32 @@ export default function TimesheetManagement() {
           duration_minutes: durationMinutes,
           duration_formatted: `${hours}h ${minutes}m`,
           is_active: !ts.clock_out,
+          store_id: ts.store_id || "default-store"
         };
       });
 
       setTimesheets(timesheetsWithEmployees);
-      setEmployees(fetchedEmployees);
+      setEmployees(employeesResult);
+
+      // Log any failed requests
+      const failedRequests = [
+        { name: 'timesheets', result: fetchedTimesheets },
+        { name: 'employees', result: fetchedEmployees },
+        { name: 'jobTitles', result: fetchedJobTitles },
+        { name: 'shifts', result: fetchedShifts }
+      ].filter(item => item.result.status === 'rejected');
+
+      if (failedRequests.length > 0) {
+        console.warn('Some data failed to load:', failedRequests);
+      }
+
     } catch (err: any) {
       logger.error("Failed to fetch timesheets or employees:", err);
-      setError("Failed to load timesheet data.");
+      setError("Failed to load timesheet data. Some features may not work correctly.");
       toast({
-        title: "Error",
-        description: err.message || "Failed to load timesheet data.",
-        status: "error",
+        title: "Partial Data Load",
+        description: "Some data failed to load. Please refresh to try again.",
+        status: "warning",
         duration: 5000,
         isClosable: true,
       });
@@ -282,7 +304,7 @@ export default function TimesheetManagement() {
           `${ts.employee?.first_name} ${ts.employee?.last_name}`,
           ts.employee?.job_title_id
             ? jobTitleMap.get(ts.employee.job_title_id) ||
-              ts.employee.job_title_id
+            ts.employee.job_title_id
             : "N/A",
           moment(ts.clock_in).format("MM/DD/YYYY HH:mm"),
           ts.clock_out
@@ -427,9 +449,9 @@ export default function TimesheetManagement() {
     );
     return shift
       ? {
-          start: moment(shift.start).format("HH:mm"),
-          end: moment(shift.end).format("HH:mm"),
-        }
+        start: moment(shift.start).format("HH:mm"),
+        end: moment(shift.end).format("HH:mm"),
+      }
       : null;
   };
 
@@ -494,8 +516,8 @@ export default function TimesheetManagement() {
                 filterStatus === "active"
                   ? "completed"
                   : filterStatus === "completed"
-                  ? "all"
-                  : "active"
+                    ? "all"
+                    : "active"
               )
             }
           >
@@ -503,8 +525,8 @@ export default function TimesheetManagement() {
             {filterStatus === "all"
               ? "All"
               : filterStatus === "active"
-              ? "Active Only"
-              : "Completed Only"}
+                ? "Active Only"
+                : "Completed Only"}
           </Button>
           <Button
             leftIcon={<FaDownload />}
@@ -717,12 +739,12 @@ export default function TimesheetManagement() {
                           : null;
                         const duration = clockOutMoment
                           ? Math.round(
-                              clockOutMoment.diff(
-                                clockInMoment,
-                                "minutes",
-                                true
-                              )
+                            clockOutMoment.diff(
+                              clockInMoment,
+                              "minutes",
+                              true
                             )
+                          )
                           : 0;
                         const hours = Math.floor(duration / 60);
                         const minutes = duration % 60;

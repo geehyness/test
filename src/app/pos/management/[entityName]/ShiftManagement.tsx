@@ -55,8 +55,8 @@ export interface Employee extends EmployeeDetails {
 export interface Shift extends ShiftDetails {
   id: string;
   employee_id: string;
-  recurring?: boolean; // FIX: Changed 'recurs' to 'recurring' to match entities.ts
-  recurringDay?: number;
+  recurring?: boolean; // Standardize on 'recurring'
+  recurring_day?: number;
   start: Date;
   end: Date;
   employee_name?: string;
@@ -64,7 +64,6 @@ export interface Shift extends ShiftDetails {
   active?: boolean;
   isDraft?: boolean;
 }
-
 export default function ShiftsPage() {
   const {
     shifts,
@@ -214,11 +213,10 @@ export default function ShiftsPage() {
         employee_id: employeeId,
         start: start.toISOString(),
         end: end.toISOString(),
-        recurring: recurs, // FIX: Changed 'recurs' to 'recurring'
-        recurringDay: recurringDay,
+        recurring: recurs, // Use 'recurring' consistently
+        recurring_day: recurs ? moment(start).day() : undefined,
         active: true,
         title: `Shift - ${selectedEmployee.name}`,
-        // Include store_id if available
         store_id: selectedEmployee.store_id || "default-store",
       };
 
@@ -286,21 +284,12 @@ export default function ShiftsPage() {
       const apiPayload = {
         ...originalShift,
         ...updates,
-        start: updates.start
-          ? updates.start.toISOString()
-          : originalShift.start.toISOString(),
-        end: updates.end
-          ? updates.end.toISOString()
-          : originalShift.end.toISOString(),
-        // Preserve recurrence settings
-        recurring: originalShift.recurring, // FIX: Changed 'recurs' to 'recurring'
-        recurringDay: originalShift.recurring
-          ? moment(updates.start || originalShift.start).day()
-          : undefined,
-        // Ensure required fields
+        start: updates.start ? updates.start.toISOString() : originalShift.start.toISOString(),
+        end: updates.end ? updates.end.toISOString() : originalShift.end.toISOString(),
+        recurring: updates.recurring !== undefined ? updates.recurring : originalShift.recurring,
+        recurring_day: originalShift.recurring ? moment(updates.start || originalShift.start).day() : undefined,
         employee_id: originalShift.employee_id,
-        active:
-          updates.active !== undefined ? updates.active : originalShift.active,
+        active: updates.active !== undefined ? updates.active : originalShift.active,
       };
 
       logger.info("ShiftManagement: Updating shift with payload:", apiPayload);

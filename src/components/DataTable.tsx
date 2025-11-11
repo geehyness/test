@@ -2,7 +2,6 @@
 'use client';
 import React, { useState, useMemo, ChangeEvent } from 'react';
 import {
-  // FIX: Import Table sub-components
   Table,
   Thead,
   Tbody,
@@ -17,33 +16,109 @@ import {
   IconButton,
   HStack,
   Select,
-  chakra, // Import chakra for icon styling
+  chakra,
+  Badge,
+  VStack,
+  useColorModeValue,
 } from '@chakra-ui/react';
-import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons'; // Import sort icons
+import { ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 
-// Define a flexible column type for better control over rendering
+// Enhanced Column interface with backward compatibility
 interface Column {
   accessorKey: string;
   header: string | React.ReactNode;
   cell?: (row: any) => React.ReactNode;
-  isSortable?: boolean; // New prop to indicate if a column is sortable
+  isSortable?: boolean;
+  width?: string; // New: column width control
+}
+
+// Enhanced props interface with backward compatibility
+interface EnhancedDataTableProps {
+  columns: Column[];
+  data: any[];
+  // Enhanced features (optional for backward compatibility)
+  onEdit?: (item: any) => void;
+  onDelete?: (id: string) => void;
+  isLoading?: boolean;
+  // Original props maintained for backward compatibility
+  searchTerm?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 export default function DataTable({
   columns,
   data,
-}: {
-  columns: Column[];
-  data: any[];
-}) {
-  const [searchTerm, setSearchTerm] = useState('');
+  // Enhanced features
+  onEdit,
+  onDelete,
+  isLoading = false,
+  // Optional controlled search (for backward compatibility)
+  searchTerm: externalSearchTerm,
+  onSearchChange,
+}: EnhancedDataTableProps) {
+  // State management (use internal state if not controlled)
+  const [internalSearchTerm, setInternalSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
 
+  // Use controlled search if provided, otherwise use internal state
+  const searchTerm = externalSearchTerm !== undefined ? externalSearchTerm : internalSearchTerm;
+
+  const handleSearchChange = (value: string) => {
+    if (onSearchChange) {
+      onSearchChange(value);
+    } else {
+      setInternalSearchTerm(value);
+    }
+    setCurrentPage(1);
+  };
+
+  // Enhanced cell rendering function
+  const renderCell = (row: any, column: Column) => {
+    // Use custom cell renderer if provided
+    if (column.cell) {
+      return column.cell(row);
+    }
+
+    const value = row[column.accessorKey];
+
+    // Enhanced data type handling
+    if (typeof value === 'boolean') {
+      return (
+        <Badge colorScheme={value ? 'green' : 'red'} size="sm">
+          {value ? 'Yes' : 'No'}
+        </Badge>
+      );
+    }
+
+    if (value instanceof Date) {
+      return value.toLocaleDateString();
+    }
+
+    // Handle date strings
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+      try {
+        return new Date(value).toLocaleDateString();
+      } catch {
+        return value;
+      }
+    }
+
+    // Handle null/undefined
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+
+    return String(value);
+  };
+
   // Memoize filtered and sorted data for performance
   const processedData = useMemo(() => {
+    if (isLoading) return [];
+
     // 1. Filter Data
     const filtered = data.filter((row) =>
       Object.values(row).some((value) =>
@@ -53,8 +128,6 @@ export default function DataTable({
 
     // 2. Sort Data
     if (sortColumn && sortDirection) {
-      // Create a shallow copy to avoid modifying the original array directly
-      // and ensure stable sort if needed, though Array.prototype.sort is stable in modern JS
       return [...filtered].sort((a, b) => {
         const aValue = a[sortColumn];
         const bValue = b[sortColumn];
@@ -74,12 +147,12 @@ export default function DataTable({
 
         if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1;
         if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
-        return 0; // Values are equal
+        return 0;
       });
     }
 
-    return filtered; // Return just filtered if no sorting is applied
-  }, [data, searchTerm, sortColumn, sortDirection]);
+    return filtered;
+  }, [data, searchTerm, sortColumn, sortDirection, isLoading]);
 
   // Calculate pagination details
   const totalPages = Math.ceil(processedData.length / itemsPerPage);
@@ -89,14 +162,9 @@ export default function DataTable({
     return processedData.slice(startIndex, endIndex);
   }, [processedData, currentPage, itemsPerPage]);
 
-  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-    setCurrentPage(1); // Reset to first page on new search
-  };
-
   const handleItemsPerPageChange = (e: ChangeEvent<HTMLSelectElement>) => {
     setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to first page when items per page changes
+    setCurrentPage(1);
   };
 
   const handlePreviousPage = () => {
@@ -109,26 +177,41 @@ export default function DataTable({
 
   const handleSort = (accessorKey: string) => {
     if (sortColumn === accessorKey) {
-      // Toggle sort direction if clicking the same column
       setSortDirection((prev) => {
         if (prev === 'asc') return 'desc';
-        if (prev === 'desc') return null; // Cycle through asc, desc, none
+        if (prev === 'desc') return null;
         return 'asc';
       });
     } else {
-      // Set new column to sort ascending
       setSortColumn(accessorKey);
       setSortDirection('asc');
     }
-    setCurrentPage(1); // Reset to first page on new sort
+    setCurrentPage(1);
   };
+
+  // Enhanced styling with color mode support
+  const borderColor = useColorModeValue('var(--border-color)', 'gray.600');
+  const bgColor = useColorModeValue('var(--light-gray-bg)', 'gray.700');
+  const hoverBgColor = useColorModeValue('var(--light-gray-bg)', 'gray.600');
+  const textColor = useColorModeValue('var(--dark-gray-text)', 'gray.200');
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box className="chakra-datatable" p={0}>
+        <Box p={4} textAlign="center" border="1px" borderColor={borderColor} rounded="md">
+          <Text color={textColor}>Loading data...</Text>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box className="chakra-datatable" p={0}>
       {/* Custom Controls */}
       <Flex mb={4} justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
         <HStack>
-          <Text color="var(--dark-gray-text)" className="font-medium">
+          <Text color={textColor} className="font-medium">
             Show
           </Text>
           <Select
@@ -137,42 +220,43 @@ export default function DataTable({
             width="80px"
             size="sm"
             rounded="md"
-            borderColor="var(--border-color)"
-            color="var(--dark-gray-text)"
+            borderColor={borderColor}
+            color={textColor}
           >
             <option value={10}>10</option>
             <option value={25}>25</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
           </Select>
-          <Text color="var(--dark-gray-text)" className="font-medium">
+          <Text color={textColor} className="font-medium">
             entries
           </Text>
         </HStack>
         <Input
           placeholder="Search..."
           value={searchTerm}
-          onChange={handleSearchChange}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
           width={{ base: '100%', md: '250px' }}
           rounded="md"
-          borderColor="var(--border-color)"
+          borderColor={borderColor}
           _focus={{ borderColor: "var(--primary-green)" }}
           size="md"
-          color="var(--dark-gray-text)"
+          color={textColor}
         />
       </Flex>
 
       {/* DataTable */}
-      <Box overflowX="auto" border="1px" borderColor="var(--border-color)" rounded="md">
+      <Box overflowX="auto" border="1px" borderColor={borderColor} rounded="md">
         <Table variant="simple" colorScheme="gray" size="md">
-          <Thead bg="var(--light-gray-bg)">
+          <Thead bg={bgColor}>
             <Tr>
               {columns.map((column, index) => (
                 <Th
                   key={column.accessorKey || index}
-                  color="var(--dark-gray-text)"
+                  color={textColor}
                   textTransform="capitalize"
                   py={3}
+                  width={column.width} // New: width support
                   onClick={() => column.isSortable && handleSort(column.accessorKey)}
                   cursor={column.isSortable ? 'pointer' : 'default'}
                   _hover={column.isSortable ? { bg: 'var(--border-color)' } : {}}
@@ -187,33 +271,80 @@ export default function DataTable({
                           ) : (
                             <ChevronDownIcon aria-label="sorted descending" />
                           )
-                        ) : (
-                          // Optional: Show a "neutral" sort icon when not sorted
-                          // <Icon as={TriangleDownIcon} transform="rotate(180deg)" color="gray.400" />
-                          null // Changed from '' to null
-                        )}
+                        ) : null}
                       </chakra.span>
                     )}
                   </Flex>
                 </Th>
               ))}
+              {/* Enhanced: Actions column */}
+              {(onEdit || onDelete) && (
+                <Th
+                  color={textColor}
+                  textTransform="capitalize"
+                  py={3}
+                  width="120px"
+                  textAlign="center"
+                >
+                  Actions
+                </Th>
+              )}
             </Tr>
           </Thead>
           <Tbody>
             {paginatedData.length > 0 ? (
               paginatedData.map((row, rowIndex) => (
-                <Tr key={row.id || rowIndex} _hover={{ bg: 'var(--light-gray-bg)' }}>
+                <Tr key={row.id || rowIndex} _hover={{ bg: hoverBgColor }}>
                   {columns.map((column, colIndex) => (
-                    <Td key={column.accessorKey + '-' + rowIndex} color="var(--medium-gray-text)">
-                      {column.cell ? column.cell(row) : String(row[column.accessorKey])}
+                    <Td
+                      key={column.accessorKey + '-' + rowIndex}
+                      color={textColor}
+                      maxW={column.width || "300px"}
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      whiteSpace="nowrap"
+                    >
+                      {renderCell(row, column)}
                     </Td>
                   ))}
+                  {/* Enhanced: Action buttons */}
+                  {(onEdit || onDelete) && (
+                    <Td>
+                      <HStack spacing={2} justify="center">
+                        {onEdit && (
+                          <IconButton
+                            aria-label="Edit"
+                            icon={<FaEdit />}
+                            size="sm"
+                            colorScheme="blue"
+                            variant="ghost"
+                            onClick={() => onEdit(row)}
+                          />
+                        )}
+                        {onDelete && (
+                          <IconButton
+                            aria-label="Delete"
+                            icon={<FaTrash />}
+                            size="sm"
+                            colorScheme="red"
+                            variant="ghost"
+                            onClick={() => onDelete(row.id)}
+                          />
+                        )}
+                      </HStack>
+                    </Td>
+                  )}
                 </Tr>
               ))
             ) : (
               <Tr>
-                <Td colSpan={columns.length} textAlign="center" py={4} color="var(--medium-gray-text)">
-                  No data found.
+                <Td
+                  colSpan={columns.length + ((onEdit || onDelete) ? 1 : 0)}
+                  textAlign="center"
+                  py={8}
+                  color={textColor}
+                >
+                  {searchTerm ? 'No data found.' : 'No data available.'}
                 </Td>
               </Tr>
             )}
@@ -223,12 +354,10 @@ export default function DataTable({
 
       {/* Pagination Controls */}
       <Flex justifyContent="space-between" alignItems="center" mt={4} px={2}>
-        <Text color="var(--dark-gray-text)" className="font-medium">
+        <Text color={textColor} className="font-medium">
           Showing {paginatedData.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0} to {Math.min(currentPage * itemsPerPage, processedData.length)} of {processedData.length} entries
         </Text>
-        {/* FIX: Removed redundant `as` prop to fix `spacing` error */}
         <HStack spacing={2}>
-          {/* FIX: Corrected icon prop and removed redundant as prop */}
           <IconButton
             aria-label="Previous page"
             icon={<ChevronLeftIcon />}
@@ -236,15 +365,14 @@ export default function DataTable({
             isDisabled={currentPage === 1}
             size="sm"
             variant="outline"
-            borderColor="var(--border-color)"
-            color="var(--dark-gray-text)"
-            _hover={{ bg: 'var(--light-gray-bg)' }}
+            borderColor={borderColor}
+            color={textColor}
+            _hover={{ bg: hoverBgColor }}
             rounded="md"
           />
-          <Text color="var(--dark-gray-text)" className="font-medium">
+          <Text color={textColor} className="font-medium">
             Page {totalPages === 0 ? 0 : currentPage} of {totalPages === 0 ? 0 : totalPages}
           </Text>
-          {/* FIX: Corrected icon prop and removed redundant as prop */}
           <IconButton
             aria-label="Next page"
             icon={<ChevronRightIcon />}
@@ -252,9 +380,9 @@ export default function DataTable({
             isDisabled={currentPage === totalPages || totalPages === 0}
             size="sm"
             variant="outline"
-            borderColor="var(--border-color)"
-            color="var(--dark-gray-text)"
-            _hover={{ bg: 'var(--light-gray-bg)' }}
+            borderColor={borderColor}
+            color={textColor}
+            _hover={{ bg: hoverBgColor }}
             rounded="md"
           />
         </HStack>

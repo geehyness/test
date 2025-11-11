@@ -1,7 +1,7 @@
 // src/app/pos/management/[entityName]/ShiftManagementComponents/ShiftCalendar.tsx
 "use client";
 
-import React, { useRef, useMemo, useCallback } from "react";
+import React, { useRef, useMemo, useCallback, useState } from "react";
 import FullCalendar from "@fullcalendar/react";
 import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import interactionPlugin from "@fullcalendar/interaction";
