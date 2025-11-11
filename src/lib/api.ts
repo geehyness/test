@@ -238,7 +238,7 @@ export async function updateShift(shiftId: string, updates: any): Promise<any> {
   return fetchData(`shifts/${shiftId}`, undefined, updates, "PUT");
 }
 export async function deleteShift(shiftId: string): Promise<any> {
-    return deleteItem('shifts', shiftId);
+  return deleteItem('shifts', shiftId);
 }
 export async function batchCreateShifts(shifts: any[]): Promise<any[]> {
     return fetchData('shifts/batch', undefined, { shifts }, 'POST');

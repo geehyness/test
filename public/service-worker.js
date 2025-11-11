@@ -1,65 +1,22 @@
-const CACHE_NAME = 'resto-admin-pos-cache-v1';
-const urlsToCache = [
-  '/',
-  '/offline.html',
-  '/globals.css',
-];
+// This service worker is intentionally left minimal.
+// Its purpose is to make the web app installable (PWA).
+// It does not provide offline caching capabilities.
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
-  );
+self.addEventListener('install', (event) => {
+  // The install event is required for a PWA but we don't need to cache anything.
+  console.log('Service Worker: Installing...');
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-
-        const fetchRequest = event.request.clone();
-
-        return fetch(fetchRequest).then(
-          response => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-      .catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('/offline.html');
-        }
-      })
-  );
+self.addEventListener('activate', (event) => {
+  // The activate event is useful for managing caches, but since we are not caching,
+  // we just log that it's active.
+  console.log('Service Worker: Activating...');
+  return self.clients.claim();
 });
 
-self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
+self.addEventListener('fetch', (event) => {
+  // An empty fetch handler is sufficient for a PWA to be installable.
+  // We are not intercepting network requests, so they will pass through as normal.
+  // This means the app will function as an online-only application.
 });

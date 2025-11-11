@@ -250,7 +250,7 @@ const managementSections = [
   },
 ];
 
-const SidebarContent = ({ onClose, ...rest }: any) => {
+const SidebarContent = ({ onClose, isOpen, ...rest }: any) => {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const pathname = usePathname();
   const { currentStaff, logoutStaff, _hasHydrated } = usePOSStore();
@@ -313,6 +313,13 @@ const SidebarContent = ({ onClose, ...rest }: any) => {
       h="full"
       display="flex"
       flexDirection="column"
+      // FIX: Control visibility based on isOpen prop
+      style={{
+        transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.3s ease-in-out'
+      }}
+      // Alternative approach using display:
+      // display={{ base: isOpen ? 'flex' : 'none', md: 'flex' }}
       {...rest}
     >
       {/* Fixed Header with Logo and Restaurant Name */}

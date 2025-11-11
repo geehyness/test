@@ -1,14 +1,12 @@
-// src/app/pos/components/POSHeader.tsx
+// src/components/pos/POSHeader.tsx - CORRECTED
 "use client";
 
 import {
-  // FIX: Import Avatar
   Avatar,
   Box,
   Flex,
   HStack,
   IconButton,
-  // FIX: Import Menu and its parts
   Menu,
   MenuButton,
   MenuDivider,
@@ -16,7 +14,6 @@ import {
   MenuList,
   Text,
   VStack,
-  // FIX: Import useColorModeValue
   useColorModeValue,
   Image as ChakraImage,
 } from "@chakra-ui/react";
@@ -53,10 +50,10 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
       px={{ base: 4, md: 4 }}
       height="20"
       alignItems="center"
-      bg="white" // Changed this to a static 'white'
+      bg="white"
       borderBottomWidth="1px"
       borderBottomColor={useColorModeValue("gray.200", "gray.700")}
-      justifyContent="space-between" // Set to space-between to push items apart
+      justifyContent="space-between"
       {...rest}
     >
       {/* Container for the menu icon on mobile */}
@@ -80,12 +77,11 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
           width="auto"
           height="20px"
           objectFit="contain"
-          // Removed mx="auto" and mt={4} as the parent Flex will handle alignment
         />
         <Flex
           alignItems="center"
           justifyContent="flex-start"
-          ml={4} // Add margin to the left of the text for spacing
+          ml={4}
           display={{ base: "none", md: "flex" }}
         >
           <Text fontSize="xl" fontWeight="bold" color="var(--primary-green)">
@@ -128,10 +124,6 @@ export const POSHeader = ({ onOpen, ...rest }: POSHeaderProps) => {
             bg={useColorModeValue("white", "gray.900")}
             borderColor={useColorModeValue("gray.200", "gray.700")}
           >
-            {/* <MenuItem>Profile</MenuItem>
-            <MenuItem>Settings</MenuItem>
-            <MenuItem>Billing</MenuItem>
-            <MenuDivider />*/}
             <MenuItem onClick={handleLogout}>Sign out</MenuItem>
           </MenuList>
         </Menu>

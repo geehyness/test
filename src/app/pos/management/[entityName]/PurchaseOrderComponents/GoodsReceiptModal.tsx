@@ -1,3 +1,4 @@
+
 // src/app/pos/management/[entityName]/PurchaseOrderComponents/GoodsReceiptModal.tsx
 "use client";
 
@@ -32,7 +33,9 @@ import {
     FormControl,
     FormLabel,
     Input,
-    Textarea
+    Textarea,
+    // FIX: Imported Select from chakra-ui
+    Select,
 } from "@chakra-ui/react";
 import { FaCheck, FaBox } from "react-icons/fa";
 import { createGoodsReceipt, getInventoryProducts } from "@/lib/api";

@@ -130,7 +130,7 @@ export default function CRUDForm({
                   placeholder={`Enter ${label}`}
                   size="md"
                   rounded="md"
-                  focusBorderColor="blue.400"
+                  _focus={{ borderColor: "blue.400" }}
                 />
               ) : fieldType === 'number' ? (
                 <NumberInput
@@ -154,7 +154,7 @@ export default function CRUDForm({
                   placeholder={`Enter ${label}`}
                   size="md"
                   rounded="md"
-                  focusBorderColor="blue.400"
+                  _focus={{ borderColor: "blue.400" }}
                 />
               )}
             </FormControl>

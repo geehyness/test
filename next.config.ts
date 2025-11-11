@@ -1,3 +1,5 @@
+
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -18,4 +20,5 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig
+// FIX: Changed 'export =' to 'export default'
+export default nextConfig;

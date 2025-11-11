@@ -1,3 +1,5 @@
+
+
 // src/app/customer-menu/[domain]/page.tsx - CORRECTED VERSION
 "use client";
 
@@ -76,15 +78,21 @@ import {
   FaExclamationTriangle,
 } from "react-icons/fa";
 import { fetchData, getTenantSettings, getTenantByDomain, fetchDataWithContext } from "@/lib/api";
-import { Table, Food, Category } from "@/lib/config/entities";
+import { Table, Food, Category, OrderItem, RecipeItem } from "@/lib/config/entities";
 import { PaymentService } from "@/lib/payment-service";
 import { payfastService } from "@/lib/payfast";
 
 // Define a new interface for displaying food items, extending the base Food entity
 interface DisplayFoodItem extends Food {
+  // FIX: Explicitly add properties from Food interface to resolve type errors.
+  id: string;
+  name: string;
+  description: string;
   categoryName: string;
   displayPrice: number;
   image?: string;
+  // FIX: Add missing image_urls property
+  image_urls?: string[];
 }
 
 interface FoodCategory {
@@ -606,7 +614,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props: { params: any; searchParam
       '--font-family': settings.font_family || 'Inter, sans-serif',
       '--navbar-main-item-hover-bg': settings.primary_color ? `${settings.primary_color}10` : '#38A16910',
       '--navbar-main-item-inactive-text': settings.text_color ? `${settings.text_color}80` : '#2D374880',
-      fontFamily: settings.font_family || 'Inter, sans-serif',
+      // FIX: Removed fontFamily property which caused an error. It should be a CSS variable.
     };
 
     return styles;
@@ -1412,7 +1420,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props: { params: any; searchParam
   if (loading && foods.length === 0) {
     return (
       <Flex justify="center" align="center" minH="80vh" bg={getTenantStyle('--background-color-light', '#F7FAFC')}>
-        <Spinner size="xl" colorScheme="green" />
+        <Spinner size="xl" color="green.500" />
         <Text ml={4} fontSize="lg" color={textColor}>
           Loading menu...
         </Text>
@@ -1426,6 +1434,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props: { params: any; searchParam
       <Flex justify="center" align="center" minH="80vh" bg={getTenantStyle('--background-color-light', '#F7FAFC')}>
         <Alert
           status="error"
+          variant="subtle"
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
@@ -1464,6 +1473,7 @@ const CustomerMenuPage: React.FC<PageProps> = (props: { params: any; searchParam
       <Flex justify="center" align="center" minH="80vh" bg={getTenantStyle('--background-color-light', '#F7FAFC')}>
         <Alert
           status="error"
+          variant="subtle"
           flexDirection="column"
           alignItems="center"
           justifyContent="center"

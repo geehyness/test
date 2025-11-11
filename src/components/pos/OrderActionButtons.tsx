@@ -50,4 +50,66 @@ export default function OrderActionButtons({
     currentOrder.status !== "new" && currentOrder.status !== "pending";
 
   return (
-    <VStack spacing={3} mt={6}
+    <VStack spacing={3} mt={6} w="full">
+      <HStack w="full">
+        <Button
+          leftIcon={<FaStickyNote />}
+          onClick={onAddNotes}
+          variant="outline"
+          colorScheme="gray"
+          flex="1"
+        >
+          Notes
+        </Button>
+        <Button
+          leftIcon={<FaTag />}
+          onClick={onApplyDiscount}
+          variant="outline"
+          colorScheme="gray"
+          flex="1"
+        >
+          Discount
+        </Button>
+        <Button
+          leftIcon={<FaChair />}
+          onClick={onSelectTable}
+          variant="outline"
+          colorScheme="gray"
+          flex="1"
+        >
+          Table
+        </Button>
+      </HStack>
+      <HStack w="full">
+        <Button
+          leftIcon={<FaPaperPlane />}
+          onClick={onSendToKitchen}
+          colorScheme="orange"
+          flex="1"
+          isDisabled={isOrderEmpty || isOrderSent}
+        >
+          {isOrderSent ? "Sent to Kitchen" : "Send to Kitchen"}
+        </Button>
+        <Button
+          leftIcon={<FaTrash />}
+          onClick={onClearOrder}
+          colorScheme="red"
+          variant="outline"
+          flex="1"
+        >
+          Clear Order
+        </Button>
+      </HStack>
+      <Button
+        leftIcon={<FaCashRegister />}
+        onClick={onOpenPaymentModal} // Use the new prop here
+        colorScheme="green"
+        size="lg"
+        width="full"
+        isDisabled={isOrderEmpty}
+      >
+        Checkout
+      </Button>
+    </VStack>
+  );
+}

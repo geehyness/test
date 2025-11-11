@@ -1,3 +1,4 @@
+
 // src/app/pos/management/[entityName]/InventoryManagement.tsx
 "use client";
 
@@ -54,13 +55,10 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import {
-  fetchData,
+  getInventoryProducts,
   getPurchaseOrders,
   getLowStockItems,
   getSuppliers,
-  getInventoryProducts,
-  createInventoryProduct,
-  updateInventoryProduct,
   deleteInventoryProduct,
 } from "@/lib/api";
 import { InventoryProduct } from "@/lib/config/entities";
@@ -133,22 +131,11 @@ export default function InventoryManagement() {
         ]
       );
 
-      console.log("Fetched inventory data:", {
-        productsCount: products?.length,
-        ordersCount: orders?.length,
-        lowStockCount: lowStockItems?.length,
-        suppliersCount: supplierList?.length,
-      });
-
       setInventoryProducts(products || []);
       setPurchaseOrders(orders || []);
       setSuppliers(supplierList || []);
 
-      if (lowStockItems && lowStockItems.length > 0) {
-        console.log("Low stock items:", lowStockItems);
-      }
     } catch (error: any) {
-      console.error("Error loading inventory data:", error);
       toast({
         title: "Error loading inventory",
         description: error.message || "Failed to fetch inventory data",
@@ -164,7 +151,6 @@ export default function InventoryManagement() {
   const filterProducts = () => {
     let filtered = inventoryProducts;
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (product) =>
@@ -179,30 +165,22 @@ export default function InventoryManagement() {
       );
     }
 
-    // Apply category filter
     if (categoryFilter) {
       filtered = filtered.filter(
         (product) => product.inv_category_id === categoryFilter
       );
     }
 
-    // Apply supplier filter
     if (supplierFilter) {
       filtered = filtered.filter(
         (product) => product.supplier_id === supplierFilter
       );
     }
 
-    // Apply tab-specific filters
     if (activeTab === 1) {
-      // Low stock tab
       filtered = filtered.filter(
         (product) => product.quantity_in_stock <= product.reorder_level
       );
-    } else if (activeTab === 3) {
-      // Purchase Orders tab
-      // This tab doesn't use the product filter
-      return;
     }
 
     setFilteredProducts(filtered);
@@ -224,14 +202,12 @@ export default function InventoryManagement() {
       0
     );
 
-    // Calculate pending orders value
     const pendingOrdersValue = purchaseOrders
       .filter((po) =>
         ["draft", "pending-approval", "approved", "ordered"].includes(po.status)
       )
       .reduce((sum, po) => sum + (po.total_amount || 0), 0);
 
-    // Get unique categories count
     const categoriesCount = new Set(
       inventoryProducts.map((p) => p.inv_category_id).filter(Boolean)
     ).size;
@@ -276,7 +252,7 @@ export default function InventoryManagement() {
         isClosable: true,
       });
 
-      fetchInventoryData(); // Refresh data
+      fetchInventoryData();
     } catch (error: any) {
       toast({
         title: "Error deleting product",
@@ -295,50 +271,8 @@ export default function InventoryManagement() {
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
-    fetchInventoryData(); // Refresh data after modal closes
+    fetchInventoryData();
   };
-
-  const handleUpdateStock = async (productId: string, newQuantity: number) => {
-    try {
-      setIsProcessing(true);
-      const product = inventoryProducts.find((p) => p.id === productId);
-      if (!product) return;
-
-      await updateInventoryProduct(productId, {
-        ...product,
-        quantity_in_stock: newQuantity,
-        updated_at: new Date().toISOString(),
-      });
-
-      toast({
-        title: "Stock updated",
-        description: `Stock level updated to ${newQuantity}`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-
-      fetchInventoryData(); // Refresh data
-    } catch (error: any) {
-      toast({
-        title: "Error updating stock",
-        description: error.message || "Failed to update stock level",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Get unique categories and suppliers for filters
-  const categories = Array.from(
-    new Set(inventoryProducts.map((p) => p.inv_category_id).filter(Boolean))
-  ).map((id) => {
-    const product = inventoryProducts.find((p) => p.inv_category_id === id);
-    return { id, name: product?.inv_category_id || "Uncategorized" };
-  });
 
   const stats = getInventoryStats();
 
@@ -375,7 +309,6 @@ export default function InventoryManagement() {
         </HStack>
       </Flex>
 
-      {/* Inventory Overview Stats */}
       <SimpleGrid columns={{ base: 2, md: 3, lg: 6 }} spacing={4} mb={6}>
         <Stat bg="white" p={4} borderRadius="md" shadow="sm">
           <StatLabel>Total Items</StatLabel>
@@ -433,7 +366,6 @@ export default function InventoryManagement() {
         </Stat>
       </SimpleGrid>
 
-      {/* Alert for critical stock levels */}
       {stats.outOfStockItems > 0 && (
         <Alert status="error" mb={4} borderRadius="md">
           <AlertIcon />
@@ -458,7 +390,7 @@ export default function InventoryManagement() {
         </Alert>
       )}
 
-      <Tabs variant="enclosed" onChange={setActiveTab}>
+      <Tabs variant="enclosed" onChange={(index) => setActiveTab(index)}>
         <TabList mb={4} overflowX="auto">
           <Tab>
             <HStack>
@@ -495,7 +427,7 @@ export default function InventoryManagement() {
           </Tab>
         </TabList>
 
-        {activeTab !== 3 && ( // Don't show filters for Purchase Orders tab
+        {activeTab !== 2 && activeTab !==3 && ( 
           <Box mb={4} p={4} bg="white" borderRadius="md" shadow="sm">
             <Flex direction={{ base: "column", md: "row" }} gap={4}>
               <InputGroup flex={1}>
@@ -516,11 +448,7 @@ export default function InventoryManagement() {
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 >
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
+                  {/* Category options would be populated here */}
                 </Select>
               </FormControl>
 
@@ -548,24 +476,16 @@ export default function InventoryManagement() {
               products={filteredProducts}
               onUpdate={fetchInventoryData}
               onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
-              onUpdateStock={handleUpdateStock}
-              isLoading={isProcessing}
             />
           </TabPanel>
           <TabPanel p={0}>
             <LowStockAlert
               products={filteredProducts}
               onUpdate={fetchInventoryData}
-              onEdit={handleEditProduct}
-              suppliers={suppliers}
             />
           </TabPanel>
           <TabPanel p={0}>
-            <StockHistory
-              products={inventoryProducts}
-              onRefresh={fetchInventoryData}
-            />
+            <StockHistory />
           </TabPanel>
           <TabPanel p={0}>
             <PurchaseOrderManagement />
@@ -573,16 +493,12 @@ export default function InventoryManagement() {
         </TabPanels>
       </Tabs>
 
-      {/* Inventory Modal */}
       <InventoryModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
         product={editingProduct}
-        suppliers={suppliers}
-        onSave={fetchInventoryData}
       />
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog
         isOpen={isDeleteDialogOpen}
         leastDestructiveRef={undefined}

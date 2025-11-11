@@ -1,4 +1,4 @@
-// src/app/pos/management/[entityName]/ShiftManagementComponents/ShiftUpdateModal.tsx
+// src/app/pos/management/[entityName]/ShiftManagementComponents/ShiftUpdateModal.tsx - CORRECTED
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -28,8 +28,8 @@ import { logger } from '@/lib/logger';
 interface ShiftUpdateModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onUpdateShift: (shiftId: string, updates: Partial<Shift>) => void;
-    onDeleteShift: (shiftId: string) => void;
+    onUpdateShift: (shiftId: string, updates: Partial<Shift>) => Promise<{ success: boolean; error?: string }>;
+    onDeleteShift: (shiftId: string) => Promise<{ success: boolean; error?: string }>;
     selectedShift: Shift | null;
     employee: Employee | null;
     isLoading: boolean;
@@ -39,7 +39,7 @@ const ShiftUpdateModal: React.FC<ShiftUpdateModalProps> = ({ isOpen, onClose, on
     const [startDate, setStartDate] = useState('');
     const [startTime, setStartTime] = useState('09:00');
     const [endTime, setEndTime] = useState('17:00');
-    const [recurs, setRecurs] = useState(false);
+    const [recurring, setRecurring] = useState(false); // FIX: Changed 'recurs' to 'recurring'
     const toast = useToast();
 
     useEffect(() => {
@@ -51,11 +51,12 @@ const ShiftUpdateModal: React.FC<ShiftUpdateModalProps> = ({ isOpen, onClose, on
             const endMoment = moment(selectedShift.end);
             setEndTime(endMoment.format('HH:mm'));
 
-            setRecurs(selectedShift.recurring || false);
+            // FIX: Changed to use 'recurring' property
+            setRecurring(selectedShift.recurring || false);
         }
     }, [selectedShift]);
 
-    const handleUpdate = () => {
+    const handleUpdate = async () => {
         if (!selectedShift) return;
 
         const newStartTime = moment(`${startDate}T${startTime}`);
@@ -72,16 +73,17 @@ const ShiftUpdateModal: React.FC<ShiftUpdateModalProps> = ({ isOpen, onClose, on
             return;
         }
 
-        onUpdateShift(selectedShift.id, {
+        await onUpdateShift(selectedShift.id, {
             start: newStartTime.toDate(),
             end: newEndTime.toDate(),
-            recurring: recurs,
+            // FIX: Changed to use 'recurring' property
+            recurring: recurring,
         });
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!selectedShift) return;
-        onDeleteShift(selectedShift.id);
+        await onDeleteShift(selectedShift.id);
     };
 
     return (
@@ -121,7 +123,7 @@ const ShiftUpdateModal: React.FC<ShiftUpdateModalProps> = ({ isOpen, onClose, on
                         </HStack>
 
                         <FormControl>
-                            <Checkbox isChecked={recurs} onChange={(e) => setRecurs(e.target.checked)}>
+                            <Checkbox isChecked={recurring} onChange={(e) => setRecurring(e.target.checked)}>
                                 This shift recurs weekly
                             </Checkbox>
                         </FormControl>
@@ -131,6 +133,7 @@ const ShiftUpdateModal: React.FC<ShiftUpdateModalProps> = ({ isOpen, onClose, on
                                 <Text fontWeight="bold" mb={2}>Current Shift Details:</Text>
                                 <Text fontSize="sm">
                                     {moment(selectedShift.start).format('MMM Do, YYYY')} - {moment(selectedShift.start).format('HH:mm')} to {moment(selectedShift.end).format('HH:mm')}
+                                    {/* FIX: Changed to use 'recurring' property */}
                                     {selectedShift.recurring && <Text as="span" ml={2} color="green.500">(Recurring)</Text>}
                                 </Text>
                             </Box>
@@ -147,14 +150,14 @@ const ShiftUpdateModal: React.FC<ShiftUpdateModalProps> = ({ isOpen, onClose, on
                         isLoading={isLoading}
                         mr={3}
                     >
-                        Delete from Draft
+                        Delete Shift
                     </Button>
                     <Button
                         colorScheme="blue"
                         onClick={handleUpdate}
                         isLoading={isLoading}
                     >
-                        Update in Draft
+                        Save Changes
                     </Button>
                 </ModalFooter>
             </ModalContent>

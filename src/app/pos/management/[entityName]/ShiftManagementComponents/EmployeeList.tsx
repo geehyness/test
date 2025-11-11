@@ -150,7 +150,6 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, onEmployeeClick 
           return (
             <Box key={role}>
               <HStack
-                as="button"
                 spacing={2}
                 cursor="pointer"
                 onClick={() => toggleRoleCollapse(role)}

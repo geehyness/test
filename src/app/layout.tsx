@@ -1,19 +1,9 @@
-// src/app/layout.tsx
+// src/app/layout.tsx - CORRECTED
 'use client';
 
 import React, { useEffect } from 'react';
 import '@/app/globals.css';
-// FIX: Removed extendTheme. Default theme will be used by ChakraProvider.
 import { ChakraProvider } from '@chakra-ui/react';
-
-function AppSelector({ children }: { children: React.ReactNode }) {
-  const appMode = process.env.NEXT_PUBLIC_APP_MODE || 'pos';
-
-  // This component will simply pass children through, 
-  // as the routing is now handled by redirects in next.config.ts
-  // and separate layouts in /admin and /pos directories.
-  return <>{children}</>;
-}
 
 export default function RootLayout({
   children,
@@ -44,10 +34,9 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body>
-        {/* FIX: Wrap children in ChakraProvider to resolve context errors */}
-        {/* FIX: Removed theme prop which was causing an error. */}
+        {/* FIX: Removed invalid 'value' prop from ChakraProvider */}
         <ChakraProvider>
-          <AppSelector>{children}</AppSelector>
+          {children}
         </ChakraProvider>
       </body>
     </html>

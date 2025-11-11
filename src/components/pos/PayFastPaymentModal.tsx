@@ -49,15 +49,15 @@ export const PayFastPaymentModal: React.FC<PayFastPaymentModalProps> = ({
       setIsProcessing(true);
 
       // Create payment data
-      const paymentData = payfastService.createPaymentData({
+      const paymentData = await payfastService.createPaymentData({
         amount: order.total_amount,
         itemName: `Order #${order.id}`,
         itemDescription: `Payment for order ${order.id} at ${new Date().toLocaleDateString()}`,
         mPaymentId: order.id,
         customer: {
-          firstName: customer?.firstName,
-          lastName: customer?.lastName,
-          email: customer?.email,
+          firstName: customer?.firstName || 'Customer',
+          lastName: customer?.lastName || '',
+          email: customer?.email || '',
           cellNumber: customer?.cellNumber,
         },
         customData: {

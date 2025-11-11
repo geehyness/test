@@ -1,4 +1,4 @@
-// src/app/pos/management/[entityName]/page.tsx
+// src/app/pos/management/[entityName]/page.tsx - CORRECTED
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
@@ -540,18 +540,18 @@ export default function DynamicEntityManagementPage() {
       }
 
       if (isEditing) {
+        const { user, ...employeeData } = payload;
         // FIX: Handle nested user object for employees
-        if (entityName === "employees" && payload.user) {
-          if (payload.user.id) {
-            await fetchData("users", payload.user.id, payload.user, "PUT");
+        if (entityName === "employees" && user) {
+          if (user.id) {
+            await fetchData("users", user.id, user, "PUT");
           }
-          delete payload.user; // Remove user object from employee payload
         }
         if (entityName === "foods" || entityName === "recipes") {
-          payload.recipes = currentRecipes;
+          employeeData.recipes = currentRecipes;
         }
         
-        await fetchData(entityConfig.endpoint, selectedItem.id, payload, "PUT");
+        await fetchData(entityConfig.endpoint, selectedItem.id, employeeData, "PUT");
 
         toast({
           title: "Updated",
@@ -565,7 +565,7 @@ export default function DynamicEntityManagementPage() {
         // FIX: Handle nested user object for new employees
         if (entityName === "employees") {
           const { user, ...employeeData } = selectedItem;
-          const newUserPayload = { ...user, password: user.password || 'password' };
+          const newUserPayload = { ...user, password: user.password || 'password' }; // Set default password if not provided
           const createdUser = await fetchData("users", undefined, newUserPayload, "POST");
 
           if (!createdUser || !createdUser.id) {
@@ -602,7 +602,6 @@ export default function DynamicEntityManagementPage() {
       setIsSubmitting(false);
     }
   };
-
 
   const handleItemChange = (field: string, value: any) => {
     setSelectedItem((prev: any) => ({ ...prev, [field]: value }));

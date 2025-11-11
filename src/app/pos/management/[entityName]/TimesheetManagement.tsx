@@ -70,11 +70,13 @@ import {
   FaCalendarPlus,
   FaClock,
 } from "react-icons/fa";
+import { usePOSStore } from "@/lib/usePOSStore";
 
 // Update the interface to include optional properties
 interface TimesheetEntryWithEmployee
   extends Omit<TimesheetEntryType, "employee_id"> {
   store_id: string;
+  employee_id: string;
   employee?: EmployeeType;
   duration_formatted: string;
   is_active?: boolean;
@@ -200,7 +202,7 @@ export default function TimesheetManagement() {
     if (isOpen) {
       loadScheduledEmployees();
     }
-  }, [selectedDate, isOpen]);
+  }, [selectedDate, isOpen, shifts, timesheets]);
 
   const loadScheduledEmployees = () => {
     const selectedDayShifts = shifts.filter((shift) =>

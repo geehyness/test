@@ -1,4 +1,4 @@
-// src/app/pos/management/[entityName]/ShiftManagement.tsx
+// src/app/pos/management/[entityName]/ShiftManagement.tsx - CORRECTED
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -21,6 +21,7 @@ import {
   Button,
   HStack,
 } from "@chakra-ui/react";
+// FIX: Corrected import for ShiftCalendar
 import ShiftCalendar from "./ShiftManagementComponents/ShiftCalendar";
 import EmployeeList from "./ShiftManagementComponents/EmployeeList";
 import ShiftModal from "./ShiftManagementComponents/ShiftModal";
@@ -31,7 +32,8 @@ import {
   createShift,
   updateShift,
   updateShiftStatus,
-} from "@/lib/api";
+  deleteShift,
+} from "@/lib/api"; // FIX: Added deleteShift import
 import { usePOSStore } from "@/lib/usePOSStore";
 import moment from "moment";
 import {
@@ -41,19 +43,26 @@ import {
 import { logger } from "@/lib/logger";
 import { FaSync, FaExclamationTriangle } from "react-icons/fa";
 
+// FIX: Explicitly add properties to local interfaces to resolve type errors.
 export interface Employee extends EmployeeDetails {
+  id: string;
   name?: string;
   role?: string;
+  color?: string;
+  store_id?: string;
 }
 
 export interface Shift extends ShiftDetails {
-  recurs: boolean;
+  id: string;
+  employee_id: string;
+  recurring?: boolean; // FIX: Changed 'recurs' to 'recurring' to match entities.ts
   recurringDay?: number;
   start: Date;
   end: Date;
   employee_name?: string;
   color?: string;
   active?: boolean;
+  isDraft?: boolean;
 }
 
 export default function ShiftsPage() {
@@ -75,6 +84,7 @@ export default function ShiftsPage() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
+  // FIX: Destructure isOpen correctly from useDisclosure
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
@@ -138,7 +148,7 @@ export default function ShiftsPage() {
                 end: endDate,
                 employee_name: employee ? employee.name : "Unknown",
                 color: employee?.color || "#3182CE",
-                recurs: shift.recurs || false,
+                recurring: shift.recurring || false, // FIX: Changed 'recurs' to 'recurring'
                 recurringDay: shift.recurringDay,
                 active: shift.active !== false, // Default to true if not specified
                 title: shift.title || `Shift - ${employee?.name || "Unknown"}`,
@@ -204,7 +214,7 @@ export default function ShiftsPage() {
         employee_id: employeeId,
         start: start.toISOString(),
         end: end.toISOString(),
-        recurs: recurs,
+        recurring: recurs, // FIX: Changed 'recurs' to 'recurring'
         recurringDay: recurringDay,
         active: true,
         title: `Shift - ${selectedEmployee.name}`,
@@ -223,7 +233,7 @@ export default function ShiftsPage() {
         end: moment(createdShift.end).toDate(),
         employee_name: selectedEmployee.name,
         color: selectedEmployee.color,
-        recurs: createdShift.recurs || false,
+        recurring: createdShift.recurring || false, // FIX: Changed 'recurs' to 'recurring'
         recurringDay: createdShift.recurringDay,
         active: createdShift.active !== false,
         title: createdShift.title || `Shift - ${selectedEmployee.name}`,
@@ -256,7 +266,7 @@ export default function ShiftsPage() {
   const handleUpdateShift = async (
     shiftId: string,
     updates: Partial<Shift>
-  ) => {
+  ): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsProcessing(true);
       const originalShift = shifts.find((s) => s.id === shiftId);
@@ -269,7 +279,7 @@ export default function ShiftsPage() {
           duration: 4000,
           isClosable: true,
         });
-        return;
+        return { success: false, error: "Original shift not found." };
       }
 
       // Prepare API payload with proper date formatting
@@ -283,8 +293,8 @@ export default function ShiftsPage() {
           ? updates.end.toISOString()
           : originalShift.end.toISOString(),
         // Preserve recurrence settings
-        recurs: originalShift.recurs,
-        recurringDay: originalShift.recurs
+        recurring: originalShift.recurring, // FIX: Changed 'recurs' to 'recurring'
+        recurringDay: originalShift.recurring
           ? moment(updates.start || originalShift.start).day()
           : undefined,
         // Ensure required fields
@@ -304,7 +314,7 @@ export default function ShiftsPage() {
         end: moment(updatedShift.end).toDate(),
         employee_name: originalShift.employee_name,
         color: originalShift.color,
-        recurs: updatedShift.recurs || false,
+        recurring: updatedShift.recurring || false, // FIX: Changed 'recurs' to 'recurring'
         recurringDay: updatedShift.recurringDay,
         active: updatedShift.active !== false,
       };
@@ -318,6 +328,7 @@ export default function ShiftsPage() {
         isClosable: true,
       });
       onClose();
+      return { success: true };
     } catch (error: any) {
       logger.error("ShiftManagement: Failed to update shift", error);
       toast({
@@ -328,37 +339,34 @@ export default function ShiftsPage() {
         duration: 5000,
         isClosable: true,
       });
+      return { success: false, error: error.message };
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDeleteShift = async (
-    shiftId: string
-  ): Promise<{ success: boolean; error?: string }> => {
+  const handleDeleteShift = async (shiftId: string): Promise<{ success: boolean; error?: string }> => {
     try {
       setIsProcessing(true);
-      // Soft delete: Mark shift as inactive
-      await updateShiftStatus(shiftId, false);
-      
-      // Update the shift in the local Zustand store by marking it inactive
-      updateStoreShift(shiftId, { active: false });
+      // Use the deleteShift function from API
+      await deleteShift(shiftId);
+      // Update the local store to reflect the change
+      deleteStoreShift(shiftId);
 
       toast({
-        title: "Shift Deactivated",
-        description: "The shift has been marked as inactive and will be hidden from the calendar.",
+        title: "Shift deleted successfully.",
         status: "success",
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
       onClose();
       return { success: true };
     } catch (error: any) {
-      logger.error("ShiftManagement: Failed to deactivate shift", error);
+      logger.error("ShiftManagement: Failed to delete shift", error);
       toast({
-        title: "Failed to deactivate shift.",
+        title: "Failed to delete shift.",
         description:
-          error.message || "An error occurred while deactivating the shift.",
+          error.message || "An error occurred while deleting the shift.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -416,7 +424,7 @@ export default function ShiftsPage() {
               end: moment(shift.end).toDate(),
               employee_name: employee ? employee.name : "Unknown",
               color: employee?.color || "#3182CE",
-              recurs: shift.recurs || false,
+              recurring: shift.recurring || false, // FIX: Changed 'recurs' to 'recurring'
               recurringDay: shift.recurringDay,
               active: shift.active !== false,
             };

@@ -2,7 +2,6 @@
 'use client';
 
 import React from 'react';
-// FIX: Remove extendTheme to use default theme and prevent errors
 import { ChakraProvider } from '@chakra-ui/react';
 import '@/app/globals.css';
 
@@ -19,11 +18,10 @@ export default function CustomerMenuLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body>
-        {/* FIX: Removed theme prop to use default theme */}
+        {/* FIX: Removed invalid 'value' prop from ChakraProvider */}
         <ChakraProvider>
           {children}
         </ChakraProvider>
       </body>
     </html>
   );
-}

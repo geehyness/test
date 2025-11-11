@@ -1,4 +1,4 @@
-// src/app/admin/layout.tsx
+// src/app/admin/layout.tsx - CORRECTED
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -11,7 +11,9 @@ import {
   useMediaQuery,
   IconButton,
   Heading,
-} from '@chakra-ui/react';
+  Alert,
+  AlertIcon,
+} from '@chakra-ui/react'; // FIX: Added Alert imports
 import { FiMenu } from 'react-icons/fi';
 
 export default function AdminLayout({

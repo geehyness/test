@@ -118,15 +118,15 @@ export default function PaymentModal({
       setPaymentStatus('processing');
 
       // Create payment data for PayFast
-      const paymentData = payfastService.createPaymentData({
+      const paymentData = await payfastService.createPaymentData({
         amount: orderTotal,
         itemName: `Order #${orderId}`,
         itemDescription: `Restaurant order ${orderId}`,
         mPaymentId: orderId,
         customer: {
           firstName: customer?.firstName || 'Customer',
-          lastName: customer?.lastName,
-          email: customer?.email,
+          lastName: customer?.lastName || '',
+          email: customer?.email || '',
           cellNumber: customer?.cellNumber,
         },
         customData: {
@@ -286,7 +286,7 @@ export default function PaymentModal({
                       size="lg"
                       rounded="md"
                       borderColor="var(--border-color)"
-                      focusBorderColor="var(--primary-green)"
+                      _focus={{ borderColor: "var(--primary-green)" }}
                       color="var(--dark-gray-text)"
                       isDisabled={isProcessing}
                     />

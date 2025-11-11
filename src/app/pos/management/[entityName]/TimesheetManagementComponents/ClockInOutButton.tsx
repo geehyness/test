@@ -3,7 +3,8 @@
 import React from 'react';
 import { Button, useToast } from '@chakra-ui/react';
 import { clockIn, clockOut } from '@/lib/api';
-import { usePOSStore } from '@/app/pos/lib/usePOSStore';
+// FIX: Corrected import path
+import { usePOSStore } from '@/lib/usePOSStore';
 import { logger } from '@/lib/logger';
 import moment from 'moment';
 import { TimesheetEntry } from '@/lib/config/entities';
@@ -32,7 +33,7 @@ const ClockInOutButton: React.FC<ClockInOutButtonProps> = ({ onRefreshData, curr
         }
 
         try {
-            await clockIn(currentStaff.id);
+            await clockIn(currentStaff.id, currentStaff.store_id || '');
             toast({
                 title: "Clocked In",
                 description: `Successfully clocked in at ${moment().format('LT')}`,
@@ -42,7 +43,7 @@ const ClockInOutButton: React.FC<ClockInOutButtonProps> = ({ onRefreshData, curr
             });
             onRefreshData();
         } catch (error) {
-            logger.error("Failed to clock in", error);
+            logger.error("Failed to clock in", "error");
             toast({
                 title: "Error",
                 description: "Failed to clock in. Please try again.",
@@ -67,7 +68,7 @@ const ClockInOutButton: React.FC<ClockInOutButtonProps> = ({ onRefreshData, curr
             });
             onRefreshData();
         } catch (error) {
-            logger.error("Failed to clock out", error);
+            logger.error("Failed to clock out", "error");
             toast({
                 title: "Error",
                 description: "Failed to clock out. Please try again.",
