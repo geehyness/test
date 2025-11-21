@@ -51,12 +51,29 @@ app.include_router(payfast_itn_router)  # ADD PAYFAST ITN ROUTER
 @app.on_event("startup")
 async def startup_event():
     try:
+        if client is None:
+            logger.error("❌ MongoDB client is None - check MONGODB_URL environment variable")
+            return
+            
         await client.admin.command('ping')
         logger.info("✅ Connected to MongoDB!")
         print("✅ Connected to MongoDB!")
     except Exception as e:
         logger.error(f"❌ Could not connect to MongoDB: {e}")
         print(f"❌ Could not connect to MongoDB: {e}")
+
+@app.get("/health")
+async def health_check():
+    try:
+        if client is None:
+            return {"status": "unhealthy", "database": "not_configured"}
+            
+        await client.admin.command('ping')
+        logger.info("Health check: OK")
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "database": "disconnected"}
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -69,12 +86,3 @@ async def root():
     logger.info("Root endpoint accessed")
     return {"message": "POS System API is running"}
 
-@app.get("/health")
-async def health_check():
-    try:
-        await client.admin.command('ping')
-        logger.info("Health check: OK")
-        return {"status": "healthy", "database": "connected"}
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return {"status": "unhealthy", "database": "disconnected"}
