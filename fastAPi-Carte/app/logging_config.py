@@ -1,13 +1,9 @@
-# app/logging_config.py
+# app/logging_config.py - FIXED FOR VERCEL
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
 import os
 from datetime import datetime
 import json
-
-# Create logs directory if it doesn't exist
-os.makedirs("logs", exist_ok=True)
 
 # Custom formatter that includes timestamps with milliseconds
 class DetailedFormatter(logging.Formatter):
@@ -23,7 +19,7 @@ class DetailedFormatter(logging.Formatter):
         return super().format(record)
 
 def setup_logging():
-    """Setup comprehensive logging configuration"""
+    """Setup logging configuration that works on Vercel"""
     
     # Create logger
     logger = logging.getLogger()
@@ -32,7 +28,7 @@ def setup_logging():
     # Clear any existing handlers
     logger.handlers.clear()
     
-    # Console handler
+    # Console handler only - Vercel can't write to files
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
     console_format = DetailedFormatter(
@@ -40,29 +36,15 @@ def setup_logging():
     )
     console_handler.setFormatter(console_format)
     
-    # File handler with rotation
-    file_handler = RotatingFileHandler(
-        'logs/api.log',
-        maxBytes=10*1024*1024,  # 10MB
-        backupCount=5
-    )
-    file_handler.setLevel(logging.INFO)
-    file_format = DetailedFormatter(
-        '%(timestamp)s | %(levelname)-8s | %(name)-20s | %(filename)s:%(lineno)d | %(message)s'
-    )
-    file_handler.setFormatter(file_format)
-    
-    # Add handlers
+    # ONLY add console handler - no file handlers on Vercel!
     logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
     
     # Set specific log levels for noisy libraries
     logging.getLogger('motor').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('asyncio').setLevel(logging.WARNING)
-    logging.getLogger('watchfiles').setLevel(logging.WARNING)  # ADD THIS LINE
+    logging.getLogger('watchfiles').setLevel(logging.WARNING)
     logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
-
 
 # Create logger instances for different modules
 def get_logger(name):
