@@ -1,24 +1,36 @@
-# app/database.py - FIXED VERSION
+# app/database.py - FIXED FOR VERCEL
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
-from dotenv import load_dotenv
 from app.utils.db_logger import log_find, log_insert, log_update, log_delete, log_error
 from app.logging_config import get_logger
 
-load_dotenv()
-
 logger = get_logger("api.database")
+
+# REMOVE THIS LINE - Vercel doesn't use .env files
+# load_dotenv()
 
 MONGO_DETAILS = os.getenv("MONGODB_URL")
 
 if not MONGO_DETAILS:
-    raise Exception("MONGODB_URL environment variable is missing or empty. Please check your .env file.")
+    # Just log the error instead of raising an exception during import
+    logger.error("MONGODB_URL environment variable is not set")
+    # Don't raise here - let it fail gracefully during runtime
+    client = None
+    database = None
+else:
+    try:
+        client = AsyncIOMotorClient(MONGO_DETAILS)
+        database = client.pos_system
+        logger.info("MongoDB client initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize MongoDB client: {e}")
+        client = None
+        database = None
 
-client = AsyncIOMotorClient(MONGO_DETAILS)
-database = client.pos_system
-
-# Collection references
+# Collection references - with error handling
 def get_collection(collection_name):
+    if database is None:
+        raise Exception("Database not initialized - check MONGODB_URL environment variable")
     return LoggedCollection(database[collection_name], collection_name)
 
 # Helper to convert MongoDB documents
