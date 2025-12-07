@@ -4,6 +4,9 @@ from pydantic import BaseModel, EmailStr, ConfigDict, validator
 from datetime import datetime, date
 from bson import ObjectId
 
+# ADD THIS IMPORT to fix circular dependency
+# from .core import PaymentAttempt  # Remove this if it causes circular import
+
 # Create a common encoder dictionary
 COMMON_ENCODERS = {
     ObjectId: str,
@@ -149,8 +152,13 @@ class OrderResponse(BaseModel):
     order_type: Optional[str] = None
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
-    stock_warnings: Optional[List[str]] = None
-    stock_warnings: Optional[List[str]] = None  # ADD THIS LINE
+    stock_warnings: Optional[List[Dict[str, Any]]] = None  # Updated type
+    created_at: Optional[str] = None  # ADD THIS LINE
+    updated_at: Optional[str] = None  # ADD THIS LINE
+    cancellation_reason: Optional[str] = None  # ADD THIS LINE
+    payment_reference: Optional[str] = None  # ADD THIS LINE
+    transaction_id: Optional[str] = None  # ADD THIS LINE
+    payment_details: Optional[Dict[str, Any]] = None  # ADD THIS LINE
 
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(
@@ -286,19 +294,6 @@ class EmployeeResponse(BaseModel):
     tenant_id: str
     store_id: str
     main_access_role_id: str
-class EmployeeResponse(BaseModel):
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str, datetime: lambda v: v.isoformat() if v else None}
-    )
-    
-    id: str
-    user_id: str
-    job_title_id: str
-    access_role_ids: List[str]
-    tenant_id: str
-    store_id: str
-    main_access_role_id: str
     hire_date: datetime  # CHANGED from str to datetime  <--- THIS TOO
     salary: float
     first_name: str
@@ -315,21 +310,6 @@ class EmployeeResponse(BaseModel):
     status: Optional[EmployeeStatusResponse] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    salary: float
-    first_name: str
-    last_name: Optional[str] = None
-    avatar_url: Optional[str] = None
-    employee_id: Optional[str] = None
-    full_name: Optional[str] = None
-    middle_name: Optional[str] = None
-    suffix: Optional[str] = None
-    profile_photo_url: Optional[str] = None
-    personal_details: Optional[PersonalDetailsResponse] = None
-    contact_details: Optional[ContactDetailsResponse] = None
-    employment_details: Optional[EmploymentDetailsResponse] = None
-    status: Optional[EmployeeStatusResponse] = None
-    created_at: Optional[datetime] = None  # Changed from str to datetime
-    updated_at: Optional[datetime] = None  # Changed from str to datetime
 
 class ReservationResponse(BaseModel):
     model_config = ConfigDict(
@@ -562,19 +542,6 @@ class TenantResponse(BaseModel):
             return {}
         return v
 
-class PayrollDeductionPreviewResponse(BaseModel):
-    """Schema for a Payroll Deduction *before* it is saved."""
-    model_config = ConfigDict(
-        arbitrary_types_allowed=True,
-        json_encoders=COMMON_ENCODERS
-    )
-    
-    id: Optional[str] = None
-    payroll_id: str
-    type: str
-    description: str
-    amount: float
-    rate: Optional[float] = None  # Add rate field for calculation display
 
 class DomainResponse(BaseModel):
     model_config = ConfigDict(

@@ -1,11 +1,10 @@
 # app/models/core.py
 from typing import Optional, List, Dict, Any
-from pydantic import Field, BaseModel, EmailStr, ConfigDict, validator # <-- ADDED validator
+from pydantic import Field, BaseModel, EmailStr, ConfigDict, validator
 from datetime import datetime, date
 import math
 from .base import MongoModel, PyObjectId
-from .response import COMMON_ENCODERS           # <-- ADDED COMMON_ENCODERS import
-# ...
+from .response import COMMON_ENCODERS
 
 
 # Payment Attempt Model
@@ -96,7 +95,35 @@ class Order(MongoModel):
     order_type: Optional[str] = None  # "dine-in" | "takeaway"
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
-    stock_warnings: Optional[List[str]] = None  # ADD THIS LINE
+    stock_warnings: Optional[List[Dict[str, Any]]] = None  # Changed from List[str] to List[Dict]
+    created_at: Optional[str] = None  # ADD THIS LINE
+    updated_at: Optional[str] = None  # ADD THIS LINE
+    cancellation_reason: Optional[str] = None  # ADD THIS LINE
+    payment_reference: Optional[str] = None  # ADD THIS LINE for Halo integration
+    transaction_id: Optional[str] = None  # ADD THIS LINE for Halo integration
+    payment_details: Optional[Dict[str, Any]] = None  # ADD THIS LINE for Halo integration
+    
+    def to_response_dict(self) -> dict:
+        """Convert Order to dictionary for response with proper handling"""
+        data = self.model_dump()
+        
+        # Convert OrderItem objects to dictionaries
+        if self.items:
+            data['items'] = [
+                {
+                    "id": item.id,
+                    "order_id": item.order_id,
+                    "food_id": item.food_id,
+                    "quantity": item.quantity,
+                    "price": item.price,
+                    "sub_total": item.sub_total,
+                    "notes": item.notes,
+                    "name": item.name,
+                    "price_at_sale": item.price_at_sale
+                } for item in self.items
+            ]
+        
+        return data
 
 class Category(MongoModel):
     name: str
@@ -175,7 +202,6 @@ class GoodsReceipt(MongoModel):
     received_items: Optional[List[Dict]] = None
 
 class User(MongoModel):
-    # name: Optional[str] = None
     email: EmailStr
     username: str
     first_name: Optional[str] = None
@@ -272,8 +298,6 @@ class PasswordReset(MongoModel):
     token: str
     created_at: str
 
-# In core.py - Update Tenant model
-# In app/models/core.py - Update Tenant model to match your BaseModel pattern
 class Tenant(MongoModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,

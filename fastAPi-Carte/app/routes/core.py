@@ -1,6 +1,6 @@
 # app/routes/core.py - COMPLETELY UPDATED
-from fastapi import APIRouter, HTTPException, Depends, Query, status
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Depends, Query, status, Body
+from typing import List, Optional, Dict, Any
 from app.database import get_collection
 from app.models.core import (
     Food, Order, Category, Customer, Table, Store, PurchaseOrder, GoodsReceipt, 
@@ -20,8 +20,7 @@ from app.utils.mongo_helpers import to_mongo_dict, to_mongo_update_dict
 from bson import ObjectId
 from datetime import datetime
 import math
-
-
+import asyncio  # ADD THIS IMPORT
 
 router = APIRouter(prefix="/api", tags=["core"])
 
@@ -152,20 +151,156 @@ async def delete_food(food_id: str):
 # --------------------------
 # --- Orders Endpoints ---
 # --------------------------
+# --------------------------
+# --- Orders Endpoints ---
+# --------------------------
 @router.get("/orders", response_model=StandardResponse[List[OrderResponse]])
-async def get_orders(store_id: Optional[str] = Query(None), status: Optional[str] = Query(None)):
-    query = {}
-    if store_id:
-        query["store_id"] = store_id
-    if status:
-        query["status"] = status
-    return await _get_all_items("orders", Order, query)
+async def get_orders(
+    store_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    employee_id: Optional[str] = Query(None),
+    customer_id: Optional[str] = Query(None),
+    order_type: Optional[str] = Query(None),
+    payment_status: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100)
+):
+    """Get orders with advanced filtering and pagination"""
+    try:
+        orders_collection = get_collection("orders")
+        
+        # Build query
+        query = {}
+        if store_id:
+            query["store_id"] = store_id
+        if status:
+            query["status"] = status
+        if employee_id:
+            query["employee_id"] = employee_id
+        if customer_id:
+            query["customer_id"] = customer_id
+        if order_type:
+            query["order_type"] = order_type
+        if payment_status:
+            query["payment_status"] = payment_status
+        
+        # Date filtering
+        if start_date or end_date:
+            query["created_at"] = {}
+            if start_date:
+                try:
+                    start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                    query["created_at"]["$gte"] = start_dt.isoformat()
+                except:
+                    return error_response(message="Invalid start_date format. Use ISO format", code=400)
+            if end_date:
+                try:
+                    end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                    query["created_at"]["$lte"] = end_dt.isoformat()
+                except:
+                    return error_response(message="Invalid end_date format. Use ISO format", code=400)
+        
+        # Get total count for pagination
+        total = await orders_collection.count_documents(query)
+        
+        # Fetch orders with pagination
+        orders_data = await orders_collection.find(query).skip(skip).limit(limit).to_list(length=limit)
+        
+        orders = []
+        for order in orders_data:
+            order_instance = Order.from_mongo(order)
+            
+            # Get payment attempts for this order
+            payment_attempts_collection = get_collection("payment_attempts")
+            payment_attempts = await payment_attempts_collection.find({"order_id": str(order["_id"])}).to_list()
+            
+            order_dict = order_instance.model_dump()
+            if payment_attempts:
+                order_dict["payment_attempts"] = [
+                    PaymentAttempt.from_mongo(pa).model_dump() 
+                    for pa in payment_attempts
+                ]
+            
+            orders.append(order_dict)
+        
+        return success_response(
+            data=orders,
+            message="success",
+            code=200
+        )
+    except Exception as e:
+        return handle_generic_exception(e)
 
 
 # Payment Attempts Endpoints
 @router.post("/payment_attempts", response_model=StandardResponse[PaymentAttemptResponse])
 async def create_payment_attempt(attempt: PaymentAttempt):
     return await _create_item("payment_attempts", attempt, PaymentAttemptResponse)
+
+@router.get("/orders/stats/daily", response_model=StandardResponse[dict])
+async def get_daily_order_stats(
+    date: str = Query(...),
+    store_id: Optional[str] = Query(None)
+):
+    """Get daily order statistics"""
+    try:
+        orders_collection = get_collection("orders")
+        
+        # Parse date
+        target_date = datetime.fromisoformat(date.replace('Z', '+00:00')).date()
+        start_dt = datetime.combine(target_date, datetime.min.time())
+        end_dt = datetime.combine(target_date, datetime.max.time())
+        
+        # Build query
+        query = {
+            "created_at": {
+                "$gte": start_dt.isoformat(),
+                "$lte": end_dt.isoformat()
+            }
+        }
+        if store_id:
+            query["store_id"] = store_id
+        
+        # Get orders
+        orders = await orders_collection.find(query).to_list()
+        
+        # Calculate statistics
+        total_orders = len(orders)
+        total_revenue = sum(order.get("total_amount", 0) for order in orders)
+        
+        # Status breakdown
+        status_counts = {}
+        for order in orders:
+            status = order.get("status", "unknown")
+            status_counts[status] = status_counts.get(status, 0) + 1
+        
+        # Payment method breakdown
+        payment_methods = {}
+        for order in orders:
+            method = order.get("payment_method", "unknown")
+            if method:  # Only count if payment_method exists
+                payment_methods[method] = payment_methods.get(method, 0) + 1
+        
+        # Order type breakdown
+        order_types = {}
+        for order in orders:
+            order_type = order.get("order_type", "unknown")
+            order_types[order_type] = order_types.get(order_type, 0) + 1
+        
+        return success_response(data={
+            "date": date,
+            "total_orders": total_orders,
+            "total_revenue": total_revenue,
+            "average_order_value": total_revenue / total_orders if total_orders > 0 else 0,
+            "status_breakdown": status_counts,
+            "payment_method_breakdown": payment_methods,
+            "order_type_breakdown": order_types,
+            "store_id": store_id
+        })
+    except Exception as e:
+        return handle_generic_exception(e)
 
 @router.put("/payment_attempts/{attempt_id}", response_model=StandardResponse[PaymentAttemptResponse])
 async def update_payment_attempt(attempt_id: str, attempt: PaymentAttempt):
@@ -184,23 +319,63 @@ async def get_payment_attempt_by_order(order_id: str):
 
 @router.get("/orders/{order_id}", response_model=StandardResponse[OrderResponse])
 async def get_order(order_id: str):
-    return await _get_item_by_id("orders", order_id, Order)
+    """Get a single order with all related data"""
+    try:
+        orders_collection = get_collection("orders")
+        order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        
+        if not order:
+            return error_response(message="Order not found", code=404)
+        
+        # Get related payment attempts
+        payment_attempts_collection = get_collection("payment_attempts")
+        payment_attempts = await payment_attempts_collection.find({"order_id": order_id}).to_list()
+        
+        # Get related payments
+        payments_collection = get_collection("payments")
+        payments = await payments_collection.find({"order_id": order_id}).to_list()
+        
+        order_instance = Order.from_mongo(order)
+        order_dict = order_instance.model_dump()
+        
+        # Add related data
+        if payment_attempts:
+            order_dict["payment_attempts"] = [
+                PaymentAttempt.from_mongo(pa).model_dump() 
+                for pa in payment_attempts
+            ]
+        
+        if payments:
+            order_dict["payments"] = [
+                Payment.from_mongo(p).model_dump() 
+                for p in payments
+            ]
+        
+        return success_response(data=order_dict)
+    except Exception:
+        return error_response(message="Invalid ID format", code=400)
 
 @router.post("/orders", response_model=StandardResponse[OrderResponse])
 async def create_order(order: Order):
+    """Create a new order with inventory management"""
     try:
         orders_collection = get_collection("orders")
         inventory_collection = get_collection("inventory_products")
         
-        # Generate IDs for order items that don't have them
+        # Generate IDs for order items
         for item in order.items:
             if not item.id:
                 item.id = str(ObjectId())
         
+        # Prepare order data
         order_dict = to_mongo_dict(order)
+        order_dict["created_at"] = datetime.utcnow().isoformat()
+        order_dict["updated_at"] = datetime.utcnow().isoformat()
         
-        # Check inventory and deduct quantities
+        # Check inventory and collect stock warnings
         stock_warnings = []
+        inventory_updates = []
+        
         for item in order.items:
             foods_collection = get_collection("foods")
             food = await foods_collection.find_one({"_id": ObjectId(item.food_id)})
@@ -212,43 +387,433 @@ async def create_order(order: Order):
                     )
                     if inventory_product:
                         required_quantity = recipe["quantity_used"] * item.quantity
-                        if inventory_product["quantity_in_stock"] < required_quantity:
-                            stock_warnings.append(
-                                f"Low stock warning: {inventory_product['name']} "
-                                f"(required: {required_quantity}, available: {inventory_product['quantity_in_stock']})"
-                            )
+                        current_stock = inventory_product.get("quantity_in_stock", 0)
                         
-                        # Deduct from inventory
-                        new_stock = inventory_product["quantity_in_stock"] - required_quantity
-                        await inventory_collection.update_one(
-                            {"_id": ObjectId(recipe["inventory_product_id"])},
-                            {"$set": {"quantity_in_stock": max(0, new_stock)}}
-                        )
+                        if current_stock < required_quantity:
+                            stock_warnings.append({
+                                "product_id": recipe["inventory_product_id"],
+                                "product_name": inventory_product.get("name", "Unknown"),
+                                "required": required_quantity,
+                                "available": current_stock,
+                                "shortage": required_quantity - current_stock
+                            })
+                        
+                        # Schedule inventory update
+                        inventory_updates.append({
+                            "product_id": recipe["inventory_product_id"],
+                            "quantity_change": -required_quantity
+                        })
         
+        # Apply inventory updates if no critical shortages
+        if not any(warning["shortage"] > 0 for warning in stock_warnings if warning.get("shortage")):
+            for update in inventory_updates:
+                await inventory_collection.update_one(
+                    {"_id": ObjectId(update["product_id"])},
+                    {"$inc": {"quantity_in_stock": update["quantity_change"]}}
+                )
+        else:
+            order_dict["status"] = "pending_stock"
+        
+        # Insert order
         result = await orders_collection.insert_one(order_dict)
         new_order = await orders_collection.find_one({"_id": result.inserted_id})
-        order_response = Order.from_mongo(new_order)
+        order_instance = Order.from_mongo(new_order)
         
-        # Add stock warnings to response if any - FIXED: Convert to dict first
-        order_response_dict = order_response.model_dump()
+        # Add stock warnings to response
+        order_data = order_instance.model_dump()
         if stock_warnings:
-            order_response_dict["stock_warnings"] = stock_warnings
+            order_data["stock_warnings"] = stock_warnings
         
         return success_response(
-            data=OrderResponse.model_validate(order_response_dict),
+            data=order_data,
             message="Order created successfully",
             code=201
         )
     except Exception as e:
         return handle_generic_exception(e)
-        
+
 @router.put("/orders/{order_id}", response_model=StandardResponse[OrderResponse])
-async def update_order(order_id: str, order: Order):
-    return await _update_item("orders", order_id, order, OrderResponse)
+async def update_order(
+    order_id: str, 
+    order_update: Dict[str, Any] = Body(...)
+):
+    """Update an order with validation"""
+    try:
+        orders_collection = get_collection("orders")
+        
+        # Check if order exists
+        existing_order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        if not existing_order:
+            return error_response(message="Order not found", code=404)
+        
+        # Validate status transitions
+        current_status = existing_order.get("status")
+        new_status = order_update.get("status")
+        
+        if new_status and new_status != current_status:
+            valid_transitions = {
+                "new": ["preparing", "cancelled"],
+                "preparing": ["ready", "served", "cancelled"],
+                "ready": ["served", "cancelled"],
+                "served": ["paid", "cancelled"],
+                "paid": [],
+                "cancelled": []
+            }
+            
+            if current_status not in valid_transitions:
+                return error_response(
+                    message=f"Cannot transition from status '{current_status}'",
+                    code=400
+                )
+            
+            if new_status not in valid_transitions.get(current_status, []):
+                return error_response(
+                    message=f"Invalid status transition from '{current_status}' to '{new_status}'",
+                    code=400
+                )
+        
+        # Update order
+        update_data = {
+            **order_update,
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        result = await orders_collection.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0:
+            return error_response(message="No changes made", code=400)
+            
+        updated_order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        order_instance = Order.from_mongo(updated_order)
+        
+        return success_response(
+            data=order_instance.model_dump(),
+            message="Order updated successfully"
+        )
+    except Exception:
+        return error_response(message="Invalid ID format", code=400)
 
 @router.delete("/orders/{order_id}", response_model=StandardResponse[dict])
-async def delete_order(order_id: str):
-    return await _delete_item("orders", order_id)
+async def delete_order(order_id: str, force: bool = Query(False)):
+    """Delete an order (with optional force delete)"""
+    try:
+        orders_collection = get_collection("orders")
+        
+        # Check if order exists
+        order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            return error_response(message="Order not found", code=404)
+        
+        # Check if order can be deleted
+        order_status = order.get("status")
+        if not force and order_status not in ["new", "cancelled"]:
+            return error_response(
+                message=f"Cannot delete order with status '{order_status}'. Use force=true to override.",
+                code=400
+            )
+        
+        # Delete related payment attempts
+        payment_attempts_collection = get_collection("payment_attempts")
+        await payment_attempts_collection.delete_many({"order_id": order_id})
+        
+        # Delete the order
+        result = await orders_collection.delete_one({"_id": ObjectId(order_id)})
+        
+        if result.deleted_count == 0:
+            return error_response(message="Order deletion failed", code=500)
+        
+        return success_response(
+            data=None,
+            message="Order deleted successfully"
+        )
+    except Exception:
+        return error_response(message="Invalid ID format", code=400)
+
+@router.post("/orders/{order_id}/process_payment", response_model=StandardResponse[dict])
+async def process_order_payment(
+    order_id: str,
+    payment_data: Dict[str, Any] = Body(...)
+):
+    """Process payment for an order"""
+    try:
+        orders_collection = get_collection("orders")
+        payment_attempts_collection = get_collection("payment_attempts")
+        payments_collection = get_collection("payments")
+        
+        # Get order
+        order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            return error_response(message="Order not found", code=404)
+        
+        # Check if order is ready for payment
+        if order.get("status") not in ["served", "ready"]:
+            return error_response(
+                message=f"Order must be 'served' or 'ready' for payment. Current status: {order.get('status')}",
+                code=400
+            )
+        
+        # Create payment attempt
+        payment_attempt = PaymentAttempt(
+            order_id=order_id,
+            payment_gateway=payment_data.get("payment_gateway", "halo"),
+            amount=order.get("total_amount", 0),
+            reference=f"PAY-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            status="pending",
+            payment_data=payment_data,
+            created_at=datetime.utcnow().isoformat()
+        )
+        
+        attempt_dict = to_mongo_dict(payment_attempt)
+        attempt_result = await payment_attempts_collection.insert_one(attempt_dict)
+        
+        # Simulate payment processing
+        await asyncio.sleep(1)  # Use asyncio.sleep instead of sleep
+        
+        # Update payment attempt status
+        is_successful = payment_data.get("simulate_success", True)
+        if is_successful:
+            # Create payment record
+            payment = Payment(
+                order_id=order_id,
+                payment_method_id=payment_data.get("payment_method_id", ""),
+                amount=order.get("total_amount", 0),
+                payment_date=datetime.utcnow().isoformat(),
+                transaction_id=payment_data.get("transaction_id", f"TXN-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"),
+                status="completed"
+            )
+            
+            payment_dict = to_mongo_dict(payment)
+            await payments_collection.insert_one(payment_dict)
+            
+            # Update order
+            await orders_collection.update_one(
+                {"_id": ObjectId(order_id)},
+                {
+                    "$set": {
+                        "status": "paid",
+                        "payment_status": "paid",
+                        "payment_method": payment_data.get("payment_method"),
+                        "updated_at": datetime.utcnow().isoformat()
+                    }
+                }
+            )
+            
+            # Update payment attempt
+            await payment_attempts_collection.update_one(
+                {"_id": attempt_result.inserted_id},
+                {
+                    "$set": {
+                        "status": "completed",
+                        "completed_at": datetime.utcnow().isoformat()
+                    }
+                }
+            )
+            
+            return success_response(
+                data={"payment_id": str(payment_dict["_id"])},
+                message="Payment processed successfully"
+            )
+        else:
+            # Payment failed
+            await payment_attempts_collection.update_one(
+                {"_id": attempt_result.inserted_id},
+                {
+                    "$set": {
+                        "status": "failed",
+                        "cancelled_at": datetime.utcnow().isoformat(),
+                        "cancellation_reason": payment_data.get("error_message", "Payment failed")
+                    }
+                }
+            )
+            
+            return error_response(
+                message="Payment processing failed",
+                code=400,
+                details={"payment_attempt_id": str(attempt_result.inserted_id)}
+            )
+            
+    except Exception as e:
+        return handle_generic_exception(e)
+
+
+@router.get("/orders/{order_id}/items", response_model=StandardResponse[List[dict]])
+async def get_order_items(order_id: str):
+    """Get all items for a specific order"""
+    try:
+        orders_collection = get_collection("orders")
+        order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        
+        if not order:
+            return error_response(message="Order not found", code=404)
+        
+        return success_response(data=order.get("items", []))
+    except Exception:
+        return error_response(message="Invalid ID format", code=400)
+
+@router.post("/orders/{order_id}/cancel", response_model=StandardResponse[OrderResponse])
+async def cancel_order(
+    order_id: str,
+    reason: Optional[str] = Body(None)
+):
+    """Cancel an order"""
+    try:
+        orders_collection = get_collection("orders")
+        
+        # Check if order exists
+        order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            return error_response(message="Order not found", code=404)
+        
+        # Check if order can be cancelled
+        current_status = order.get("status")
+        if current_status in ["paid", "completed"]:
+            return error_response(
+                message=f"Cannot cancel order with status '{current_status}'",
+                code=400
+            )
+        
+        # Update order status
+        result = await orders_collection.update_one(
+            {"_id": ObjectId(order_id)},
+            {
+                "$set": {
+                    "status": "cancelled",
+                    "updated_at": datetime.utcnow().isoformat(),
+                    "cancellation_reason": reason
+                }
+            }
+        )
+        
+        if result.modified_count == 0:
+            return error_response(message="Order cancellation failed", code=500)
+        
+        # Restore inventory if needed
+        if current_status not in ["new", "cancelled"]:
+            await restore_order_inventory(order_id)
+        
+        updated_order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        order_instance = Order.from_mongo(updated_order)
+        
+        return success_response(
+            data=order_instance.model_dump(),
+            message="Order cancelled successfully"
+        )
+    except Exception:
+        return error_response(message="Invalid ID format", code=400)
+
+# --------------------------
+# --- Orders Endpoints ---
+# --------------------------
+@router.get("/orders", response_model=StandardResponse[List[OrderResponse]])
+async def get_orders(
+    store_id: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    employee_id: Optional[str] = Query(None),
+    customer_id: Optional[str] = Query(None),
+    order_type: Optional[str] = Query(None),
+    payment_status: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100)
+):
+    """Get orders with advanced filtering and pagination"""
+    try:
+        orders_collection = get_collection("orders")
+        
+        # Build query
+        query = {}
+        if store_id:
+            query["store_id"] = store_id
+        if status:
+            query["status"] = status
+        if employee_id:
+            query["employee_id"] = employee_id
+        if customer_id:
+            query["customer_id"] = customer_id
+        if order_type:
+            query["order_type"] = order_type
+        if payment_status:
+            query["payment_status"] = payment_status
+        
+        # Date filtering
+        if start_date or end_date:
+            query["created_at"] = {}
+            if start_date:
+                try:
+                    start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                    query["created_at"]["$gte"] = start_dt.isoformat()
+                except:
+                    return error_response(message="Invalid start_date format. Use ISO format", code=400)
+            if end_date:
+                try:
+                    end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                    query["created_at"]["$lte"] = end_dt.isoformat()
+                except:
+                    return error_response(message="Invalid end_date format. Use ISO format", code=400)
+        
+        # Get total count for pagination
+        total = await orders_collection.count_documents(query)
+        
+        # Fetch orders with pagination
+        orders_data = await orders_collection.find(query).skip(skip).limit(limit).to_list(length=limit)
+        
+        orders = []
+        for order in orders_data:
+            order_instance = Order.from_mongo(order)
+            
+            # Get payment attempts for this order
+            payment_attempts_collection = get_collection("payment_attempts")
+            payment_attempts = await payment_attempts_collection.find({"order_id": str(order["_id"])}).to_list()
+            
+            order_dict = order_instance.model_dump()
+            if payment_attempts:
+                order_dict["payment_attempts"] = [
+                    PaymentAttempt.from_mongo(pa).model_dump() 
+                    for pa in payment_attempts
+                ]
+            
+            orders.append(order_dict)
+        
+        return success_response(
+            data=orders,
+            message="success",
+            code=200
+        )
+    except Exception as e:
+        return handle_generic_exception(e)
+
+
+# Helper function to restore inventory
+async def restore_order_inventory(order_id: str):
+    """Restore inventory quantities for a cancelled order"""
+    try:
+        orders_collection = get_collection("orders")
+        inventory_collection = get_collection("inventory_products")
+        
+        order = await orders_collection.find_one({"_id": ObjectId(order_id)})
+        if not order:
+            return
+        
+        # Restore inventory for each item
+        for item in order.get("items", []):
+            foods_collection = get_collection("foods")
+            food = await foods_collection.find_one({"_id": ObjectId(item["food_id"])})
+            
+            if food and food.get("recipes"):
+                for recipe in food["recipes"]:
+                    await inventory_collection.update_one(
+                        {"_id": ObjectId(recipe["inventory_product_id"])},
+                        {"$inc": {"quantity_in_stock": recipe["quantity_used"] * item["quantity"]}}
+                    )
+    except Exception as e:
+        print(f"Error restoring inventory for order {order_id}: {e}")
+
+
+
 
 # --------------------------
 # --- Categories Endpoints ---
