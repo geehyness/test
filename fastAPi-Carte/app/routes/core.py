@@ -154,44 +154,6 @@ async def delete_food(food_id: str):
 # --------------------------
 # --- Orders Endpoints ---
 # --------------------------
-@router.get("/orders", response_model=StandardResponse[List[OrderResponse]])
-async def get_orders(
-    store_id: Optional[str] = Query(None),
-    status: Optional[str] = Query(None)
-    # Remove other parameters temporarily
-):
-    """Get orders - simplified"""
-    try:
-        # FIX: NO AWAIT HERE!
-        orders_collection = get_collection("orders")  # ✅ NO AWAIT
-        
-        # Simple query
-        query = {}
-        if store_id:
-            query["store_id"] = store_id
-        if status:
-            query["status"] = status
-        
-        # Simple fetch
-        orders_data = await orders_collection.find(query).to_list(length=100)
-        
-        orders = []
-        for order in orders_data:
-            order_instance = Order.from_mongo(order)
-            orders.append(order_instance.model_dump())
-        
-        return success_response(
-            data=orders,
-            message=f"Found {len(orders)} orders",
-            code=200
-        )
-    except Exception as e:
-        print(f"Orders error: {e}")
-        return error_response(
-            message="Failed to fetch orders",
-            code=500,
-            details={"error": str(e)}
-        )
 
 
 # Payment Attempts Endpoints
@@ -1733,63 +1695,10 @@ async def detailed_health_check():
 
 
 # Add Halo transaction endpoint at the end of core.py
+
 @router.post("/halo/transaction", response_model=StandardResponse[dict])
-async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...)):
-    """Process Halo payment transaction"""
-    print(f"DEBUG: Halo transaction received at {datetime.utcnow().isoformat()}")
-    print(f"DEBUG: Transaction data: {transaction_data}")
-    
-    try:
-        # Extract transaction data
-        amount = transaction_data.get("amount", 0)
-        order_id = transaction_data.get("order_id")
-        
-        print(f"DEBUG: Processing order {order_id} for amount {amount}")
-        
-        if not order_id:
-            print("DEBUG: No order ID provided")
-            return error_response(message="Order ID is required", code=400)
-        
-        if amount <= 0:
-            print("DEBUG: Invalid amount")
-            return error_response(message="Amount must be greater than 0", code=400)
-        
-        # Create a simple success response
-        transaction_id = transaction_data.get("transaction_id", f"HALO-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}")
-        
-        response_data = {
-            "status": "success",
-            "transaction_id": transaction_id,
-            "order_id": order_id,
-            "amount": amount,
-            "message": "Payment processed successfully",
-            "payment_reference": f"PAY-REF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        print(f"DEBUG: Returning success response: {response_data}")
-        
-        return success_response(
-            data=response_data,
-            message="Halo transaction processed successfully"
-        )
-        
-    except Exception as e:
-        print(f"DEBUG: Halo transaction CRASHED with error: {str(e)}")
-        print(f"DEBUG: Error type: {type(e)}")
-        import traceback
-        traceback.print_exc()
-        
-        # Return a safe error response
-        return error_response(
-            message="Halo transaction failed",
-            code=500,
-            details={"error": str(e), "timestamp": datetime.utcnow().isoformat()}
-        )
 
 
-
-        # Add these endpoints at the end of core.py (before the router definition ends):
 @router.get("/halo/status")
 async def halo_status():
     """Simple endpoint to test if Halo is working"""
@@ -1802,7 +1711,6 @@ async def halo_status():
         message="Halo payment endpoint is active"
     )
 
-@router.post("/halo/transaction", response_model=StandardResponse[dict])
 async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...)):
     """Process Halo payment transaction"""
     try:
