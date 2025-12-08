@@ -169,7 +169,8 @@ async def get_orders(
 ):
     """Get orders with advanced filtering and pagination"""
     try:
-        orders_collection = get_collection("orders")
+        # FIX: await the get_collection call
+        orders_collection = await get_collection("orders")
         
         # Build query
         query = {}
@@ -205,40 +206,28 @@ async def get_orders(
         # Get total count for pagination
         total = await orders_collection.count_documents(query)
         
-        # CORRECT: Use find() with await and apply skip/limit in to_list()
-        # Option 1: Using to_list() with length parameter
-        orders_data = await orders_collection.find(query).to_list(length=limit)
-        
-        # Option 2: If you need skip, you need to fetch all and manually skip
-        # orders_data = await orders_collection.find(query).to_list(length=None)
-        # if skip > 0:
-        #     orders_data = orders_data[skip:]
-        # if limit > 0:
-        #     orders_data = orders_data[:limit]
-        
-        # Option 3: Better - use aggregate for proper pagination
-        pipeline = []
-        
-        # Match stage
-        if query:
-            pipeline.append({"$match": query})
-        
-        # Skip stage
-        if skip > 0:
-            pipeline.append({"$skip": skip})
-        
-        # Limit stage
-        if limit > 0:
-            pipeline.append({"$limit": limit})
-        
-        orders_data = await orders_collection.aggregate(pipeline).to_list(length=limit)
+        # Use find with to_list - SIMPLE version
+        if skip > 0 or limit > 0:
+            # Use aggregate for proper pagination
+            pipeline = []
+            if query:
+                pipeline.append({"$match": query})
+            if skip > 0:
+                pipeline.append({"$skip": skip})
+            if limit > 0:
+                pipeline.append({"$limit": limit})
+            
+            orders_data = await orders_collection.aggregate(pipeline).to_list(length=limit)
+        else:
+            # Simple find without pagination
+            orders_data = await orders_collection.find(query).to_list(length=None)
         
         orders = []
         for order in orders_data:
             order_instance = Order.from_mongo(order)
             
-            # Get payment attempts for this order
-            payment_attempts_collection = get_collection("payment_attempts")
+            # Get payment attempts for this order (also need to await get_collection)
+            payment_attempts_collection = await get_collection("payment_attempts")
             payment_attempts = await payment_attempts_collection.find({"order_id": str(order["_id"])}).to_list()
             
             order_dict = order_instance.model_dump()
@@ -252,12 +241,12 @@ async def get_orders(
         
         return success_response(
             data=orders,
-            message="success",
+            message=f"Found {len(orders)} orders",
             code=200
         )
     except Exception as e:
         return handle_generic_exception(e)
-
+        
 
 # Payment Attempts Endpoints
 @router.post("/payment_attempts", response_model=StandardResponse[PaymentAttemptResponse])
