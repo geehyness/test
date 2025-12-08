@@ -73,6 +73,7 @@ app.include_router(auth.router)
 app.include_router(payroll_router)
 app.include_router(log_router)
 app.include_router(payfast_itn_router)  # ADD PAYFAST ITN ROUTER
+#app.include_router(payments_router)
 
 @app.on_event("startup")
 async def startup_event():

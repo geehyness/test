@@ -1770,3 +1770,57 @@ async def detailed_health_check():
             code=503,
             details={"error": str(e)}
         )
+
+
+# Add Halo transaction endpoint at the end of core.py
+@router.post("/halo/transaction", response_model=StandardResponse[dict])
+async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...)):
+    """Process Halo payment transaction"""
+    try:
+        # Extract transaction data
+        amount = transaction_data.get("amount", 0)
+        order_id = transaction_data.get("order_id")
+        
+        if not order_id:
+            return error_response(message="Order ID is required", code=400)
+        
+        if amount <= 0:
+            return error_response(message="Amount must be greater than 0", code=400)
+        
+        # Simulate successful payment for demo
+        response_data = {
+            "status": "success",
+            "transaction_id": transaction_data.get("transaction_id", f"HALO-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"),
+            "order_id": order_id,
+            "amount": amount,
+            "message": "Payment processed successfully",
+            "payment_reference": f"PAY-REF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        }
+        
+        # Optionally update the order in database
+        try:
+            orders_collection = get_collection("orders")
+            await orders_collection.update_one(
+                {"_id": ObjectId(order_id)},
+                {
+                    "$set": {
+                        "payment_status": "paid",
+                        "payment_method": transaction_data.get("payment_method", "card"),
+                        "updated_at": datetime.utcnow().isoformat()
+                    }
+                }
+            )
+        except:
+            pass  # Continue even if order update fails
+        
+        return success_response(
+            data=response_data,
+            message="Halo transaction processed successfully"
+        )
+        
+    except Exception as e:
+        return error_response(
+            message="Halo transaction failed",
+            code=500,
+            details={"error": str(e)}
+        )
