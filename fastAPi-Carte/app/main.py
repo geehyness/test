@@ -29,15 +29,41 @@ app = FastAPI(
     }
 )
 
-# Add middleware to the single app instance
-app.add_middleware(LoggingMiddleware)
+
+
+
+origins_env = os.getenv("ALLOWED_ORIGINS", "")
+if origins_env:
+    origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+else:
+    origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000", 
+        "http://localhost:8000",
+        "https://carte-pos.vercel.app",
+        "https://carte-fastapi.vercel.app"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "https://carte-pos.vercel.app/"],  # Specific origins for security
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
+
+
+
+
+# Add middleware to the single app instance
+#app.add_middleware(LoggingMiddleware)
+#app.add_middleware(
+#    CORSMiddleware,
+#    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "https://carte-pos.vercel.app/"],  # Specific origins for security
+#    allow_credentials=True,
+#    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+#    allow_headers=["*"],
+#)
 
 # Include routers
 app.include_router(core.router)
