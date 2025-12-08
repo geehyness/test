@@ -205,14 +205,33 @@ async def get_orders(
         # Get total count for pagination
         total = await orders_collection.count_documents(query)
         
-        # FIXED: Proper cursor chaining
-        cursor = orders_collection.find(query)
-        if skip > 0:
-            cursor = cursor.skip(skip)
-        if limit > 0:
-            cursor = cursor.limit(limit)
+        # CORRECT: Use find() with await and apply skip/limit in to_list()
+        # Option 1: Using to_list() with length parameter
+        orders_data = await orders_collection.find(query).to_list(length=limit)
         
-        orders_data = await cursor.to_list(length=limit)
+        # Option 2: If you need skip, you need to fetch all and manually skip
+        # orders_data = await orders_collection.find(query).to_list(length=None)
+        # if skip > 0:
+        #     orders_data = orders_data[skip:]
+        # if limit > 0:
+        #     orders_data = orders_data[:limit]
+        
+        # Option 3: Better - use aggregate for proper pagination
+        pipeline = []
+        
+        # Match stage
+        if query:
+            pipeline.append({"$match": query})
+        
+        # Skip stage
+        if skip > 0:
+            pipeline.append({"$skip": skip})
+        
+        # Limit stage
+        if limit > 0:
+            pipeline.append({"$limit": limit})
+        
+        orders_data = await orders_collection.aggregate(pipeline).to_list(length=limit)
         
         orders = []
         for order in orders_data:
@@ -238,6 +257,7 @@ async def get_orders(
         )
     except Exception as e:
         return handle_generic_exception(e)
+
 
 # Payment Attempts Endpoints
 @router.post("/payment_attempts", response_model=StandardResponse[PaymentAttemptResponse])
