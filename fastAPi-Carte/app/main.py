@@ -86,3 +86,7 @@ async def root():
     logger.info("Root endpoint accessed")
     return {"message": "POS System API is running"}
 
+@app.options("/test-cors")
+@app.get("/test-cors")
+async def test_cors():
+    return {"message": "CORS is configured correctly"}
