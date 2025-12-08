@@ -205,12 +205,13 @@ async def get_orders(
         # Get total count for pagination
         total = await orders_collection.count_documents(query)
         
-        # FIX: Ensure we're using await properly
-        # OLD (wrong): orders_data = await orders_collection.find(query).skip(skip).limit(limit).to_list(length=limit)
-        # NEW (correct):
+        # FIXED: Proper cursor chaining
         cursor = orders_collection.find(query)
-        cursor = cursor.skip(skip)
-        cursor = cursor.limit(limit)
+        if skip > 0:
+            cursor = cursor.skip(skip)
+        if limit > 0:
+            cursor = cursor.limit(limit)
+        
         orders_data = await cursor.to_list(length=limit)
         
         orders = []
@@ -237,7 +238,6 @@ async def get_orders(
         )
     except Exception as e:
         return handle_generic_exception(e)
-        
 
 # Payment Attempts Endpoints
 @router.post("/payment_attempts", response_model=StandardResponse[PaymentAttemptResponse])
