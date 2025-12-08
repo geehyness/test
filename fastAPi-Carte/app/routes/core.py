@@ -644,6 +644,7 @@ async def get_orders(
 ):
     """Get orders with advanced filtering and pagination"""
     try:
+        # FIX: Get collection WITHOUT await (if get_collection is sync)
         orders_collection = get_collection("orders")
         
         # Build query
@@ -680,34 +681,71 @@ async def get_orders(
         # Get total count for pagination
         total = await orders_collection.count_documents(query)
         
-        # Fetch orders with pagination
-        orders_data = await orders_collection.find(query).skip(skip).limit(limit).to_list(length=limit)
+        # FIXED: Proper cursor chaining - use aggregate for skip/limit
+        if skip > 0 or limit > 0:
+            # Use aggregate pipeline for proper pagination
+            pipeline = []
+            
+            # Match stage
+            if query:
+                pipeline.append({"$match": query})
+            
+            # Skip stage
+            if skip > 0:
+                pipeline.append({"$skip": skip})
+            
+            # Limit stage
+            if limit > 0:
+                pipeline.append({"$limit": limit})
+            
+            orders_data = await orders_collection.aggregate(pipeline).to_list(length=limit)
+        else:
+            # Simple find without pagination
+            orders_data = await orders_collection.find(query).to_list(length=None)
         
         orders = []
         for order in orders_data:
             order_instance = Order.from_mongo(order)
             
             # Get payment attempts for this order
-            payment_attempts_collection = get_collection("payment_attempts")
-            payment_attempts = await payment_attempts_collection.find({"order_id": str(order["_id"])}).to_list()
-            
-            order_dict = order_instance.model_dump()
-            if payment_attempts:
-                order_dict["payment_attempts"] = [
-                    PaymentAttempt.from_mongo(pa).model_dump() 
-                    for pa in payment_attempts
-                ]
-            
-            orders.append(order_dict)
+            try:
+                payment_attempts_collection = get_collection("payment_attempts")
+                payment_attempts = await payment_attempts_collection.find({"order_id": str(order["_id"])}).to_list()
+                
+                order_dict = order_instance.model_dump()
+                if payment_attempts:
+                    order_dict["payment_attempts"] = [
+                        PaymentAttempt.from_mongo(pa).model_dump() 
+                        for pa in payment_attempts
+                    ]
+                
+                orders.append(order_dict)
+            except Exception as e:
+                # If payment attempts fail, just add order without them
+                orders.append(order_instance.model_dump())
         
         return success_response(
             data=orders,
-            message="success",
-            code=200
+            message=f"Found {len(orders)} orders",
+            code=200,
+            pagination={
+                "total": total,
+                "skip": skip,
+                "limit": limit,
+                "has_more": total > (skip + len(orders))
+            }
         )
     except Exception as e:
-        return handle_generic_exception(e)
-
+        print(f"Orders endpoint error: {type(e).__name__}: {e}")
+        return error_response(
+            message="Failed to fetch orders",
+            code=500,
+            details={
+                "error": str(e),
+                "error_type": type(e).__name__,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        )
 
 # Helper function to restore inventory
 async def restore_order_inventory(order_id: str):
@@ -1711,6 +1749,7 @@ async def halo_status():
         message="Halo payment endpoint is active"
     )
 
+@router.post("/halo/transaction", response_model=StandardResponse[dict])
 async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...)):
     """Process Halo payment transaction"""
     try:
