@@ -634,15 +634,33 @@ async def get_orders(
     store_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None)
 ):
-    """Get orders - using same pattern as get_foods"""
+    """Get orders - custom implementation to fix datetime issue"""
     try:
+        collection = get_collection("orders")
+        
+        # Build query
         query = {}
         if store_id:
             query["store_id"] = store_id
         if status:
             query["status"] = status
             
-        return await _get_all_items("orders", Order, query)
+        items_data = await collection.find(query)
+        items = []
+        for item in items_data:
+            # Convert MongoDB document to dictionary
+            item_dict = dict(item)
+            item_dict["id"] = str(item_dict.pop("_id"))
+            
+            # Convert datetime fields to ISO strings
+            for field in ['created_at', 'updated_at']:
+                if field in item_dict and item_dict[field]:
+                    if isinstance(item_dict[field], datetime):
+                        item_dict[field] = item_dict[field].isoformat()
+            
+            items.append(item_dict)
+        
+        return success_response(data=items)
     except Exception as e:
         return handle_generic_exception(e)
 

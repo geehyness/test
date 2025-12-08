@@ -92,20 +92,48 @@ class Order(MongoModel):
     tax_amount: float
     discount_amount: float
     employee_id: Optional[str] = None
-    order_type: Optional[str] = None  # "dine-in" | "takeaway"
+    order_type: Optional[str] = None
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
-    stock_warnings: Optional[List[Dict[str, Any]]] = None  # Changed from List[str] to List[Dict]
-    created_at: Optional[str] = None  # ADD THIS LINE
-    updated_at: Optional[str] = None  # ADD THIS LINE
-    cancellation_reason: Optional[str] = None  # ADD THIS LINE
-    payment_reference: Optional[str] = None  # ADD THIS LINE for Halo integration
-    transaction_id: Optional[str] = None  # ADD THIS LINE for Halo integration
-    payment_details: Optional[Dict[str, Any]] = None  # ADD THIS LINE for Halo integration
+    stock_warnings: Optional[List[Dict[str, Any]]] = None
+    created_at: Optional[datetime] = None  # CHANGE from str to datetime
+    updated_at: Optional[datetime] = None  # CHANGE from str to datetime
+    cancellation_reason: Optional[str] = None
+    payment_reference: Optional[str] = None
+    transaction_id: Optional[str] = None
+    payment_details: Optional[Dict[str, Any]] = None
+    
+    @classmethod
+    def from_mongo(cls, data):
+        """Override from_mongo to handle datetime conversion"""
+        if data is None:
+            return None
+        
+        data_dict = dict(data)
+        data_dict['id'] = str(data_dict.pop('_id'))
+        
+        # Handle datetime fields
+        for field in ['created_at', 'updated_at']:
+            if field in data_dict and data_dict[field]:
+                # If it's already a datetime, keep it
+                if isinstance(data_dict[field], str):
+                    try:
+                        # Try to parse string to datetime
+                        data_dict[field] = datetime.fromisoformat(data_dict[field].replace('Z', '+00:00'))
+                    except:
+                        # If parsing fails, leave as string
+                        pass
+        
+        return cls(**data_dict)
     
     def to_response_dict(self) -> dict:
         """Convert Order to dictionary for response with proper handling"""
         data = self.model_dump()
+        
+        # Convert datetime fields to ISO strings
+        for field in ['created_at', 'updated_at']:
+            if field in data and data[field] and isinstance(data[field], datetime):
+                data[field] = data[field].isoformat()
         
         # Convert OrderItem objects to dictionaries
         if self.items:

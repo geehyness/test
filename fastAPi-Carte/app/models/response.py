@@ -152,13 +152,13 @@ class OrderResponse(BaseModel):
     order_type: Optional[str] = None
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
-    stock_warnings: Optional[List[Dict[str, Any]]] = None  # Updated type
-    created_at: Optional[str] = None  # ADD THIS LINE
-    updated_at: Optional[str] = None  # ADD THIS LINE
-    cancellation_reason: Optional[str] = None  # ADD THIS LINE
-    payment_reference: Optional[str] = None  # ADD THIS LINE
-    transaction_id: Optional[str] = None  # ADD THIS LINE
-    payment_details: Optional[Dict[str, Any]] = None  # ADD THIS LINE
+    stock_warnings: Optional[List[Dict[str, Any]]] = None
+    created_at: Optional[str] = None  # Keep as string for API response
+    updated_at: Optional[str] = None  # Keep as string for API response
+    cancellation_reason: Optional[str] = None
+    payment_reference: Optional[str] = None
+    transaction_id: Optional[str] = None
+    payment_details: Optional[Dict[str, Any]] = None
 
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(
