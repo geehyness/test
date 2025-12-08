@@ -33,7 +33,7 @@ app = FastAPI(
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"],  # Specific origins for security
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "https://carte-pos.vercel.app/"],  # Specific origins for security
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
