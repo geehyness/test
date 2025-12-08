@@ -1776,42 +1776,38 @@ async def detailed_health_check():
 @router.post("/halo/transaction", response_model=StandardResponse[dict])
 async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...)):
     """Process Halo payment transaction"""
+    print(f"DEBUG: Halo transaction received at {datetime.utcnow().isoformat()}")
+    print(f"DEBUG: Transaction data: {transaction_data}")
+    
     try:
         # Extract transaction data
         amount = transaction_data.get("amount", 0)
         order_id = transaction_data.get("order_id")
         
+        print(f"DEBUG: Processing order {order_id} for amount {amount}")
+        
         if not order_id:
+            print("DEBUG: No order ID provided")
             return error_response(message="Order ID is required", code=400)
         
         if amount <= 0:
+            print("DEBUG: Invalid amount")
             return error_response(message="Amount must be greater than 0", code=400)
         
-        # Simulate successful payment for demo
+        # Create a simple success response
+        transaction_id = transaction_data.get("transaction_id", f"HALO-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}")
+        
         response_data = {
             "status": "success",
-            "transaction_id": transaction_data.get("transaction_id", f"HALO-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"),
+            "transaction_id": transaction_id,
             "order_id": order_id,
             "amount": amount,
             "message": "Payment processed successfully",
-            "payment_reference": f"PAY-REF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+            "payment_reference": f"PAY-REF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            "timestamp": datetime.utcnow().isoformat()
         }
         
-        # Optionally update the order in database
-        try:
-            orders_collection = get_collection("orders")
-            await orders_collection.update_one(
-                {"_id": ObjectId(order_id)},
-                {
-                    "$set": {
-                        "payment_status": "paid",
-                        "payment_method": transaction_data.get("payment_method", "card"),
-                        "updated_at": datetime.utcnow().isoformat()
-                    }
-                }
-            )
-        except:
-            pass  # Continue even if order update fails
+        print(f"DEBUG: Returning success response: {response_data}")
         
         return success_response(
             data=response_data,
@@ -1819,8 +1815,14 @@ async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...))
         )
         
     except Exception as e:
+        print(f"DEBUG: Halo transaction CRASHED with error: {str(e)}")
+        print(f"DEBUG: Error type: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        # Return a safe error response
         return error_response(
             message="Halo transaction failed",
             code=500,
-            details={"error": str(e)}
+            details={"error": str(e), "timestamp": datetime.utcnow().isoformat()}
         )
