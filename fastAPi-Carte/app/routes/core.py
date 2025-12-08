@@ -157,87 +157,28 @@ async def delete_food(food_id: str):
 @router.get("/orders", response_model=StandardResponse[List[OrderResponse]])
 async def get_orders(
     store_id: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    employee_id: Optional[str] = Query(None),
-    customer_id: Optional[str] = Query(None),
-    order_type: Optional[str] = Query(None),
-    payment_status: Optional[str] = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100)
+    status: Optional[str] = Query(None)
+    # Remove other parameters temporarily
 ):
-    """Get orders with advanced filtering and pagination"""
+    """Get orders - simplified"""
     try:
-        # FIX: await the get_collection call
-        orders_collection = await get_collection("orders")
+        # FIX: NO AWAIT HERE!
+        orders_collection = get_collection("orders")  # ✅ NO AWAIT
         
-        # Build query
+        # Simple query
         query = {}
         if store_id:
             query["store_id"] = store_id
         if status:
             query["status"] = status
-        if employee_id:
-            query["employee_id"] = employee_id
-        if customer_id:
-            query["customer_id"] = customer_id
-        if order_type:
-            query["order_type"] = order_type
-        if payment_status:
-            query["payment_status"] = payment_status
         
-        # Date filtering
-        if start_date or end_date:
-            query["created_at"] = {}
-            if start_date:
-                try:
-                    start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
-                    query["created_at"]["$gte"] = start_dt.isoformat()
-                except:
-                    return error_response(message="Invalid start_date format. Use ISO format", code=400)
-            if end_date:
-                try:
-                    end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
-                    query["created_at"]["$lte"] = end_dt.isoformat()
-                except:
-                    return error_response(message="Invalid end_date format. Use ISO format", code=400)
-        
-        # Get total count for pagination
-        total = await orders_collection.count_documents(query)
-        
-        # Use find with to_list - SIMPLE version
-        if skip > 0 or limit > 0:
-            # Use aggregate for proper pagination
-            pipeline = []
-            if query:
-                pipeline.append({"$match": query})
-            if skip > 0:
-                pipeline.append({"$skip": skip})
-            if limit > 0:
-                pipeline.append({"$limit": limit})
-            
-            orders_data = await orders_collection.aggregate(pipeline).to_list(length=limit)
-        else:
-            # Simple find without pagination
-            orders_data = await orders_collection.find(query).to_list(length=None)
+        # Simple fetch
+        orders_data = await orders_collection.find(query).to_list(length=100)
         
         orders = []
         for order in orders_data:
             order_instance = Order.from_mongo(order)
-            
-            # Get payment attempts for this order (also need to await get_collection)
-            payment_attempts_collection = await get_collection("payment_attempts")
-            payment_attempts = await payment_attempts_collection.find({"order_id": str(order["_id"])}).to_list()
-            
-            order_dict = order_instance.model_dump()
-            if payment_attempts:
-                order_dict["payment_attempts"] = [
-                    PaymentAttempt.from_mongo(pa).model_dump() 
-                    for pa in payment_attempts
-                ]
-            
-            orders.append(order_dict)
+            orders.append(order_instance.model_dump())
         
         return success_response(
             data=orders,
@@ -245,8 +186,13 @@ async def get_orders(
             code=200
         )
     except Exception as e:
-        return handle_generic_exception(e)
-        
+        print(f"Orders error: {e}")
+        return error_response(
+            message="Failed to fetch orders",
+            code=500,
+            details={"error": str(e)}
+        )
+
 
 # Payment Attempts Endpoints
 @router.post("/payment_attempts", response_model=StandardResponse[PaymentAttemptResponse])
