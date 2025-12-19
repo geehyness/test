@@ -284,13 +284,28 @@ async def create_order(order: Order):
         orders_collection = get_collection("orders")
         inventory_collection = get_collection("inventory_products")
         
-        # Generate IDs for order items
+        # Generate order ID
+        order_id = str(ObjectId())
+        
+        # Update each item with order_id and generate item IDs if missing
         for item in order.items:
+            # Set order_id for each item
+            item.order_id = order_id
+            
+            # Generate item ID if not provided
             if not item.id:
                 item.id = str(ObjectId())
+            
+            # Ensure price_at_sale is set (default to price if not)
+            if item.price_at_sale is None:
+                item.price_at_sale = item.price
         
         # Prepare order data
         order_dict = to_mongo_dict(order)
+        order_dict["_id"] = ObjectId(order_id)  # Set the order ID
+        order_dict["id"] = order_id  # Also include in the dict
+        
+        # Set timestamps
         order_dict["created_at"] = datetime.utcnow().isoformat()
         order_dict["updated_at"] = datetime.utcnow().isoformat()
         
@@ -1651,9 +1666,6 @@ async def detailed_health_check():
 
 # Add Halo transaction endpoint at the end of core.py
 
-@router.post("/halo/transaction", response_model=StandardResponse[dict])
-
-
 @router.get("/halo/status")
 async def halo_status():
     """Simple endpoint to test if Halo is working"""
@@ -1726,3 +1738,45 @@ async def process_halo_transaction(transaction_data: Dict[str, Any] = Body(...))
             code=500,
             details={"error": str(e), "timestamp": datetime.utcnow().isoformat()}
         )
+
+
+# Add this to your core.py routes section
+@router.post("/halo/verify", response_model=StandardResponse[dict])
+async def verify_halo_payment(
+    reference: str = Query(..., description="Halo transaction reference")
+):
+    """Verify a Halo payment status"""
+    try:
+        # Check payment attempts collection
+        payment_attempts_collection = get_collection("payment_attempts")
+        
+        # Try to find by reference
+        attempt = await payment_attempts_collection.find_one({
+            "reference": reference
+        })
+        
+        if not attempt:
+            # Try to find by order_id if reference is an order ID
+            attempt = await payment_attempts_collection.find_one({
+                "order_id": reference
+            })
+        
+        if attempt:
+            return success_response(data={
+                "status": attempt.get("status", "pending"),
+                "transaction_id": attempt.get("reference"),
+                "order_id": attempt.get("order_id"),
+                "amount": attempt.get("amount"),
+                "completed_at": attempt.get("completed_at"),
+                "created_at": attempt.get("created_at"),
+                "payment_gateway": attempt.get("payment_gateway")
+            })
+        
+        return error_response(
+            message="Transaction not found",
+            code=404,
+            details={"reference": reference}
+        )
+        
+    except Exception as e:
+        return handle_generic_exception(e)

@@ -71,7 +71,7 @@ class StoreFood(MongoModel):
 
 class OrderItem(MongoModel):
     id: Optional[str] = None  # Make this truly optional
-    order_id: str
+    order_id: Optional[str] = None  # CHANGE from str to Optional[str]
     food_id: str
     quantity: int
     price: float
@@ -79,6 +79,15 @@ class OrderItem(MongoModel):
     notes: Optional[str] = None
     name: str
     price_at_sale: float
+
+    # Optional: Add a class method to help with response
+    def to_response_dict(self) -> dict:
+        """Convert OrderItem to dictionary for response"""
+        data = self.model_dump()
+        # Ensure id is included
+        if not data.get('id'):
+            data['id'] = str(ObjectId())
+        return data
 
 class Order(MongoModel):
     store_id: Optional[str] = None
@@ -96,12 +105,23 @@ class Order(MongoModel):
     payment_status: Optional[str] = None
     payment_method: Optional[str] = None
     stock_warnings: Optional[List[Dict[str, Any]]] = None
-    created_at: Optional[datetime] = None  # CHANGE from str to datetime
-    updated_at: Optional[datetime] = None  # CHANGE from str to datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     cancellation_reason: Optional[str] = None
     payment_reference: Optional[str] = None
     transaction_id: Optional[str] = None
     payment_details: Optional[Dict[str, Any]] = None
+    
+    # Optional: Add validation to ensure items have order_id after creation
+    @validator('items', always=True)
+    def validate_items_order_id(cls, v, values):
+        """Validate that items have order_id (should be set by backend)"""
+        order_id = values.get('id')
+        if order_id:
+            for item in v:
+                if not item.order_id:
+                    item.order_id = order_id
+        return v
     
     @classmethod
     def from_mongo(cls, data):
