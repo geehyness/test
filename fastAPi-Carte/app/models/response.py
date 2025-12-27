@@ -4,9 +4,6 @@ from pydantic import BaseModel, EmailStr, ConfigDict, validator
 from datetime import datetime, date
 from bson import ObjectId
 
-# ADD THIS IMPORT to fix circular dependency
-# from .core import PaymentAttempt  # Remove this if it causes circular import
-
 # Create a common encoder dictionary
 COMMON_ENCODERS = {
     ObjectId: str,
@@ -51,7 +48,7 @@ class ErrorResponse(BaseModel):
     message: str
     details: Optional[Dict[str, Any]] = None
 
-# Add to response.py
+# Instead, define PaymentAttemptResponse directly:
 class PaymentAttemptResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -69,8 +66,7 @@ class PaymentAttemptResponse(BaseModel):
     completed_at: Optional[str] = None
     cancelled_at: Optional[str] = None
     cancellation_reason: Optional[str] = None
-
-
+    
 # Recipe Item Response
 class RecipeItemResponse(BaseModel):
     model_config = ConfigDict(

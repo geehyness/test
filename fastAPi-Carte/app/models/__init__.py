@@ -27,6 +27,7 @@ from .response import (
     DomainResponse, TenantResponse, SiteResponse, JobResponse, FailedJobResponse,
     PasswordResetResponse, PayrollPreviewResponse, # New
     PayrollDeductionPreviewResponse, # New
+    PaymentAttemptResponse
 )
 
 __all__ = [
@@ -59,5 +60,5 @@ __all__ = [
     "HealthResponse", "DepartmentResponse", "UserResponse", "PaymentResponse", "TaxResponse",
     "PaymentMethodResponse", "BrandResponse", "ContactMessageResponse", "ReportResponse",
     "DomainResponse", "TenantResponse", "SiteResponse", "JobResponse", "FailedJobResponse",
-    "PasswordResetResponse"
+    "PasswordResetResponse", "PaymentAttemptResponse"
 ]

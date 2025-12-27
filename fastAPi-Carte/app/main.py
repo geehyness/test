@@ -1,19 +1,16 @@
-# app/main.py - UPDATED WITH PAYFAST
-from fastapi import FastAPI, HTTPException
-from app.routes import core, hr, inventory, auth
+# app/main.py - COMPLETELY CORRECTED VERSION
+from fastapi import FastAPI
 from app.database import client
 from fastapi.middleware.cors import CORSMiddleware
-from app.middleware.logging_middleware import LoggingMiddleware
 from app.logging_config import get_logger, setup_logging
-from app.routes import core, hr, inventory, auth, payroll_router, log_router
+from app.routes import (
+    core_router, hr_router, inventory_router, auth_router,
+    payroll_router, payments_router, log_router, payfast_itn_router  # FIXED IMPORTS
+)
 import os
 
-from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from bson import ObjectId
-
-# Import the PayFast ITN router
-from app.routes.payfast_itn import router as payfast_itn_router
 
 # Setup logging
 setup_logging()
@@ -29,9 +26,7 @@ app = FastAPI(
     }
 )
 
-
-
-
+# CORS Configuration
 origins_env = os.getenv("ALLOWED_ORIGINS", "")
 if origins_env:
     origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
@@ -52,28 +47,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
-
-# Add middleware to the single app instance
-#app.add_middleware(LoggingMiddleware)
-#app.add_middleware(
-#    CORSMiddleware,
-#    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000", "https://carte-pos.vercel.app/"],  # Specific origins for security
-#    allow_credentials=True,
-#    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-#    allow_headers=["*"],
-#)
-
-# Include routers
-app.include_router(core.router)
-app.include_router(hr.router) 
+# Include ALL routers
+app.include_router(core_router)
+app.include_router(hr_router) 
 app.include_router(inventory.router)
-app.include_router(auth.router)
+app.include_router(auth_router)
 app.include_router(payroll_router)
+app.include_router(payments_router)  # FIXED: Use .router
 app.include_router(log_router)
-app.include_router(payfast_itn_router)  # ADD PAYFAST ITN ROUTER
-#app.include_router(payments_router)
+app.include_router(payfast_itn_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -104,16 +86,16 @@ async def health_check():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    client.close()
-    logger.info("✅ MongoDB connection closed.")
-    print("✅ MongoDB connection closed.")
+    if client:
+        client.close()
+        logger.info("✅ MongoDB connection closed.")
+        print("✅ MongoDB connection closed.")
 
 @app.get("/")
 async def root():
     logger.info("Root endpoint accessed")
     return {"message": "POS System API is running"}
 
-@app.options("/test-cors")
 @app.get("/test-cors")
 async def test_cors():
     return {"message": "CORS is configured correctly"}
