@@ -50,7 +50,7 @@ app.add_middleware(
 # Include ALL routers
 app.include_router(core_router)
 app.include_router(hr_router) 
-app.include_router(inventory.router)
+app.include_router(inventory_router)
 app.include_router(auth_router)
 app.include_router(payroll_router)
 app.include_router(payments_router)  # FIXED: Use .router
