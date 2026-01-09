@@ -8,6 +8,10 @@ from app.routes import (
     payroll_router, payments_router, log_router  # FIXED IMPORTS
 )
 from app.routes.reports import router as reports_router
+
+# In your main app.py or wherever you import routes
+from app.routes import reports, analytics
+
 import os
 
 from datetime import datetime
