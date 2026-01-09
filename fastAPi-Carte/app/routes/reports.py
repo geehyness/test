@@ -132,94 +132,23 @@ async def get_financial_report(
         if status:
             query["status"] = status
         
-        # Get collections
-        orders_collection = get_collection("orders")
+        # Process report data
+        from app.utils.analytics_helpers import process_financial_report
+        processed_data = await process_financial_report(query, {
+            "store_id": store_id,
+            "employee_id": employee_id,
+            "category_id": category_id
+        })
+        
+        # Get collections for additional data
         foods_collection = get_collection("foods")
         customers_collection = get_collection("customers")
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch orders
-        orders = await orders_collection.find(query).to_list()
-        
-        # Calculate basic metrics
-        total_revenue = 0
-        total_orders = len(orders)
-        total_cost = 0
-        item_sales = defaultdict(lambda: {"quantity": 0, "revenue": 0, "cost": 0})
-        customer_spending = defaultdict(lambda: {"total": 0, "orders": 0})
-        employee_performance = defaultdict(lambda: {"orders": 0, "revenue": 0})
-        payment_methods = defaultdict(float)
-        daily_revenue = defaultdict(float)
-        
-        # Process each order
-        for order in orders:
-            if order.get("status") == "cancelled":
-                continue
-                
-            order_revenue = order.get("total_amount", 0)
-            order_date = order.get("created_at")
-            
-            if isinstance(order_date, datetime):
-                date_key = order_date.strftime("%Y-%m-%d")
-            else:
-                try:
-                    date_key = datetime.fromisoformat(str(order_date)).strftime("%Y-%m-%d")
-                except:
-                    date_key = "unknown"
-            
-            # Accumulate metrics
-            total_revenue += order_revenue
-            daily_revenue[date_key] += order_revenue
-            
-            # Payment method
-            payment_method = order.get("payment_method", "unknown")
-            payment_methods[payment_method] += order_revenue
-            
-            # Customer spending
-            customer_id = order.get("customer_id")
-            if customer_id:
-                customer_spending[customer_id]["total"] += order_revenue
-                customer_spending[customer_id]["orders"] += 1
-            
-            # Employee performance
-            emp_id = order.get("employee_id")
-            if emp_id:
-                employee_performance[emp_id]["orders"] += 1
-                employee_performance[emp_id]["revenue"] += order_revenue
-            
-            # Item sales
-            for item in order.get("items", []):
-                food_id = item.get("food_id")
-                quantity = item.get("quantity", 0)
-                price = item.get("price", 0)
-                sub_total = item.get("sub_total", 0)
-                
-                item_sales[food_id]["quantity"] += quantity
-                item_sales[food_id]["revenue"] += sub_total
-                
-                # Calculate cost from recipes
-                food = await foods_collection.find_one({"_id": ObjectId(food_id)})
-                if food and food.get("recipes"):
-                    for recipe in food["recipes"]:
-                        inv_product = await inventory_collection.find_one(
-                            {"_id": ObjectId(recipe.get("inventory_product_id"))}
-                        )
-                        if inv_product:
-                            unit_cost = inv_product.get("unit_cost", 0)
-                            quantity_used = recipe.get("quantity_used", 0)
-                            item_cost = unit_cost * quantity_used * quantity
-                            item_sales[food_id]["cost"] += item_cost
-                            total_cost += item_cost
-        
-        # Calculate derived metrics
-        gross_profit = total_revenue - total_cost
-        gross_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
-        avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
-        
         # Get top items
         top_items = []
-        for food_id, data in item_sales.items():
+        for food_id, data in processed_data["item_sales"].items():
             food = await foods_collection.find_one({"_id": ObjectId(food_id)})
             top_items.append({
                 "id": food_id,
@@ -231,13 +160,12 @@ async def get_financial_report(
                 "category_id": food.get("category_id") if food else None
             })
         
-        # Sort and limit top items
         top_items.sort(key=lambda x: x["revenue"], reverse=True)
         top_items = top_items[:10]
         
         # Get top customers
         top_customers = []
-        for customer_id, data in customer_spending.items():
+        for customer_id, data in processed_data["customer_spending"].items():
             customer = await customers_collection.find_one({"_id": ObjectId(customer_id)})
             top_customers.append({
                 "id": customer_id,
@@ -253,7 +181,7 @@ async def get_financial_report(
         
         # Get employee performance
         employee_perf_data = []
-        for emp_id, data in employee_performance.items():
+        for emp_id, data in processed_data["employee_performance"].items():
             employee = await employees_collection.find_one({"_id": ObjectId(emp_id)})
             employee_perf_data.append({
                 "id": emp_id,
@@ -267,14 +195,15 @@ async def get_financial_report(
         employee_perf_data.sort(key=lambda x: x["total_sales"], reverse=True)
         
         # Get inventory metrics
-        inventory_products = await inventory_collection.find().to_list()
+        cursor = inventory_collection.find()
+        inventory_products = await cursor.to_list(None)
         inventory_value = sum(p.get("quantity_in_stock", 0) * p.get("unit_cost", 0) for p in inventory_products)
         low_stock_items = [p for p in inventory_products if p.get("quantity_in_stock", 0) <= p.get("reorder_level", 0)]
         
         # Calculate daily metrics
         daily_data = []
-        for date_str, revenue in sorted(daily_revenue.items()):
-            daily_orders = [o for o in orders if (
+        for date_str, revenue in sorted(processed_data["daily_revenue"].items()):
+            daily_orders = [o for o in processed_data["orders"] if (
                 (isinstance(o.get("created_at"), datetime) and o["created_at"].strftime("%Y-%m-%d") == date_str) or
                 (isinstance(o.get("created_at"), str) and o["created_at"].startswith(date_str))
             )]
@@ -294,15 +223,15 @@ async def get_financial_report(
                 "days": (end_dt - start_dt).days + 1
             },
             "summary": {
-                "total_revenue": total_revenue,
-                "total_orders": total_orders,
-                "total_cost": total_cost,
-                "gross_profit": gross_profit,
-                "gross_margin": gross_margin,
-                "average_order_value": avg_order_value,
+                "total_revenue": processed_data["total_revenue"],
+                "total_orders": processed_data["total_orders"],
+                "total_cost": processed_data["total_cost"],
+                "gross_profit": processed_data["gross_profit"],
+                "gross_margin": processed_data["gross_margin"],
+                "average_order_value": processed_data["avg_order_value"],
                 "inventory_value": inventory_value
             },
-            "payment_methods": dict(payment_methods),
+            "payment_methods": processed_data["payment_methods"],
             "daily_performance": daily_data,
             "top_items": top_items,
             "top_customers": top_customers,
@@ -334,6 +263,84 @@ async def get_financial_report(
         
     except Exception as e:
         return handle_generic_exception(e)
+
+
+@router.get("/reports/quick/sales")
+async def get_quick_sales_report(
+    days: int = Query(7, ge=1, le=365),
+    store_id: Optional[str] = Query(None)
+):
+    """Quick sales report for testing"""
+    try:
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        
+        # Simple test data
+        daily_data = []
+        for i in range(days):
+            date = start_date + timedelta(days=i)
+            revenue = 1000 + (i * 100)  # Increasing revenue
+            orders = 20 + (i * 2)
+            
+            daily_data.append({
+                "date": date.strftime("%Y-%m-%d"),
+                "revenue": revenue,
+                "orders": orders,
+                "avg_order_value": revenue / orders if orders > 0 else 0
+            })
+        
+        report_data = {
+            "period": {
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "days": days
+            },
+            "store_id": store_id,
+            "summary": {
+                "total_revenue": sum(d["revenue"] for d in daily_data),
+                "total_orders": sum(d["orders"] for d in daily_data),
+                "average_daily_revenue": sum(d["revenue"] for d in daily_data) / days,
+                "growth_rate": 12.5  # Example
+            },
+            "daily_data": daily_data,
+            "top_items": [
+                {"name": "Burger", "revenue": 2500, "quantity": 50},
+                {"name": "Pizza", "revenue": 2000, "quantity": 40},
+                {"name": "Fries", "revenue": 1500, "quantity": 150}
+            ],
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        return success_response(data=report_data)
+        
+    except Exception as e:
+        return handle_generic_exception(e)
+
+@router.get("/reports/quick/inventory")
+async def get_quick_inventory_report(store_id: Optional[str] = Query(None)):
+    """Quick inventory report for testing"""
+    try:
+        report_data = {
+            "store_id": store_id,
+            "summary": {
+                "total_items": 50,
+                "total_value": 15000.00,
+                "low_stock_items": 5,
+                "out_of_stock_items": 2
+            },
+            "low_stock": [
+                {"id": "1", "name": "Burger Buns", "current": 10, "reorder_level": 50},
+                {"id": "2", "name": "Lettuce", "current": 5, "reorder_level": 20},
+                {"id": "3", "name": "Tomatoes", "current": 8, "reorder_level": 25}
+            ],
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        return success_response(data=report_data)
+        
+    except Exception as e:
+        return handle_generic_exception(e)
+
 
 @router.get("/reports/sales/daily", response_model=StandardResponse[dict])
 async def get_daily_sales_report(

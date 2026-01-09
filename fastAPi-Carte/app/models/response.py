@@ -529,13 +529,19 @@ class TenantResponse(BaseModel):
     phone: Optional[str] = None
     address: Optional[str] = None
     customer_page_settings: Optional[dict] = None
-    created_at: Optional[datetime] = None  # Use datetime like other entities
-    updated_at: Optional[datetime] = None  # Use datetime like other entities
+    created_at: Optional[str] = None  # Changed from datetime to string
+    updated_at: Optional[str] = None  # Changed from datetime to string
     
     @validator('customer_page_settings', pre=True)
     def validate_customer_page_settings(cls, v):
         if v is None:
             return {}
+        return v
+    
+    @validator('created_at', 'updated_at', pre=True)
+    def validate_datetime_fields(cls, v):
+        if isinstance(v, datetime):
+            return v.isoformat()
         return v
 
 
