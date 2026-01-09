@@ -7,6 +7,7 @@ from app.routes import (
     core_router, hr_router, inventory_router, auth_router,
     payroll_router, payments_router, log_router  # FIXED IMPORTS
 )
+from app.routes.reports import router as reports_router
 import os
 
 from datetime import datetime
@@ -55,6 +56,7 @@ app.include_router(auth_router)
 app.include_router(payroll_router)
 app.include_router(payments_router)  # FIXED: Use .router
 app.include_router(log_router)
+app.include_router(reports_router)
 
 @app.on_event("startup")
 async def startup_event():

@@ -924,3 +924,173 @@ class ReportResponse(BaseModel):
     attempts: int
     last_attempt_at: str
     created_at: Optional[datetime] = None
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Add to app/models/response.py
+
+class FinancialReportResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    period: Dict[str, str]
+    summary: Dict[str, Any]
+    payment_methods: Dict[str, float]
+    daily_performance: List[Dict[str, Any]]
+    top_items: List[Dict[str, Any]]
+    top_customers: List[Dict[str, Any]]
+    employee_performance: List[Dict[str, Any]]
+    inventory_metrics: Dict[str, Any]
+    filters: Dict[str, Optional[str]]
+    generated_at: str
+
+class DailySalesReportResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    date: str
+    store_id: Optional[str]
+    total_revenue: float
+    total_orders: int
+    average_order_value: float
+    hourly_breakdown: List[Dict[str, Any]]
+    status_breakdown: Dict[str, int]
+    payment_method_breakdown: Dict[str, float]
+    peak_hour: Optional[Dict[str, Any]]
+
+class InventoryReportResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    total_items: int
+    total_inventory_value: float
+    low_stock_items: Dict[str, Any]
+    out_of_stock_items: Dict[str, Any]
+    slow_moving_items: Dict[str, Any]
+    store_id: Optional[str]
+    threshold_percentage: float
+
+class EmployeePerformanceReportResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    period: Dict[str, str]
+    store_id: Optional[str]
+    total_employees: int
+    averages: Dict[str, float]
+    employee_performance: List[Dict[str, Any]]
+    top_performers: List[Dict[str, Any]]
+    generated_at: str
+
+class CustomerAnalysisReportResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    period: Dict[str, str]
+    store_id: Optional[str]
+    overall_metrics: Dict[str, Any]
+    customer_segments: Dict[str, Any]
+    top_customers: List[Dict[str, Any]]
+    generated_at: str
+
+class DashboardAnalyticsResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    period: Dict[str, str]
+    store_id: Optional[str]
+    kpis: Dict[str, Any]
+    hourly_performance: List[Dict[str, Any]]
+    top_items: List[Dict[str, Any]]
+    payment_methods: Dict[str, float]
+    peak_hour: Optional[Dict[str, Any]]
+    generated_at: str
+
+class RealtimeAnalyticsResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    timestamp: str
+    store_id: Optional[str]
+    today: Dict[str, Any]
+    current_hour: Dict[str, Any]
+    active_tables: int
+    pending_orders: int
+    peak_hour_today: Optional[int]
+
+class PredictiveAnalyticsResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    prediction_period: Dict[str, str]
+    store_id: Optional[str]
+    predictions: Dict[str, Any]
+    peak_hour_prediction: Dict[str, Any]
+    historical_data_points: int
+    generated_at: str
+
+class ComparativeAnalyticsResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    periods: Dict[str, Any]
+    store_id: Optional[str]
+    comparison_metrics: Dict[str, Any]
+    top_items_analysis: Dict[str, Any]
+    insights: List[str]
+    generated_at: str
+
+class ReportScheduleResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    schedule_id: str
+    report_type: str
+    schedule: str
+    email: Optional[str]
+    parameters: Dict[str, Any]
+    next_run: str
+    created_at: str
+    status: str
+
+class AvailableReportsResponse(BaseModel):
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders=COMMON_ENCODERS
+    )
+    
+    id: str
+    name: str
+    description: str
+    endpoint: str
+    parameters: List[str]
