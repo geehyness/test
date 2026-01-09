@@ -1,4 +1,4 @@
-# app/routes/reports.py
+# app/routes/reports.py - UPDATED VERSION WITH TEST ENDPOINTS
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -10,6 +10,86 @@ import asyncio
 from collections import defaultdict
 
 router = APIRouter(prefix="/api", tags=["reports"])
+
+# ==================== TEST ENDPOINTS - ADDED FIRST ====================
+
+@router.get("/reports/test")
+async def test_reports_endpoint():
+    """Test endpoint to verify reports API is working"""
+    return {
+        "code": 200,
+        "message": "Reports API test endpoint is working",
+        "data": {
+            "timestamp": datetime.utcnow().isoformat(),
+            "status": "ok",
+            "route": "/api/reports/test",
+            "endpoints_available": [
+                "/api/reports/test",
+                "/api/reports/financial/simple",
+                "/api/reports/financial",
+                "/api/reports/sales/daily",
+                "/api/reports/inventory",
+                "/api/reports/employee/performance",
+                "/api/reports/customer/analysis",
+                "/api/analytics/dashboard",
+                "/api/analytics/realtime",
+                "/api/analytics/predictive",
+                "/api/analytics/comparative"
+            ]
+        }
+    }
+
+@router.get("/reports/financial/simple")
+async def get_simple_financial_report(
+    start_date: str = Query("2024-01-01", description="Start date in YYYY-MM-DD format"),
+    end_date: str = Query("2024-12-31", description="End date in YYYY-MM-DD format"),
+    store_id: Optional[str] = Query(None)
+):
+    """Simple financial report for testing"""
+    try:
+        # Simple test data
+        report_data = {
+            "period": {
+                "start_date": start_date,
+                "end_date": end_date,
+                "days": 365
+            },
+            "summary": {
+                "total_revenue": 125000.50,
+                "total_orders": 1250,
+                "total_cost": 62500.25,
+                "gross_profit": 62500.25,
+                "gross_margin": 50.0,
+                "average_order_value": 100.00,
+                "inventory_value": 15000.00
+            },
+            "payment_methods": {
+                "cash": 50000.00,
+                "card": 60000.00,
+                "online": 15000.50
+            },
+            "top_items": [
+                {"name": "Burger", "revenue": 25000.00, "quantity": 500},
+                {"name": "Pizza", "revenue": 20000.00, "quantity": 400},
+                {"name": "Fries", "revenue": 15000.00, "quantity": 1500}
+            ],
+            "test_data": True,
+            "store_id": store_id,
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        return success_response(
+            data=report_data,
+            message="Simple financial report generated successfully"
+        )
+        
+    except Exception as e:
+        return error_response(
+            message=f"Error generating simple report: {str(e)}",
+            code=500
+        )
+
+# ==================== ORIGINAL ENDPOINTS ====================
 
 # ----------------------------------------------------
 # --- Financial Reports Endpoints ---
