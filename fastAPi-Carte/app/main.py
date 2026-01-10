@@ -5,11 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.logging_config import get_logger, setup_logging
 from app.routes import (
     core_router, hr_router, inventory_router, auth_router,
-    payroll_router, payments_router, log_router  # FIXED IMPORTS
+    payroll_router, payments_router, log_router, reports_router, analytics_router
 )
-from app.routes.reports import router as reports_router
-from app.routes.analytics import router as analytics_router
-
 
 import os
 
