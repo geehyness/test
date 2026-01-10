@@ -8,6 +8,7 @@ from app.routes import (
     payroll_router, payments_router, log_router  # FIXED IMPORTS
 )
 from app.routes.reports import router as reports_router
+from app.routes.analytics import router as analytics_router
 
 
 import os
@@ -59,6 +60,7 @@ app.include_router(payroll_router)
 app.include_router(payments_router)  # FIXED: Use .router
 app.include_router(log_router)
 app.include_router(reports_router)
+app.include_router(analytics_router)
 
 @app.on_event("startup")
 async def startup_event():
