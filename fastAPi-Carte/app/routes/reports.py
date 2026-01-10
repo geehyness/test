@@ -1,4 +1,4 @@
-# app/routes/reports.py - COMPLETE VERSION WITH EMPTY DATA HANDLING
+# app/routes/reports.py - FIXED VERSION
 from fastapi import APIRouter, Query
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -124,18 +124,12 @@ async def get_financial_report(
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch data
-        orders_cursor = orders_collection.find(query)
-        foods_cursor = foods_collection.find({})
-        customers_cursor = customers_collection.find({})
-        employees_cursor = employees_collection.find({})
-        inventory_cursor = inventory_collection.find({})
-        
-        orders = await orders_cursor.to_list(None)
-        foods = await foods_cursor.to_list(None)
-        customers = await customers_cursor.to_list(None)
-        employees = await employees_cursor.to_list(None)
-        inventory = await inventory_cursor.to_list(None)
+        # FIXED: Use await directly since LoggedCollection.find() returns a list
+        orders = await orders_collection.find(query)
+        foods = await foods_collection.find({})
+        customers = await customers_collection.find({})
+        employees = await employees_collection.find({})
+        inventory = await inventory_collection.find({})
         
         # If no orders found, return empty report with success response
         if not orders:
@@ -420,9 +414,8 @@ async def get_daily_sales_report(
         # Get collection
         orders_collection = get_collection("orders")
         
-        # Fetch orders
-        cursor = orders_collection.find(query)
-        orders = await cursor.to_list(None)
+        # FIXED: Use await directly since LoggedCollection.find() returns a list
+        orders = await orders_collection.find(query)
         
         # If no orders found, return empty report with success
         if not orders:
@@ -536,9 +529,8 @@ async def get_inventory_report(
         # Get collection
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch inventory data
-        cursor = inventory_collection.find(query)
-        products = await cursor.to_list(None)
+        # FIXED: Use await directly
+        products = await inventory_collection.find(query)
         
         # If no inventory products found, return empty report with success
         if not products:
@@ -696,12 +688,9 @@ async def get_employee_performance_report(
         orders_collection = get_collection("orders")
         employees_collection = get_collection("employees")
         
-        # Fetch data
-        orders_cursor = orders_collection.find(orders_query)
-        employees_cursor = employees_collection.find({})
-        
-        orders = await orders_cursor.to_list(None)
-        employees = await employees_cursor.to_list(None)
+        # FIXED: Use await directly
+        orders = await orders_collection.find(orders_query)
+        employees = await employees_collection.find({})
         
         # If no orders found, return empty report with success
         if not orders:
@@ -842,12 +831,9 @@ async def get_customer_analysis_report(
         orders_collection = get_collection("orders")
         customers_collection = get_collection("customers")
         
-        # Fetch data
-        orders_cursor = orders_collection.find(query)
-        customers_cursor = customers_collection.find({})
-        
-        orders = await orders_cursor.to_list(None)
-        customers = await customers_cursor.to_list(None)
+        # FIXED: Use await directly
+        orders = await orders_collection.find(query)
+        customers = await customers_collection.find({})
         
         # If no orders found, return empty report with success
         if not orders:

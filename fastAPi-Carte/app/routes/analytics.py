@@ -1,4 +1,4 @@
-# app/routes/analytics.py - UPDATED WITH EMPTY DATA HANDLING
+# app/routes/analytics.py - UPDATED WITH FIXED DATABASE CALLS
 from fastapi import APIRouter, Query
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -60,18 +60,12 @@ async def get_dashboard_analytics(
         inventory_collection = get_collection("inventory_products")
         tables_collection = get_collection("tables")
         
-        # Fetch data
-        orders_cursor = orders_collection.find(query)
-        customers_cursor = customers_collection.find({})
-        employees_cursor = employees_collection.find({})
-        inventory_cursor = inventory_collection.find({})
-        tables_cursor = tables_collection.find({})
-        
-        orders = await orders_cursor.to_list(None)
-        customers = await customers_cursor.to_list(None)
-        employees = await employees_cursor.to_list(None)
-        inventory = await inventory_cursor.to_list(None)
-        tables = await tables_cursor.to_list(None)
+        # FIXED: Use await directly since LoggedCollection.find() returns a list
+        orders = await orders_collection.find(query)
+        customers = await customers_collection.find({})
+        employees = await employees_collection.find({})
+        inventory = await inventory_collection.find({})
+        tables = await tables_collection.find({})
         
         # Calculate KPIs with defaults for empty data
         total_revenue = sum(o.get("total_amount", 0) or 0 for o in orders)
@@ -217,12 +211,9 @@ async def get_realtime_analytics(
         orders_collection = get_collection("orders")
         tables_collection = get_collection("tables")
         
-        # Fetch data
-        orders_cursor = orders_collection.find(query)
-        active_tables_cursor = tables_collection.find({"status": "occupied"})
-        
-        orders = await orders_cursor.to_list(None)
-        active_tables = await active_tables_cursor.to_list(None)
+        # FIXED: Use await directly
+        orders = await orders_collection.find(query)
+        active_tables = await tables_collection.find({"status": "occupied"})
         
         # Check if we have any data
         has_data = len(orders) > 0 or len(active_tables) > 0
@@ -331,24 +322,17 @@ async def test_analytics_data():
         inventory_collection = get_collection("inventory_products")
         tables_collection = get_collection("tables")
         
-        orders_cursor = orders_collection.find({})
-        customers_cursor = customers_collection.find({})
-        employees_cursor = employees_collection.find({})
-        inventory_cursor = inventory_collection.find({})
-        tables_cursor = tables_collection.find({})
-        
-        orders = await orders_cursor.to_list(None)
-        customers = await customers_cursor.to_list(None)
-        employees = await employees_cursor.to_list(None)
-        inventory = await inventory_cursor.to_list(None)
-        tables = await tables_cursor.to_list(None)
+        orders = await orders_collection.find({})
+        customers = await customers_collection.find({})
+        employees = await employees_collection.find({})
+        inventory = await inventory_collection.find({})
+        tables = await tables_collection.find({})
         
         # Check recent orders (last 30 days)
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        recent_orders_cursor = orders_collection.find({
+        recent_orders = await orders_collection.find({
             "created_at": {"$gte": thirty_days_ago}
         })
-        recent_orders = await recent_orders_cursor.to_list(None)
         
         return success_response(data={
             "collection_counts": {

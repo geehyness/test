@@ -1458,25 +1458,6 @@ async def delete_user(user_id: str):
     return await _delete_item("users", user_id)
 
 # --------------------------
-# --- Reports Endpoints ---
-# --------------------------
-@router.get("/reports", response_model=StandardResponse[List[ReportResponse]])
-async def get_reports():
-    return await _get_all_items("reports", Report)
-
-@router.get("/reports/{report_id}", response_model=StandardResponse[ReportResponse])
-async def get_report(report_id: str):
-    return await _get_item_by_id("reports", report_id, Report)
-
-@router.post("/reports", response_model=StandardResponse[ReportResponse])
-async def create_report(report: Report):
-    return await _create_item("reports", report, ReportResponse)
-
-@router.delete("/reports/{report_id}", response_model=StandardResponse[dict])
-async def delete_report(report_id: str):
-    return await _delete_item("reports", report_id)
-
-# --------------------------
 # --- Password Resets Endpoints ---
 # --------------------------
 @router.get("/password_resets", response_model=StandardResponse[List[PasswordResetResponse]])

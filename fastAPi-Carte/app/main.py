@@ -48,16 +48,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include ALL routers
-app.include_router(core_router)
+# === CRITICAL: REORDER ROUTERS ===
+# Put specific routers BEFORE generic core router to avoid conflicts
+app.include_router(reports_router)    # First - specific reports routes
+app.include_router(analytics_router)  # Second - specific analytics routes
+app.include_router(log_router)        # Third - specific log routes
+app.include_router(payments_router)   # Fourth - specific payment routes
+
+# Then include general routers
+app.include_router(core_router)       # Fifth - has generic /api/reports/{id} route
 app.include_router(hr_router) 
 app.include_router(inventory_router)
 app.include_router(auth_router)
 app.include_router(payroll_router)
-app.include_router(payments_router)  # FIXED: Use .router
-app.include_router(log_router)
-app.include_router(reports_router)
-app.include_router(analytics_router)
 
 @app.on_event("startup")
 async def startup_event():
