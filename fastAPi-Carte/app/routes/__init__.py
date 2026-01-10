@@ -5,7 +5,7 @@ from .inventory import router as inventory_router
 from .auth import router as auth_router
 from .payroll import router as payroll_router
 from .payments import router as payments_router
-from .reports import router as reports_router  # ADD THIS LINE
+from .reports import router as reports_router 
 from app.utils.log_viewer import router as log_router
 
 __all__ = [
@@ -15,6 +15,6 @@ __all__ = [
     "auth_router", 
     "payroll_router", 
     "payments_router",
-    "reports_router",  # ADD THIS LINE
+    "reports_router", 
     "log_router"
 ]

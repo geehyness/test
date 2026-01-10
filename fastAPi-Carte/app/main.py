@@ -9,8 +9,6 @@ from app.routes import (
 )
 from app.routes.reports import router as reports_router
 
-# In your main app.py or wherever you import routes
-from app.routes import reports, analytics
 
 import os
 
