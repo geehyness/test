@@ -1,4 +1,4 @@
-# app/routes/analytics.py
+# app/routes/analytics.py - FIXED VERSION
 from fastapi import APIRouter, Query
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -46,12 +46,18 @@ async def get_dashboard_analytics(
         inventory_collection = get_collection("inventory_products")
         tables_collection = get_collection("tables")
         
-        # Fetch data
-        orders = await orders_collection.find(query).to_list(length=1000)
-        customers = await customers_collection.find({}).to_list(length=1000)
-        employees = await employees_collection.find({}).to_list(length=1000)
-        inventory = await inventory_collection.find({}).to_list(length=1000)
-        tables = await tables_collection.find({}).to_list(length=1000)
+        # Fetch data - FIXED
+        orders_cursor = orders_collection.find(query)
+        customers_cursor = customers_collection.find({})
+        employees_cursor = employees_collection.find({})
+        inventory_cursor = inventory_collection.find({})
+        tables_cursor = tables_collection.find({})
+        
+        orders = await orders_cursor.to_list(None)
+        customers = await customers_cursor.to_list(None)
+        employees = await employees_cursor.to_list(None)
+        inventory = await inventory_cursor.to_list(None)
+        tables = await tables_cursor.to_list(None)
         
         # Calculate KPIs
         total_revenue = sum(o.get("total_amount", 0) for o in orders)
@@ -185,9 +191,12 @@ async def get_realtime_analytics(
         orders_collection = get_collection("orders")
         tables_collection = get_collection("tables")
         
-        # Fetch data
-        orders = await orders_collection.find(query).to_list(length=1000)
-        active_tables = await tables_collection.find({"status": "occupied"}).to_list(length=1000)
+        # Fetch data - FIXED
+        orders_cursor = orders_collection.find(query)
+        active_tables_cursor = tables_collection.find({"status": "occupied"})
+        
+        orders = await orders_cursor.to_list(None)
+        active_tables = await active_tables_cursor.to_list(None)
         
         # Calculate metrics
         current_hour = datetime.utcnow().hour

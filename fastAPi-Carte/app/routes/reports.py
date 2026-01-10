@@ -1,15 +1,13 @@
-# app/routes/reports.py - FIXED ROUTING VERSION
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+# app/routes/reports.py - COMPLETELY FIXED VERSION
+from fastapi import APIRouter, Query
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from bson import ObjectId
 from app.database import get_collection
-from app.models.response import StandardResponse, SuccessResponse, ErrorResponse
-from app.utils.response_helpers import success_response, error_response, handle_generic_exception
+from app.utils.response_helpers import success_response, error_response
 import asyncio
 from collections import defaultdict
 
-# Use a separate router for reports to avoid conflicts
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
 # ==================== TEST ENDPOINT ====================
@@ -81,12 +79,19 @@ async def get_financial_report(
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch data
-        orders = await orders_collection.find(query).to_list(length=1000)  # Limit for safety
-        foods = await foods_collection.find({}).to_list(length=1000)
-        customers = await customers_collection.find({}).to_list(length=1000)
-        employees = await employees_collection.find({}).to_list(length=1000)
-        inventory = await inventory_collection.find({}).to_list(length=1000)
+        # Fetch data - FIXED: Use cursor properly
+        orders_cursor = orders_collection.find(query)
+        foods_cursor = foods_collection.find({})
+        customers_cursor = customers_collection.find({})
+        employees_cursor = employees_collection.find({})
+        inventory_cursor = inventory_collection.find({})
+        
+        # Execute all queries
+        orders = await orders_cursor.to_list(None)  # FIXED: No length parameter or use to_list()
+        foods = await foods_cursor.to_list(None)
+        customers = await customers_cursor.to_list(None)
+        employees = await employees_cursor.to_list(None)
+        inventory = await inventory_cursor.to_list(None)
         
         # Calculate metrics
         total_revenue = 0
@@ -126,36 +131,39 @@ async def get_financial_report(
             daily_revenue[date_key] += order_revenue
             
             # Payment method
-            payment_method = order.get("payment_method", "unknown")
-            payment_methods[payment_method] += order_revenue
+            pmt_method = order.get("payment_method", "unknown")
+            payment_methods[pmt_method] += order_revenue
             
             # Customer spending
             customer_id = order.get("customer_id")
             if customer_id:
-                customer_spending[customer_id]["total"] += order_revenue
-                customer_spending[customer_id]["orders"] += 1
+                customer_spending[str(customer_id)]["total"] += order_revenue
+                customer_spending[str(customer_id)]["orders"] += 1
             
             # Employee performance
             emp_id = order.get("employee_id")
             if emp_id:
-                employee_performance[emp_id]["orders"] += 1
-                employee_performance[emp_id]["revenue"] += order_revenue
+                employee_performance[str(emp_id)]["orders"] += 1
+                employee_performance[str(emp_id)]["revenue"] += order_revenue
             
             # Item sales
             for item in order.get("items", []):
                 food_id = item.get("food_id")
+                if not food_id:
+                    continue
+                    
                 quantity = item.get("quantity", 0)
                 price = item.get("price", 0)
                 sub_total = item.get("sub_total", 0)
                 
-                item_sales[food_id]["quantity"] += quantity
-                item_sales[food_id]["revenue"] += sub_total
+                item_sales[str(food_id)]["quantity"] += quantity
+                item_sales[str(food_id)]["revenue"] += sub_total
                 
                 # Calculate cost from food data
-                food = food_dict.get(food_id)
+                food = food_dict.get(str(food_id))
                 if food and food.get("unit_cost"):
                     item_cost = food["unit_cost"] * quantity
-                    item_sales[food_id]["cost"] += item_cost
+                    item_sales[str(food_id)]["cost"] += item_cost
                     total_cost += item_cost
         
         # Calculate derived metrics
@@ -308,8 +316,9 @@ async def get_daily_sales_report(
         # Get collection
         orders_collection = get_collection("orders")
         
-        # Fetch orders
-        orders = await orders_collection.find(query).to_list(length=1000)
+        # Fetch orders - FIXED
+        cursor = orders_collection.find(query)
+        orders = await cursor.to_list(None)
         
         # Calculate hourly breakdown
         hourly_data = defaultdict(lambda: {"revenue": 0, "orders": 0})
@@ -398,8 +407,9 @@ async def get_inventory_report(
         # Get collection
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch inventory data
-        products = await inventory_collection.find(query).to_list(length=1000)
+        # Fetch inventory data - FIXED
+        cursor = inventory_collection.find(query)
+        products = await cursor.to_list(None)
         
         # Calculate metrics
         total_value = 0
@@ -524,16 +534,19 @@ async def get_employee_performance_report(
         orders_collection = get_collection("orders")
         employees_collection = get_collection("employees")
         
-        # Fetch data
-        orders = await orders_collection.find(orders_query).to_list(length=1000)
-        employees = await employees_collection.find({}).to_list(length=1000)
+        # Fetch data - FIXED
+        orders_cursor = orders_collection.find(orders_query)
+        orders = await orders_cursor.to_list(None)
+        
+        employees_cursor = employees_collection.find({})
+        employees = await employees_cursor.to_list(None)
         
         # Group orders by employee
         employee_orders = defaultdict(list)
         for order in orders:
             emp_id = order.get("employee_id")
             if emp_id:
-                employee_orders[emp_id].append(order)
+                employee_orders[str(emp_id)].append(order)
         
         # Process each employee
         performance_data = []
@@ -596,6 +609,176 @@ async def get_employee_performance_report(
             code=500
         )
 
+# ==================== CUSTOMER ANALYSIS REPORT ====================
+
+@router.get("/customer/analysis")
+async def get_customer_analysis_report(
+    start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
+    end_date: str = Query(..., description="End date in YYYY-MM-DD format"),
+    store_id: Optional[str] = Query(None),
+    min_orders: int = Query(1, description="Minimum orders to be included")
+):
+    """Generate customer behavior analysis report from real data"""
+    try:
+        # Parse dates
+        try:
+            start_dt = datetime.fromisoformat(start_date + "T00:00:00")
+            end_dt = datetime.fromisoformat(end_date + "T23:59:59.999999")
+        except ValueError:
+            return error_response(
+                message="Invalid date format. Use YYYY-MM-DD format",
+                code=400
+            )
+        
+        # Build query
+        query = {
+            "created_at": {
+                "$gte": start_dt,
+                "$lte": end_dt
+            },
+            "customer_id": {"$ne": None}
+        }
+        if store_id:
+            query["store_id"] = store_id
+        
+        # Get collections
+        orders_collection = get_collection("orders")
+        customers_collection = get_collection("customers")
+        
+        # Fetch data - FIXED
+        orders_cursor = orders_collection.find(query)
+        customers_cursor = customers_collection.find({})
+        
+        orders = await orders_cursor.to_list(None)
+        customers = await customers_cursor.to_list(None)
+        
+        # Group orders by customer
+        customer_orders = {}
+        for order in orders:
+            customer_id = order.get("customer_id")
+            if customer_id:
+                if str(customer_id) not in customer_orders:
+                    customer_orders[str(customer_id)] = []
+                customer_orders[str(customer_id)].append(order)
+        
+        # Prepare customer analysis
+        customer_analysis = []
+        customer_dict = {str(c["_id"]): c for c in customers}
+        
+        for customer_id, orders_list in customer_orders.items():
+            if len(orders_list) < min_orders:
+                continue
+            
+            customer = customer_dict.get(customer_id)
+            
+            # Calculate metrics
+            total_spent = sum(o.get("total_amount", 0) for o in orders_list)
+            avg_spend = total_spent / len(orders_list)
+            
+            # Calculate visit frequency
+            order_dates = []
+            for order in orders_list:
+                order_date = order.get("created_at")
+                if isinstance(order_date, datetime):
+                    order_dates.append(order_date.date())
+                elif isinstance(order_date, str):
+                    try:
+                        order_dates.append(datetime.fromisoformat(order_date.replace('Z', '+00:00')).date())
+                    except:
+                        pass
+            
+            unique_visit_days = len(set(order_dates))
+            avg_days_between_visits = 0
+            if len(order_dates) > 1:
+                order_dates.sort()
+                total_days = (order_dates[-1] - order_dates[0]).days
+                avg_days_between_visits = total_days / (len(order_dates) - 1)
+            
+            # Calculate favorite items
+            item_counts = defaultdict(int)
+            for order in orders_list:
+                for item in order.get("items", []):
+                    item_name = item.get("name", "Unknown")
+                    item_counts[item_name] += item.get("quantity", 0)
+            
+            favorite_item = max(item_counts.items(), key=lambda x: x[1]) if item_counts else ("None", 0)
+            
+            # Calculate customer value
+            customer_value_score = (total_spent * len(orders_list)) / (avg_days_between_visits + 1)
+            
+            customer_analysis.append({
+                "customer_id": customer_id,
+                "name": f"{customer.get('first_name', '')} {customer.get('last_name', '')}".strip() 
+                        if customer else f"Customer {customer_id[:8]}",
+                "email": customer.get("email") if customer else None,
+                "phone": customer.get("phone_number") if customer else None,
+                "total_orders": len(orders_list),
+                "total_spent": total_spent,
+                "average_spend": avg_spend,
+                "unique_visit_days": unique_visit_days,
+                "average_days_between_visits": round(avg_days_between_visits, 1),
+                "favorite_item": favorite_item[0],
+                "favorite_item_quantity": favorite_item[1],
+                "loyalty_points": customer.get("loyalty_points", 0) if customer else 0,
+                "customer_value_score": round(customer_value_score, 2),
+                "last_order_date": max(order_dates).isoformat() if order_dates else None
+            })
+        
+        # Sort by customer value
+        customer_analysis.sort(key=lambda x: x["customer_value_score"], reverse=True)
+        
+        # Calculate segments
+        high_value = [c for c in customer_analysis if c["customer_value_score"] > 1000]
+        medium_value = [c for c in customer_analysis if 500 <= c["customer_value_score"] <= 1000]
+        low_value = [c for c in customer_analysis if c["customer_value_score"] < 500]
+        
+        # Calculate overall metrics
+        total_customers = len(customer_analysis)
+        total_revenue_from_customers = sum(c["total_spent"] for c in customer_analysis)
+        avg_orders_per_customer = sum(c["total_orders"] for c in customer_analysis) / total_customers if total_customers > 0 else 0
+        
+        # Prepare response
+        report_data = {
+            "period": {
+                "start_date": start_dt.isoformat(),
+                "end_date": end_dt.isoformat(),
+                "days": (end_dt - start_dt).days + 1
+            },
+            "store_id": store_id,
+            "overall_metrics": {
+                "total_customers_analyzed": total_customers,
+                "total_revenue_from_customers": total_revenue_from_customers,
+                "average_orders_per_customer": round(avg_orders_per_customer, 1)
+            },
+            "customer_segments": {
+                "high_value": {
+                    "count": len(high_value),
+                    "percentage": round((len(high_value) / total_customers) * 100, 1) if total_customers > 0 else 0,
+                    "customers": high_value[:10]
+                },
+                "medium_value": {
+                    "count": len(medium_value),
+                    "percentage": round((len(medium_value) / total_customers) * 100, 1) if total_customers > 0 else 0,
+                    "customers": medium_value[:10]
+                },
+                "low_value": {
+                    "count": len(low_value),
+                    "percentage": round((len(low_value) / total_customers) * 100, 1) if total_customers > 0 else 0,
+                    "customers": low_value[:10]
+                }
+            },
+            "top_customers": customer_analysis[:20],
+            "generated_at": datetime.utcnow().isoformat()
+        }
+        
+        return success_response(data=report_data)
+        
+    except Exception as e:
+        return error_response(
+            message=f"Error generating customer analysis report: {str(e)}",
+            code=500
+        )
+
 # ==================== OTHER ENDPOINTS ====================
 
 @router.get("/available")
@@ -629,6 +812,13 @@ async def get_available_reports():
             "description": "Employee productivity and performance metrics",
             "endpoint": "/api/reports/employee/performance",
             "parameters": ["start_date", "end_date", "store_id"]
+        },
+        {
+            "id": "customer_analysis",
+            "name": "Customer Analysis Report",
+            "description": "Customer behavior and segmentation analysis",
+            "endpoint": "/api/reports/customer/analysis",
+            "parameters": ["start_date", "end_date", "store_id", "min_orders"]
         }
     ]
     
