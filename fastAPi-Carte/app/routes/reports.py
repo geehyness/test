@@ -72,22 +72,21 @@ async def get_financial_report(
         if status:
             query["status"] = status
         
-        # Get collections
-        orders_collection = get_collection("orders")
-        foods_collection = get_collection("foods")
-        customers_collection = get_collection("customers")
-        employees_collection = get_collection("employees")
-        inventory_collection = get_collection("inventory_products")
+        # Get collections - FIXED: Handle async get_collection
+        orders_collection = await get_collection("orders")
+        foods_collection = await get_collection("foods")
+        customers_collection = await get_collection("customers")
+        employees_collection = await get_collection("employees")
+        inventory_collection = await get_collection("inventory_products")
         
-        # Fetch data - FIXED: Use cursor properly
+        # Fetch data
         orders_cursor = orders_collection.find(query)
         foods_cursor = foods_collection.find({})
         customers_cursor = customers_collection.find({})
         employees_cursor = employees_collection.find({})
         inventory_cursor = inventory_collection.find({})
         
-        # Execute all queries
-        orders = await orders_cursor.to_list(None)  # FIXED: No length parameter or use to_list()
+        orders = await orders_cursor.to_list(None)
         foods = await foods_cursor.to_list(None)
         customers = await customers_cursor.to_list(None)
         employees = await employees_cursor.to_list(None)
@@ -106,14 +105,17 @@ async def get_financial_report(
         daily_revenue = defaultdict(float)
         
         # Food lookup
-        food_dict = {str(food["_id"]): food for food in foods}
+        food_dict = {}
+        for food in foods:
+            food_id = str(food.get("_id", ""))
+            food_dict[food_id] = food
         
         # Process orders
         for order in orders:
             if order.get("status") == "cancelled":
                 continue
                 
-            order_revenue = order.get("total_amount", 0)
+            order_revenue = order.get("total_amount", 0) or 0
             order_date = order.get("created_at")
             
             # Parse date
@@ -148,22 +150,22 @@ async def get_financial_report(
             
             # Item sales
             for item in order.get("items", []):
-                food_id = item.get("food_id")
+                food_id = str(item.get("food_id", ""))
                 if not food_id:
                     continue
                     
-                quantity = item.get("quantity", 0)
-                price = item.get("price", 0)
-                sub_total = item.get("sub_total", 0)
+                quantity = item.get("quantity", 0) or 0
+                price = item.get("price", 0) or 0
+                sub_total = item.get("sub_total", 0) or 0
                 
-                item_sales[str(food_id)]["quantity"] += quantity
-                item_sales[str(food_id)]["revenue"] += sub_total
+                item_sales[food_id]["quantity"] += quantity
+                item_sales[food_id]["revenue"] += sub_total
                 
                 # Calculate cost from food data
-                food = food_dict.get(str(food_id))
+                food = food_dict.get(food_id)
                 if food and food.get("unit_cost"):
-                    item_cost = food["unit_cost"] * quantity
-                    item_sales[str(food_id)]["cost"] += item_cost
+                    item_cost = (food.get("unit_cost") or 0) * quantity
+                    item_sales[food_id]["cost"] += item_cost
                     total_cost += item_cost
         
         # Calculate derived metrics
@@ -188,7 +190,11 @@ async def get_financial_report(
         top_items = top_items[:10]
         
         # Get top customers
-        customer_dict = {str(customer["_id"]): customer for customer in customers}
+        customer_dict = {}
+        for customer in customers:
+            customer_id = str(customer.get("_id", ""))
+            customer_dict[customer_id] = customer
+        
         top_customers = []
         for customer_id, data in customer_spending.items():
             customer = customer_dict.get(customer_id)
@@ -205,7 +211,11 @@ async def get_financial_report(
         top_customers = top_customers[:10]
         
         # Get employee performance
-        employee_dict = {str(emp["_id"]): emp for emp in employees}
+        employee_dict = {}
+        for emp in employees:
+            emp_id = str(emp.get("_id", ""))
+            employee_dict[emp_id] = emp
+        
         employee_perf_data = []
         for emp_id, data in employee_performance.items():
             employee = employee_dict.get(emp_id)
@@ -221,8 +231,8 @@ async def get_financial_report(
         employee_perf_data.sort(key=lambda x: x["total_sales"], reverse=True)
         
         # Get inventory metrics
-        inventory_value = sum(p.get("quantity_in_stock", 0) * p.get("unit_cost", 0) for p in inventory)
-        low_stock_items = [p for p in inventory if p.get("quantity_in_stock", 0) <= p.get("reorder_level", 0)]
+        inventory_value = sum((p.get("quantity_in_stock", 0) or 0) * (p.get("unit_cost", 0) or 0) for p in inventory)
+        low_stock_items = [p for p in inventory if (p.get("quantity_in_stock", 0) or 0) <= (p.get("reorder_level", 0) or 0)]
         
         # Calculate daily metrics
         daily_data = []
@@ -282,7 +292,8 @@ async def get_financial_report(
     except Exception as e:
         return error_response(
             message=f"Error generating financial report: {str(e)}",
-            code=500
+            code=500,
+            details={"error": str(e), "traceback": str(e.__traceback__)}
         )
 
 # ==================== DAILY SALES REPORT ====================
@@ -313,10 +324,10 @@ async def get_daily_sales_report(
         if store_id:
             query["store_id"] = store_id
         
-        # Get collection
-        orders_collection = get_collection("orders")
+        # Get collection - FIXED: Handle async get_collection
+        orders_collection = await get_collection("orders")
         
-        # Fetch orders - FIXED
+        # Fetch orders
         cursor = orders_collection.find(query)
         orders = await cursor.to_list(None)
         
@@ -335,7 +346,7 @@ async def get_daily_sales_report(
                 except:
                     pass
             
-            hourly_data[hour]["revenue"] += order.get("total_amount", 0)
+            hourly_data[hour]["revenue"] += order.get("total_amount", 0) or 0
             hourly_data[hour]["orders"] += 1
         
         # Sort hourly data
@@ -363,7 +374,7 @@ async def get_daily_sales_report(
         payment_methods = defaultdict(float)
         for order in orders:
             method = order.get("payment_method", "unknown")
-            payment_methods[method] += order.get("total_amount", 0)
+            payment_methods[method] += order.get("total_amount", 0) or 0
         
         # Prepare response
         response_data = {
@@ -404,10 +415,10 @@ async def get_inventory_report(
         if store_id:
             query["store_id"] = store_id
         
-        # Get collection
-        inventory_collection = get_collection("inventory_products")
+        # Get collection - FIXED: Handle async get_collection
+        inventory_collection = await get_collection("inventory_products")
         
-        # Fetch inventory data - FIXED
+        # Fetch inventory data
         cursor = inventory_collection.find(query)
         products = await cursor.to_list(None)
         
@@ -418,9 +429,9 @@ async def get_inventory_report(
         slow_moving = []
         
         for product in products:
-            current_stock = product.get("quantity_in_stock", 0)
-            reorder_level = product.get("reorder_level", 0)
-            unit_cost = product.get("unit_cost", 0)
+            current_stock = product.get("quantity_in_stock", 0) or 0
+            reorder_level = product.get("reorder_level", 0) or 0
+            unit_cost = product.get("unit_cost", 0) or 0
             
             # Calculate product value
             product_value = current_stock * unit_cost
@@ -429,8 +440,8 @@ async def get_inventory_report(
             # Check stock status
             if current_stock <= 0:
                 out_of_stock.append({
-                    "id": str(product["_id"]),
-                    "name": product.get("name"),
+                    "id": str(product.get("_id", "")),
+                    "name": product.get("name", "Unknown"),
                     "current_stock": current_stock,
                     "reorder_level": reorder_level,
                     "last_restocked": product.get("last_restocked_at"),
@@ -438,8 +449,8 @@ async def get_inventory_report(
                 })
             elif current_stock <= reorder_level * threshold:
                 low_stock.append({
-                    "id": str(product["_id"]),
-                    "name": product.get("name"),
+                    "id": str(product.get("_id", "")),
+                    "name": product.get("name", "Unknown"),
                     "current_stock": current_stock,
                     "reorder_level": reorder_level,
                     "percentage": (current_stock / reorder_level) * 100 if reorder_level > 0 else 0,
@@ -458,8 +469,8 @@ async def get_inventory_report(
                     days_since_restock = (datetime.utcnow() - last_date).days
                     if days_since_restock > 90:
                         slow_moving.append({
-                            "id": str(product["_id"]),
-                            "name": product.get("name"),
+                            "id": str(product.get("_id", "")),
+                            "name": product.get("name", "Unknown"),
                             "days_since_restock": days_since_restock,
                             "current_stock": current_stock,
                             "value": product_value
@@ -530,11 +541,11 @@ async def get_employee_performance_report(
         if store_id:
             orders_query["store_id"] = store_id
         
-        # Get collections
-        orders_collection = get_collection("orders")
-        employees_collection = get_collection("employees")
+        # Get collections - FIXED: Handle async get_collection
+        orders_collection = await get_collection("orders")
+        employees_collection = await get_collection("employees")
         
-        # Fetch data - FIXED
+        # Fetch data
         orders_cursor = orders_collection.find(orders_query)
         orders = await orders_cursor.to_list(None)
         
@@ -550,7 +561,10 @@ async def get_employee_performance_report(
         
         # Process each employee
         performance_data = []
-        employee_dict = {str(emp["_id"]): emp for emp in employees}
+        employee_dict = {}
+        for emp in employees:
+            emp_id = str(emp.get("_id", ""))
+            employee_dict[emp_id] = emp
         
         for emp_id, orders_list in employee_orders.items():
             employee = employee_dict.get(emp_id)
@@ -559,7 +573,7 @@ async def get_employee_performance_report(
             
             # Calculate order metrics
             total_orders = len(orders_list)
-            total_revenue = sum(o.get("total_amount", 0) for o in orders_list)
+            total_revenue = sum(o.get("total_amount", 0) or 0 for o in orders_list)
             avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
             
             performance_data.append({
@@ -641,11 +655,11 @@ async def get_customer_analysis_report(
         if store_id:
             query["store_id"] = store_id
         
-        # Get collections
-        orders_collection = get_collection("orders")
-        customers_collection = get_collection("customers")
+        # Get collections - FIXED: Handle async get_collection
+        orders_collection = await get_collection("orders")
+        customers_collection = await get_collection("customers")
         
-        # Fetch data - FIXED
+        # Fetch data
         orders_cursor = orders_collection.find(query)
         customers_cursor = customers_collection.find({})
         
@@ -657,13 +671,17 @@ async def get_customer_analysis_report(
         for order in orders:
             customer_id = order.get("customer_id")
             if customer_id:
-                if str(customer_id) not in customer_orders:
-                    customer_orders[str(customer_id)] = []
-                customer_orders[str(customer_id)].append(order)
+                customer_id_str = str(customer_id)
+                if customer_id_str not in customer_orders:
+                    customer_orders[customer_id_str] = []
+                customer_orders[customer_id_str].append(order)
         
         # Prepare customer analysis
         customer_analysis = []
-        customer_dict = {str(c["_id"]): c for c in customers}
+        customer_dict = {}
+        for c in customers:
+            customer_id = str(c.get("_id", ""))
+            customer_dict[customer_id] = c
         
         for customer_id, orders_list in customer_orders.items():
             if len(orders_list) < min_orders:
@@ -672,7 +690,7 @@ async def get_customer_analysis_report(
             customer = customer_dict.get(customer_id)
             
             # Calculate metrics
-            total_spent = sum(o.get("total_amount", 0) for o in orders_list)
+            total_spent = sum(o.get("total_amount", 0) or 0 for o in orders_list)
             avg_spend = total_spent / len(orders_list)
             
             # Calculate visit frequency
@@ -699,7 +717,7 @@ async def get_customer_analysis_report(
             for order in orders_list:
                 for item in order.get("items", []):
                     item_name = item.get("name", "Unknown")
-                    item_counts[item_name] += item.get("quantity", 0)
+                    item_counts[item_name] += item.get("quantity", 0) or 0
             
             favorite_item = max(item_counts.items(), key=lambda x: x[1]) if item_counts else ("None", 0)
             
