@@ -1,4 +1,4 @@
-# app/routes/analytics.py - COMPLETELY FIXED VERSION
+# app/routes/analytics.py - UPDATED WITH EMPTY DATA HANDLING
 from fastapi import APIRouter, Query
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -53,14 +53,14 @@ async def get_dashboard_analytics(
             else:
                 return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections - FIXED: No await on get_collection()
+        # Get collections
         orders_collection = get_collection("orders")
         customers_collection = get_collection("customers")
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         tables_collection = get_collection("tables")
         
-        # Fetch data - FIXED: Use await on collection methods
+        # Fetch data
         orders_cursor = orders_collection.find(query)
         customers_cursor = customers_collection.find({})
         employees_cursor = employees_collection.find({})
@@ -73,7 +73,7 @@ async def get_dashboard_analytics(
         inventory = await inventory_cursor.to_list(None)
         tables = await tables_cursor.to_list(None)
         
-        # Calculate KPIs
+        # Calculate KPIs with defaults for empty data
         total_revenue = sum(o.get("total_amount", 0) or 0 for o in orders)
         total_orders = len(orders)
         avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
@@ -85,6 +85,7 @@ async def get_dashboard_analytics(
         
         # Employee metrics
         active_employees = len(set(str(o.get("employee_id")) for o in orders if o.get("employee_id")))
+        total_employees = len(employees)
         
         # Inventory metrics
         inventory_value = sum((p.get("quantity_in_stock", 0) or 0) * (p.get("unit_cost", 0) or 0) for p in inventory)
@@ -143,6 +144,9 @@ async def get_dashboard_analytics(
         # Get active tables
         active_tables = [t for t in tables if t.get("status") == "occupied"]
         
+        # Check if we have any data
+        has_data = len(orders) > 0 or len(customers) > 0 or len(employees) > 0 or len(inventory) > 0
+        
         # Prepare response
         response_data = {
             "period": {
@@ -156,8 +160,10 @@ async def get_dashboard_analytics(
                 "total_orders": total_orders,
                 "average_order_value": avg_order_value,
                 "active_customers": active_customers,
+                "total_customers": total_customers,
                 "customer_growth_rate": round(customer_growth, 1),
                 "active_employees": active_employees,
+                "total_employees": total_employees,
                 "inventory_value": inventory_value,
                 "low_stock_items": len(low_stock_items),
                 "active_tables": len(active_tables)
@@ -165,7 +171,9 @@ async def get_dashboard_analytics(
             "hourly_performance": hourly_data,
             "top_items": top_items,
             "payment_methods": dict(payment_methods),
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
+            "data_status": "has_data" if has_data else "empty",
+            "message": "Dashboard analytics generated successfully" if has_data else "No data available for dashboard analytics"
         }
         
         # Add peak hour if there's data
@@ -205,19 +213,19 @@ async def get_realtime_analytics(
             else:
                 return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections - FIXED: No await on get_collection()
+        # Get collections
         orders_collection = get_collection("orders")
         tables_collection = get_collection("tables")
         
-        # Fetch data - FIXED: Use await on collection methods
+        # Fetch data
         orders_cursor = orders_collection.find(query)
         active_tables_cursor = tables_collection.find({"status": "occupied"})
         
         orders = await orders_cursor.to_list(None)
         active_tables = await active_tables_cursor.to_list(None)
         
-        # Calculate metrics
-        current_hour = datetime.utcnow().hour
+        # Check if we have any data
+        has_data = len(orders) > 0 or len(active_tables) > 0
         
         # Today's metrics
         today_revenue = sum(o.get("total_amount", 0) or 0 for o in orders)
@@ -225,6 +233,7 @@ async def get_realtime_analytics(
         today_avg_order = today_revenue / today_orders if today_orders > 0 else 0
         
         # Current hour metrics
+        current_hour = datetime.utcnow().hour
         current_hour_orders = [
             o for o in orders 
             if (isinstance(o.get("created_at"), datetime) and o["created_at"].hour == current_hour)
@@ -276,7 +285,9 @@ async def get_realtime_analytics(
             },
             "active_tables": len(active_tables),
             "pending_orders": len(pending_orders),
-            "peak_hour_today": peak_hour
+            "peak_hour_today": peak_hour,
+            "data_status": "has_data" if has_data else "empty",
+            "message": "Real-time analytics generated successfully" if has_data else "No data available for real-time analytics"
         }
         
         return success_response(data=response_data)
@@ -308,3 +319,58 @@ async def get_available_analytics():
     ]
     
     return success_response(data=analytics)
+
+# Add a test endpoint to check data availability
+@router.get("/test-data")
+async def test_analytics_data():
+    """Test if analytics data exists"""
+    try:
+        orders_collection = get_collection("orders")
+        customers_collection = get_collection("customers")
+        employees_collection = get_collection("employees")
+        inventory_collection = get_collection("inventory_products")
+        tables_collection = get_collection("tables")
+        
+        orders_cursor = orders_collection.find({})
+        customers_cursor = customers_collection.find({})
+        employees_cursor = employees_collection.find({})
+        inventory_cursor = inventory_collection.find({})
+        tables_cursor = tables_collection.find({})
+        
+        orders = await orders_cursor.to_list(None)
+        customers = await customers_cursor.to_list(None)
+        employees = await employees_cursor.to_list(None)
+        inventory = await inventory_cursor.to_list(None)
+        tables = await tables_cursor.to_list(None)
+        
+        # Check recent orders (last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        recent_orders_cursor = orders_collection.find({
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        recent_orders = await recent_orders_cursor.to_list(None)
+        
+        return success_response(data={
+            "collection_counts": {
+                "orders_total": len(orders),
+                "orders_recent_30_days": len(recent_orders),
+                "customers": len(customers),
+                "employees": len(employees),
+                "inventory_products": len(inventory),
+                "tables": len(tables)
+            },
+            "sample_data": {
+                "latest_order": orders[-1] if orders else None,
+                "oldest_order": orders[0] if orders else None,
+                "sample_customer": customers[0] if customers else None,
+                "sample_employee": employees[0] if employees else None
+            },
+            "has_data": len(orders) > 0 or len(customers) > 0 or len(employees) > 0,
+            "message": "Data availability check completed"
+        })
+        
+    except Exception as e:
+        return error_response(
+            message=f"Error checking analytics data: {str(e)}",
+            code=500
+        )

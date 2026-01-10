@@ -1,4 +1,4 @@
-# app/routes/reports.py - COMPLETELY FIXED VERSION
+# app/routes/reports.py - COMPLETE VERSION WITH EMPTY DATA HANDLING
 from fastapi import APIRouter, Query
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -19,6 +19,31 @@ def safe_objectid(id_str):
     except:
         pass
     return None
+
+def create_empty_response(start_date=None, end_date=None, store_id=None, message="No data found"):
+    """Create a standardized empty response"""
+    response = {
+        "message": message,
+        "data": None,
+        "summary": {
+            "total_revenue": 0,
+            "total_orders": 0,
+            "total_cost": 0,
+            "gross_profit": 0,
+            "gross_margin": 0,
+            "average_order_value": 0,
+            "inventory_value": 0
+        } if start_date else {},
+        "period": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "days": (datetime.fromisoformat(end_date) - datetime.fromisoformat(start_date)).days + 1 if start_date and end_date else 0
+        } if start_date else {},
+        "filters": {
+            "store_id": store_id
+        } if store_id else {}
+    }
+    return response
 
 # ==================== TEST ENDPOINT ====================
 
@@ -92,14 +117,14 @@ async def get_financial_report(
         if status:
             query["status"] = status
         
-        # Get collections - FIXED: No await on get_collection()
+        # Get collections
         orders_collection = get_collection("orders")
         foods_collection = get_collection("foods")
         customers_collection = get_collection("customers")
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch data - Use await on collection methods
+        # Fetch data
         orders_cursor = orders_collection.find(query)
         foods_cursor = foods_collection.find({})
         customers_cursor = customers_collection.find({})
@@ -112,7 +137,50 @@ async def get_financial_report(
         employees = await employees_cursor.to_list(None)
         inventory = await inventory_cursor.to_list(None)
         
-        # Calculate metrics
+        # If no orders found, return empty report with success response
+        if not orders:
+            report_data = {
+                "period": {
+                    "start_date": start_dt.isoformat(),
+                    "end_date": end_dt.isoformat(),
+                    "days": (end_dt - start_dt).days + 1
+                },
+                "summary": {
+                    "total_revenue": 0,
+                    "total_orders": 0,
+                    "total_cost": 0,
+                    "gross_profit": 0,
+                    "gross_margin": 0,
+                    "average_order_value": 0,
+                    "inventory_value": sum((p.get("quantity_in_stock", 0) or 0) * (p.get("unit_cost", 0) or 0) for p in inventory)
+                },
+                "payment_methods": {},
+                "daily_performance": [],
+                "top_items": [],
+                "top_customers": [],
+                "employee_performance": [],
+                "inventory_metrics": {
+                    "total_value": sum((p.get("quantity_in_stock", 0) or 0) * (p.get("unit_cost", 0) or 0) for p in inventory),
+                    "low_stock_count": len([p for p in inventory if (p.get("quantity_in_stock", 0) or 0) <= (p.get("reorder_level", 0) or 0)])
+                },
+                "filters": {
+                    "store_id": store_id,
+                    "employee_id": employee_id,
+                    "category_id": category_id,
+                    "payment_method": payment_method,
+                    "status": status
+                },
+                "generated_at": datetime.utcnow().isoformat(),
+                "data_status": "empty",
+                "message": "No orders found for the selected period"
+            }
+            
+            return success_response(
+                data=report_data,
+                message="No orders found for the selected period"
+            )
+        
+        # Calculate metrics (existing code continues...)
         total_revenue = 0
         total_cost = 0
         total_orders = len(orders)
@@ -301,7 +369,8 @@ async def get_financial_report(
                 "payment_method": payment_method,
                 "status": status
             },
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
+            "data_status": "has_data"
         }
         
         return success_response(
@@ -313,7 +382,7 @@ async def get_financial_report(
         return error_response(
             message=f"Error generating financial report: {str(e)}",
             code=500,
-            details={"error": str(e), "traceback": str(e.__traceback__)}
+            details={"error": str(e)}
         )
 
 # ==================== DAILY SALES REPORT ====================
@@ -348,12 +417,32 @@ async def get_daily_sales_report(
             else:
                 return error_response(message="Invalid store ID format", code=400)
         
-        # Get collection - FIXED: No await on get_collection()
+        # Get collection
         orders_collection = get_collection("orders")
         
         # Fetch orders
         cursor = orders_collection.find(query)
         orders = await cursor.to_list(None)
+        
+        # If no orders found, return empty report with success
+        if not orders:
+            response_data = {
+                "date": date,
+                "store_id": store_id,
+                "total_revenue": 0,
+                "total_orders": 0,
+                "average_order_value": 0,
+                "hourly_breakdown": [],
+                "status_breakdown": {},
+                "payment_method_breakdown": {},
+                "data_status": "empty",
+                "message": "No orders found for the selected date"
+            }
+            
+            return success_response(
+                data=response_data,
+                message="No orders found for the selected date"
+            )
         
         # Calculate hourly breakdown
         hourly_data = defaultdict(lambda: {"revenue": 0, "orders": 0})
@@ -409,7 +498,8 @@ async def get_daily_sales_report(
             "average_order_value": total_revenue / total_orders if total_orders > 0 else 0,
             "hourly_breakdown": hourly_list,
             "status_breakdown": dict(status_counts),
-            "payment_method_breakdown": dict(payment_methods)
+            "payment_method_breakdown": dict(payment_methods),
+            "data_status": "has_data"
         }
         
         # Add peak hour if there's data
@@ -443,12 +533,40 @@ async def get_inventory_report(
             else:
                 return error_response(message="Invalid store ID format", code=400)
         
-        # Get collection - FIXED: No await on get_collection()
+        # Get collection
         inventory_collection = get_collection("inventory_products")
         
         # Fetch inventory data
         cursor = inventory_collection.find(query)
         products = await cursor.to_list(None)
+        
+        # If no inventory products found, return empty report with success
+        if not products:
+            response_data = {
+                "total_items": 0,
+                "total_inventory_value": 0,
+                "low_stock_items": {
+                    "count": 0,
+                    "items": []
+                },
+                "out_of_stock_items": {
+                    "count": 0,
+                    "items": []
+                },
+                "slow_moving_items": {
+                    "count": 0,
+                    "items": []
+                },
+                "store_id": store_id,
+                "threshold_percentage": threshold * 100,
+                "data_status": "empty",
+                "message": "No inventory products found"
+            }
+            
+            return success_response(
+                data=response_data,
+                message="No inventory products found"
+            )
         
         # Calculate metrics
         total_value = 0
@@ -528,7 +646,8 @@ async def get_inventory_report(
                 "items": slow_moving[:20]
             },
             "store_id": store_id,
-            "threshold_percentage": threshold * 100
+            "threshold_percentage": threshold * 100,
+            "data_status": "has_data"
         }
         
         return success_response(data=response_data)
@@ -573,7 +692,7 @@ async def get_employee_performance_report(
             else:
                 return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections - FIXED: No await on get_collection()
+        # Get collections
         orders_collection = get_collection("orders")
         employees_collection = get_collection("employees")
         
@@ -583,6 +702,33 @@ async def get_employee_performance_report(
         
         orders = await orders_cursor.to_list(None)
         employees = await employees_cursor.to_list(None)
+        
+        # If no orders found, return empty report with success
+        if not orders:
+            report_data = {
+                "period": {
+                    "start_date": start_dt.isoformat(),
+                    "end_date": end_dt.isoformat(),
+                    "days": (end_dt - start_dt).days + 1
+                },
+                "store_id": store_id,
+                "total_employees": 0,
+                "averages": {
+                    "revenue_per_employee": 0,
+                    "orders_per_employee": 0,
+                    "average_order_value": 0
+                },
+                "employee_performance": [],
+                "top_performers": [],
+                "generated_at": datetime.utcnow().isoformat(),
+                "data_status": "empty",
+                "message": "No orders found for the selected period"
+            }
+            
+            return success_response(
+                data=report_data,
+                message="No orders found for the selected period"
+            )
         
         # Group orders by employee
         employee_orders = defaultdict(list)
@@ -644,7 +790,8 @@ async def get_employee_performance_report(
             },
             "employee_performance": performance_data,
             "top_performers": performance_data[:5] if performance_data else [],
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
+            "data_status": "has_data" if performance_data else "empty"
         }
         
         return success_response(data=report_data)
@@ -691,7 +838,7 @@ async def get_customer_analysis_report(
             else:
                 return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections - FIXED: No await on get_collection()
+        # Get collections
         orders_collection = get_collection("orders")
         customers_collection = get_collection("customers")
         
@@ -701,6 +848,48 @@ async def get_customer_analysis_report(
         
         orders = await orders_cursor.to_list(None)
         customers = await customers_cursor.to_list(None)
+        
+        # If no orders found, return empty report with success
+        if not orders:
+            report_data = {
+                "period": {
+                    "start_date": start_dt.isoformat(),
+                    "end_date": end_dt.isoformat(),
+                    "days": (end_dt - start_dt).days + 1
+                },
+                "store_id": store_id,
+                "overall_metrics": {
+                    "total_customers_analyzed": 0,
+                    "total_revenue_from_customers": 0,
+                    "average_orders_per_customer": 0
+                },
+                "customer_segments": {
+                    "high_value": {
+                        "count": 0,
+                        "percentage": 0,
+                        "customers": []
+                    },
+                    "medium_value": {
+                        "count": 0,
+                        "percentage": 0,
+                        "customers": []
+                    },
+                    "low_value": {
+                        "count": 0,
+                        "percentage": 0,
+                        "customers": []
+                    }
+                },
+                "top_customers": [],
+                "generated_at": datetime.utcnow().isoformat(),
+                "data_status": "empty",
+                "message": "No orders found for the selected period"
+            }
+            
+            return success_response(
+                data=report_data,
+                message="No orders found for the selected period"
+            )
         
         # Group orders by customer
         customer_orders = {}
@@ -822,7 +1011,8 @@ async def get_customer_analysis_report(
                 }
             },
             "top_customers": customer_analysis[:20],
-            "generated_at": datetime.utcnow().isoformat()
+            "generated_at": datetime.utcnow().isoformat(),
+            "data_status": "has_data" if customer_analysis else "empty"
         }
         
         return success_response(data=report_data)
