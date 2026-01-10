@@ -1,4 +1,4 @@
-# app/routes/reports.py - UPDATED WITH REAL DATA
+# app/routes/reports.py - FIXED ROUTING VERSION
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -6,32 +6,27 @@ from bson import ObjectId
 from app.database import get_collection
 from app.models.response import StandardResponse, SuccessResponse, ErrorResponse
 from app.utils.response_helpers import success_response, error_response, handle_generic_exception
-from app.utils.analytics_helpers import AnalyticsProcessor
 import asyncio
+from collections import defaultdict
 
-router = APIRouter(prefix="/api", tags=["reports"])
+# Use a separate router for reports to avoid conflicts
+router = APIRouter(prefix="/api/reports", tags=["reports"])
 
-# ==================== TEST ENDPOINTS ====================
+# ==================== TEST ENDPOINT ====================
 
-@router.get("/reports/test")
+@router.get("/test")
 async def test_reports_endpoint():
     """Test endpoint to verify reports API is working"""
     return success_response(
         data={
             "timestamp": datetime.utcnow().isoformat(),
             "status": "ok",
-            "route": "/api/reports/test",
             "endpoints_available": [
-                "/api/reports/test",
                 "/api/reports/financial",
                 "/api/reports/sales/daily",
                 "/api/reports/inventory",
                 "/api/reports/employee/performance",
-                "/api/reports/customer/analysis",
-                "/api/analytics/dashboard",
-                "/api/analytics/realtime",
-                "/api/analytics/predictive",
-                "/api/analytics/comparative"
+                "/api/reports/customer/analysis"
             ]
         },
         message="Reports API is working"
@@ -39,10 +34,10 @@ async def test_reports_endpoint():
 
 # ==================== FINANCIAL REPORTS ====================
 
-@router.get("/reports/financial", response_model=StandardResponse[dict])
+@router.get("/financial")
 async def get_financial_report(
-    start_date: str = Query(..., description="Start date in ISO format (YYYY-MM-DD)"),
-    end_date: str = Query(..., description="End date in ISO format (YYYY-MM-DD)"),
+    start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
+    end_date: str = Query(..., description="End date in YYYY-MM-DD format"),
     store_id: Optional[str] = Query(None),
     employee_id: Optional[str] = Query(None),
     category_id: Optional[str] = Query(None),
@@ -86,21 +81,155 @@ async def get_financial_report(
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         
-        # Fetch data in parallel
-        orders_task = orders_collection.find(query).to_list(None)
-        foods_task = foods_collection.find().to_list(None)
-        customers_task = customers_collection.find().to_list(None)
-        employees_task = employees_collection.find().to_list(None)
-        inventory_task = inventory_collection.find().to_list(None)
+        # Fetch data
+        orders = await orders_collection.find(query).to_list(length=1000)  # Limit for safety
+        foods = await foods_collection.find({}).to_list(length=1000)
+        customers = await customers_collection.find({}).to_list(length=1000)
+        employees = await employees_collection.find({}).to_list(length=1000)
+        inventory = await inventory_collection.find({}).to_list(length=1000)
         
-        orders, foods, customers, employees, inventory = await asyncio.gather(
-            orders_task, foods_task, customers_task, employees_task, inventory_task
-        )
+        # Calculate metrics
+        total_revenue = 0
+        total_cost = 0
+        total_orders = len(orders)
         
-        # Process financial report
-        processed_data = await AnalyticsProcessor.process_financial_report(
-            orders, foods, inventory, customers, employees
-        )
+        # Data structures
+        item_sales = defaultdict(lambda: {"quantity": 0, "revenue": 0, "cost": 0})
+        customer_spending = defaultdict(lambda: {"total": 0, "orders": 0})
+        employee_performance = defaultdict(lambda: {"orders": 0, "revenue": 0})
+        payment_methods = defaultdict(float)
+        daily_revenue = defaultdict(float)
+        
+        # Food lookup
+        food_dict = {str(food["_id"]): food for food in foods}
+        
+        # Process orders
+        for order in orders:
+            if order.get("status") == "cancelled":
+                continue
+                
+            order_revenue = order.get("total_amount", 0)
+            order_date = order.get("created_at")
+            
+            # Parse date
+            date_key = "unknown"
+            if isinstance(order_date, datetime):
+                date_key = order_date.strftime("%Y-%m-%d")
+            elif isinstance(order_date, str):
+                try:
+                    date_key = datetime.fromisoformat(order_date.replace('Z', '+00:00')).strftime("%Y-%m-%d")
+                except:
+                    pass
+            
+            # Accumulate metrics
+            total_revenue += order_revenue
+            daily_revenue[date_key] += order_revenue
+            
+            # Payment method
+            payment_method = order.get("payment_method", "unknown")
+            payment_methods[payment_method] += order_revenue
+            
+            # Customer spending
+            customer_id = order.get("customer_id")
+            if customer_id:
+                customer_spending[customer_id]["total"] += order_revenue
+                customer_spending[customer_id]["orders"] += 1
+            
+            # Employee performance
+            emp_id = order.get("employee_id")
+            if emp_id:
+                employee_performance[emp_id]["orders"] += 1
+                employee_performance[emp_id]["revenue"] += order_revenue
+            
+            # Item sales
+            for item in order.get("items", []):
+                food_id = item.get("food_id")
+                quantity = item.get("quantity", 0)
+                price = item.get("price", 0)
+                sub_total = item.get("sub_total", 0)
+                
+                item_sales[food_id]["quantity"] += quantity
+                item_sales[food_id]["revenue"] += sub_total
+                
+                # Calculate cost from food data
+                food = food_dict.get(food_id)
+                if food and food.get("unit_cost"):
+                    item_cost = food["unit_cost"] * quantity
+                    item_sales[food_id]["cost"] += item_cost
+                    total_cost += item_cost
+        
+        # Calculate derived metrics
+        gross_profit = total_revenue - total_cost
+        gross_margin = (gross_profit / total_revenue * 100) if total_revenue > 0 else 0
+        avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
+        
+        # Get top items
+        top_items = []
+        for food_id, data in item_sales.items():
+            food = food_dict.get(food_id)
+            top_items.append({
+                "id": food_id,
+                "name": food.get("name", f"Item {food_id[:8]}") if food else f"Item {food_id[:8]}",
+                "quantity": data["quantity"],
+                "revenue": data["revenue"],
+                "cost": data["cost"],
+                "profit": data["revenue"] - data["cost"]
+            })
+        
+        top_items.sort(key=lambda x: x["revenue"], reverse=True)
+        top_items = top_items[:10]
+        
+        # Get top customers
+        customer_dict = {str(customer["_id"]): customer for customer in customers}
+        top_customers = []
+        for customer_id, data in customer_spending.items():
+            customer = customer_dict.get(customer_id)
+            top_customers.append({
+                "id": customer_id,
+                "name": f"{customer.get('first_name', '')} {customer.get('last_name', '')}".strip() 
+                        if customer else f"Customer {customer_id[:8]}",
+                "total_spent": data["total"],
+                "orders": data["orders"],
+                "avg_spend": data["total"] / data["orders"] if data["orders"] > 0 else 0
+            })
+        
+        top_customers.sort(key=lambda x: x["total_spent"], reverse=True)
+        top_customers = top_customers[:10]
+        
+        # Get employee performance
+        employee_dict = {str(emp["_id"]): emp for emp in employees}
+        employee_perf_data = []
+        for emp_id, data in employee_performance.items():
+            employee = employee_dict.get(emp_id)
+            employee_perf_data.append({
+                "id": emp_id,
+                "name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip()
+                        if employee else f"Employee {emp_id[:8]}",
+                "orders_processed": data["orders"],
+                "total_sales": data["revenue"],
+                "avg_order_value": data["revenue"] / data["orders"] if data["orders"] > 0 else 0
+            })
+        
+        employee_perf_data.sort(key=lambda x: x["total_sales"], reverse=True)
+        
+        # Get inventory metrics
+        inventory_value = sum(p.get("quantity_in_stock", 0) * p.get("unit_cost", 0) for p in inventory)
+        low_stock_items = [p for p in inventory if p.get("quantity_in_stock", 0) <= p.get("reorder_level", 0)]
+        
+        # Calculate daily metrics
+        daily_data = []
+        for date_str, revenue in sorted(daily_revenue.items()):
+            daily_orders = [o for o in orders if (
+                (isinstance(o.get("created_at"), datetime) and o["created_at"].strftime("%Y-%m-%d") == date_str) or
+                (isinstance(o.get("created_at"), str) and date_str in o["created_at"])
+            )]
+            
+            daily_data.append({
+                "date": date_str,
+                "revenue": revenue,
+                "orders": len(daily_orders),
+                "avg_order_value": revenue / len(daily_orders) if len(daily_orders) > 0 else 0
+            })
         
         # Prepare response
         report_data = {
@@ -110,95 +239,22 @@ async def get_financial_report(
                 "days": (end_dt - start_dt).days + 1
             },
             "summary": {
-                "total_revenue": processed_data["total_revenue"],
-                "total_orders": processed_data["total_orders"],
-                "total_cost": processed_data["total_cost"],
-                "gross_profit": processed_data["gross_profit"],
-                "gross_margin": processed_data["gross_margin"],
-                "average_order_value": processed_data["avg_order_value"]
+                "total_revenue": total_revenue,
+                "total_orders": total_orders,
+                "total_cost": total_cost,
+                "gross_profit": gross_profit,
+                "gross_margin": gross_margin,
+                "average_order_value": avg_order_value,
+                "inventory_value": inventory_value
             },
-            "payment_methods": processed_data["payment_methods"],
-            "daily_performance": [
-                {
-                    "date": date,
-                    "revenue": revenue,
-                    "orders": len([
-                        o for o in orders 
-                        if AnalyticsProcessor._parse_date_key(o.get("created_at")) == date
-                    ]),
-                    "avg_order_value": revenue / len([
-                        o for o in orders 
-                        if AnalyticsProcessor._parse_date_key(o.get("created_at")) == date
-                    ]) if len([
-                        o for o in orders 
-                        if AnalyticsProcessor._parse_date_key(o.get("created_at")) == date
-                    ]) > 0 else 0
-                }
-                for date, revenue in sorted(processed_data["daily_revenue"].items())
-            ],
-            "top_items": sorted(
-                [
-                    {
-                        "id": food_id,
-                        "name": next(
-                            (f.get("name", f"Item {food_id[:8]}") for f in foods if str(f["_id"]) == food_id),
-                            f"Item {food_id[:8]}"
-                        ),
-                        "quantity": data["quantity"],
-                        "revenue": data["revenue"],
-                        "cost": data["cost"],
-                        "profit": data["revenue"] - data["cost"]
-                    }
-                    for food_id, data in processed_data["item_sales"].items()
-                ],
-                key=lambda x: x["revenue"],
-                reverse=True
-            )[:10],
-            "top_customers": sorted(
-                [
-                    {
-                        "id": customer_id,
-                        "name": next(
-                            (f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() 
-                             for c in customers if str(c["_id"]) == customer_id),
-                            f"Customer {customer_id[:8]}"
-                        ),
-                        "total_spent": data["total"],
-                        "orders": data["orders"],
-                        "avg_spend": data["total"] / data["orders"] if data["orders"] > 0 else 0
-                    }
-                    for customer_id, data in processed_data["customer_spending"].items()
-                ],
-                key=lambda x: x["total_spent"],
-                reverse=True
-            )[:10],
-            "employee_performance": sorted(
-                [
-                    {
-                        "id": emp_id,
-                        "name": next(
-                            (f"{e.get('first_name', '')} {e.get('last_name', '')}".strip() 
-                             for e in employees if str(e["_id"]) == emp_id),
-                            f"Employee {emp_id[:8]}"
-                        ),
-                        "orders_processed": data["orders"],
-                        "total_sales": data["revenue"],
-                        "avg_order_value": data["revenue"] / data["orders"] if data["orders"] > 0 else 0
-                    }
-                    for emp_id, data in processed_data["employee_performance"].items()
-                ],
-                key=lambda x: x["total_sales"],
-                reverse=True
-            ),
+            "payment_methods": dict(payment_methods),
+            "daily_performance": daily_data,
+            "top_items": top_items,
+            "top_customers": top_customers,
+            "employee_performance": employee_perf_data,
             "inventory_metrics": {
-                "total_value": sum(
-                    p.get("quantity_in_stock", 0) * p.get("unit_cost", 0) 
-                    for p in inventory
-                ),
-                "low_stock_count": len([
-                    p for p in inventory 
-                    if p.get("quantity_in_stock", 0) <= p.get("reorder_level", 0)
-                ])
+                "total_value": inventory_value,
+                "low_stock_count": len(low_stock_items)
             },
             "filters": {
                 "store_id": store_id,
@@ -216,43 +272,118 @@ async def get_financial_report(
         )
         
     except Exception as e:
-        return handle_generic_exception(e)
+        return error_response(
+            message=f"Error generating financial report: {str(e)}",
+            code=500
+        )
 
 # ==================== DAILY SALES REPORT ====================
 
-@router.get("/reports/sales/daily", response_model=StandardResponse[dict])
+@router.get("/sales/daily")
 async def get_daily_sales_report(
     date: str = Query(..., description="Date in YYYY-MM-DD format"),
     store_id: Optional[str] = Query(None)
 ):
     """Get detailed daily sales report from real data"""
     try:
+        # Parse date
+        try:
+            target_date = datetime.fromisoformat(date + "T00:00:00")
+        except ValueError:
+            return error_response(message="Invalid date format. Use YYYY-MM-DD", code=400)
+        
+        start_dt = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_dt = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
         # Build query
-        query = {}
+        query = {
+            "created_at": {
+                "$gte": start_dt,
+                "$lte": end_dt
+            }
+        }
         if store_id:
             query["store_id"] = store_id
         
-        # Get collections
+        # Get collection
         orders_collection = get_collection("orders")
         
-        # Fetch all orders and filter in memory (simpler approach)
-        cursor = orders_collection.find(query)
-        all_orders = await cursor.to_list(None)
+        # Fetch orders
+        orders = await orders_collection.find(query).to_list(length=1000)
         
-        # Process daily sales
-        processed_data = await AnalyticsProcessor.process_daily_sales(all_orders, date)
+        # Calculate hourly breakdown
+        hourly_data = defaultdict(lambda: {"revenue": 0, "orders": 0})
         
-        # Add store_id to response
-        processed_data["store_id"] = store_id
+        for order in orders:
+            order_date = order.get("created_at")
+            hour = 0
+            
+            if isinstance(order_date, datetime):
+                hour = order_date.hour
+            elif isinstance(order_date, str):
+                try:
+                    hour = datetime.fromisoformat(order_date.replace('Z', '+00:00')).hour
+                except:
+                    pass
+            
+            hourly_data[hour]["revenue"] += order.get("total_amount", 0)
+            hourly_data[hour]["orders"] += 1
         
-        return success_response(data=processed_data)
+        # Sort hourly data
+        hourly_list = []
+        for hour in range(24):
+            data = hourly_data[hour]
+            hourly_list.append({
+                "hour": f"{hour:02d}:00",
+                "revenue": data["revenue"],
+                "orders": data["orders"],
+                "avg_order_value": data["revenue"] / data["orders"] if data["orders"] > 0 else 0
+            })
+        
+        # Calculate metrics
+        total_revenue = sum(h["revenue"] for h in hourly_list)
+        total_orders = sum(h["orders"] for h in hourly_list)
+        
+        # Get status breakdown
+        status_counts = defaultdict(int)
+        for order in orders:
+            status = order.get("status", "unknown")
+            status_counts[status] += 1
+        
+        # Get payment method breakdown
+        payment_methods = defaultdict(float)
+        for order in orders:
+            method = order.get("payment_method", "unknown")
+            payment_methods[method] += order.get("total_amount", 0)
+        
+        # Prepare response
+        response_data = {
+            "date": date,
+            "store_id": store_id,
+            "total_revenue": total_revenue,
+            "total_orders": total_orders,
+            "average_order_value": total_revenue / total_orders if total_orders > 0 else 0,
+            "hourly_breakdown": hourly_list,
+            "status_breakdown": dict(status_counts),
+            "payment_method_breakdown": dict(payment_methods)
+        }
+        
+        # Add peak hour if there's data
+        if hourly_list:
+            peak_hour = max(hourly_list, key=lambda x: x["revenue"])
+            response_data["peak_hour"] = peak_hour
+        
+        return success_response(data=response_data)
         
     except Exception as e:
-        return handle_generic_exception(e)
+        return error_response(
+            message=f"Error generating daily sales report: {str(e)}",
+            code=500
+        )
 
 # ==================== INVENTORY REPORT ====================
 
-@router.get("/reports/inventory", response_model=StandardResponse[dict])
+@router.get("/inventory")
 async def get_inventory_report(
     threshold: float = Query(0.3, description="Low stock threshold as percentage of reorder level"),
     store_id: Optional[str] = Query(None)
@@ -268,27 +399,103 @@ async def get_inventory_report(
         inventory_collection = get_collection("inventory_products")
         
         # Fetch inventory data
-        cursor = inventory_collection.find(query)
-        inventory = await cursor.to_list(None)
+        products = await inventory_collection.find(query).to_list(length=1000)
         
-        # Process inventory report
-        processed_data = await AnalyticsProcessor.process_inventory_report(inventory, threshold)
+        # Calculate metrics
+        total_value = 0
+        low_stock = []
+        out_of_stock = []
+        slow_moving = []
         
-        # Add store_id to response
-        processed_data["store_id"] = store_id
-        processed_data["threshold_percentage"] = threshold * 100
+        for product in products:
+            current_stock = product.get("quantity_in_stock", 0)
+            reorder_level = product.get("reorder_level", 0)
+            unit_cost = product.get("unit_cost", 0)
+            
+            # Calculate product value
+            product_value = current_stock * unit_cost
+            total_value += product_value
+            
+            # Check stock status
+            if current_stock <= 0:
+                out_of_stock.append({
+                    "id": str(product["_id"]),
+                    "name": product.get("name"),
+                    "current_stock": current_stock,
+                    "reorder_level": reorder_level,
+                    "last_restocked": product.get("last_restocked_at"),
+                    "value": product_value
+                })
+            elif current_stock <= reorder_level * threshold:
+                low_stock.append({
+                    "id": str(product["_id"]),
+                    "name": product.get("name"),
+                    "current_stock": current_stock,
+                    "reorder_level": reorder_level,
+                    "percentage": (current_stock / reorder_level) * 100 if reorder_level > 0 else 0,
+                    "value": product_value
+                })
+            
+            # Check for slow-moving items
+            last_restocked = product.get("last_restocked_at")
+            if last_restocked:
+                try:
+                    if isinstance(last_restocked, str):
+                        last_date = datetime.fromisoformat(last_restocked.replace('Z', '+00:00'))
+                    else:
+                        last_date = last_restocked
+                    
+                    days_since_restock = (datetime.utcnow() - last_date).days
+                    if days_since_restock > 90:
+                        slow_moving.append({
+                            "id": str(product["_id"]),
+                            "name": product.get("name"),
+                            "days_since_restock": days_since_restock,
+                            "current_stock": current_stock,
+                            "value": product_value
+                        })
+                except:
+                    pass
         
-        return success_response(data=processed_data)
+        # Sort lists
+        low_stock.sort(key=lambda x: x["percentage"])
+        out_of_stock.sort(key=lambda x: x.get("last_restocked") or "", reverse=True)
+        slow_moving.sort(key=lambda x: x["days_since_restock"], reverse=True)
+        
+        # Prepare response
+        response_data = {
+            "total_items": len(products),
+            "total_inventory_value": total_value,
+            "low_stock_items": {
+                "count": len(low_stock),
+                "items": low_stock[:20]
+            },
+            "out_of_stock_items": {
+                "count": len(out_of_stock),
+                "items": out_of_stock[:20]
+            },
+            "slow_moving_items": {
+                "count": len(slow_moving),
+                "items": slow_moving[:20]
+            },
+            "store_id": store_id,
+            "threshold_percentage": threshold * 100
+        }
+        
+        return success_response(data=response_data)
         
     except Exception as e:
-        return handle_generic_exception(e)
+        return error_response(
+            message=f"Error generating inventory report: {str(e)}",
+            code=500
+        )
 
 # ==================== EMPLOYEE PERFORMANCE REPORT ====================
 
-@router.get("/reports/employee/performance", response_model=StandardResponse[dict])
+@router.get("/employee/performance")
 async def get_employee_performance_report(
-    start_date: str = Query(..., description="Start date in ISO format"),
-    end_date: str = Query(..., description="End date in ISO format"),
+    start_date: str = Query(..., description="Start date in YYYY-MM-DD format"),
+    end_date: str = Query(..., description="End date in YYYY-MM-DD format"),
     store_id: Optional[str] = Query(None)
 ):
     """Generate employee performance report from real data"""
@@ -316,168 +523,51 @@ async def get_employee_performance_report(
         # Get collections
         orders_collection = get_collection("orders")
         employees_collection = get_collection("employees")
-        timesheets_collection = get_collection("timesheet_entries")
-        shifts_collection = get_collection("shifts")
-        
-        # Fetch data in parallel
-        orders_task = orders_collection.find(orders_query).to_list(None)
-        employees_task = employees_collection.find().to_list(None)
-        timesheets_task = timesheets_collection.find().to_list(None)
-        shifts_task = shifts_collection.find().to_list(None)
-        
-        orders, employees, timesheets, shifts = await asyncio.gather(
-            orders_task, employees_task, timesheets_task, shifts_task
-        )
-        
-        # Process employee performance
-        processed_data = await AnalyticsProcessor.process_employee_performance(
-            orders, employees, timesheets, shifts
-        )
-        
-        # Prepare response
-        report_data = {
-            "period": {
-                "start_date": start_dt.isoformat(),
-                "end_date": end_dt.isoformat(),
-                "days": (end_dt - start_dt).days + 1
-            },
-            "store_id": store_id,
-            "total_employees": len(employees),
-            "averages": processed_data["averages"],
-            "employee_performance": processed_data["employee_performance"],
-            "top_performers": processed_data["top_performers"],
-            "generated_at": datetime.utcnow().isoformat()
-        }
-        
-        return success_response(data=report_data)
-        
-    except Exception as e:
-        return handle_generic_exception(e)
-
-# ==================== CUSTOMER ANALYSIS REPORT ====================
-
-@router.get("/reports/customer/analysis", response_model=StandardResponse[dict])
-async def get_customer_analysis_report(
-    start_date: str = Query(..., description="Start date in ISO format"),
-    end_date: str = Query(..., description="End date in ISO format"),
-    store_id: Optional[str] = Query(None),
-    min_orders: int = Query(1, description="Minimum orders to be included")
-):
-    """Generate customer behavior analysis report from real data"""
-    try:
-        # Parse dates
-        try:
-            start_dt = datetime.fromisoformat(start_date + "T00:00:00")
-            end_dt = datetime.fromisoformat(end_date + "T23:59:59.999999")
-        except ValueError:
-            return error_response(
-                message="Invalid date format. Use YYYY-MM-DD format",
-                code=400
-            )
-        
-        # Build query
-        query = {
-            "created_at": {
-                "$gte": start_dt,
-                "$lte": end_dt
-            },
-            "customer_id": {"$ne": None}
-        }
-        if store_id:
-            query["store_id"] = store_id
-        
-        # Get collections
-        orders_collection = get_collection("orders")
-        customers_collection = get_collection("customers")
         
         # Fetch data
-        orders_cursor = orders_collection.find(query)
-        customers_cursor = customers_collection.find()
+        orders = await orders_collection.find(orders_query).to_list(length=1000)
+        employees = await employees_collection.find({}).to_list(length=1000)
         
-        orders, customers = await asyncio.gather(
-            orders_cursor.to_list(None),
-            customers_cursor.to_list(None)
-        )
-        
-        # Group orders by customer
-        customer_orders = {}
+        # Group orders by employee
+        employee_orders = defaultdict(list)
         for order in orders:
-            customer_id = order.get("customer_id")
-            if customer_id:
-                if customer_id not in customer_orders:
-                    customer_orders[customer_id] = []
-                customer_orders[customer_id].append(order)
+            emp_id = order.get("employee_id")
+            if emp_id:
+                employee_orders[emp_id].append(order)
         
-        # Prepare customer analysis
-        customer_analysis = []
-        customer_dict = {str(c["_id"]): c for c in customers}
+        # Process each employee
+        performance_data = []
+        employee_dict = {str(emp["_id"]): emp for emp in employees}
         
-        for customer_id, orders_list in customer_orders.items():
-            if len(orders_list) < min_orders:
+        for emp_id, orders_list in employee_orders.items():
+            employee = employee_dict.get(emp_id)
+            if not employee:
                 continue
             
-            customer = customer_dict.get(customer_id)
+            # Calculate order metrics
+            total_orders = len(orders_list)
+            total_revenue = sum(o.get("total_amount", 0) for o in orders_list)
+            avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
             
-            # Calculate metrics
-            total_spent = sum(o.get("total_amount", 0) for o in orders_list)
-            avg_spend = total_spent / len(orders_list)
-            
-            # Calculate visit frequency
-            order_dates = []
-            for order in orders_list:
-                order_date = AnalyticsProcessor._parse_datetime(order.get("created_at"))
-                if order_date:
-                    order_dates.append(order_date.date())
-            
-            unique_visit_days = len(set(order_dates))
-            avg_days_between_visits = 0
-            if len(order_dates) > 1:
-                order_dates.sort()
-                total_days = (order_dates[-1] - order_dates[0]).days
-                avg_days_between_visits = total_days / (len(order_dates) - 1)
-            
-            # Calculate favorite items
-            item_counts = defaultdict(int)
-            for order in orders_list:
-                for item in order.get("items", []):
-                    item_name = item.get("name", "Unknown")
-                    item_counts[item_name] += item.get("quantity", 0)
-            
-            favorite_item = max(item_counts.items(), key=lambda x: x[1]) if item_counts else ("None", 0)
-            
-            # Calculate customer value
-            customer_value_score = (total_spent * len(orders_list)) / (avg_days_between_visits + 1)
-            
-            customer_analysis.append({
-                "customer_id": customer_id,
-                "name": f"{customer.get('first_name', '')} {customer.get('last_name', '')}".strip() 
-                        if customer else f"Customer {customer_id[:8]}",
-                "email": customer.get("email") if customer else None,
-                "phone": customer.get("phone_number") if customer else None,
-                "total_orders": len(orders_list),
-                "total_spent": total_spent,
-                "average_spend": avg_spend,
-                "unique_visit_days": unique_visit_days,
-                "average_days_between_visits": round(avg_days_between_visits, 1),
-                "favorite_item": favorite_item[0],
-                "favorite_item_quantity": favorite_item[1],
-                "loyalty_points": customer.get("loyalty_points", 0) if customer else 0,
-                "customer_value_score": round(customer_value_score, 2),
-                "last_order_date": max(order_dates).isoformat() if order_dates else None
+            performance_data.append({
+                "employee_id": emp_id,
+                "name": f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip(),
+                "total_orders": total_orders,
+                "total_revenue": total_revenue,
+                "average_order_value": avg_order_value,
+                "store_id": employee.get("store_id")
             })
         
-        # Sort by customer value
-        customer_analysis.sort(key=lambda x: x["customer_value_score"], reverse=True)
+        # Sort by revenue
+        performance_data.sort(key=lambda x: x["total_revenue"], reverse=True)
         
-        # Calculate segments
-        high_value = [c for c in customer_analysis if c["customer_value_score"] > 1000]
-        medium_value = [c for c in customer_analysis if 500 <= c["customer_value_score"] <= 1000]
-        low_value = [c for c in customer_analysis if c["customer_value_score"] < 500]
-        
-        # Calculate overall metrics
-        total_customers = len(customer_analysis)
-        total_revenue_from_customers = sum(c["total_spent"] for c in customer_analysis)
-        avg_orders_per_customer = sum(c["total_orders"] for c in customer_analysis) / total_customers if total_customers > 0 else 0
+        # Calculate averages
+        if performance_data:
+            avg_revenue_per_emp = sum(p["total_revenue"] for p in performance_data) / len(performance_data)
+            avg_orders_per_emp = sum(p["total_orders"] for p in performance_data) / len(performance_data)
+            avg_order_value_all = sum(p["total_revenue"] for p in performance_data) / sum(p["total_orders"] for p in performance_data) if sum(p["total_orders"] for p in performance_data) > 0 else 0
+        else:
+            avg_revenue_per_emp = avg_orders_per_emp = avg_order_value_all = 0
         
         # Prepare response
         report_data = {
@@ -487,196 +577,28 @@ async def get_customer_analysis_report(
                 "days": (end_dt - start_dt).days + 1
             },
             "store_id": store_id,
-            "overall_metrics": {
-                "total_customers_analyzed": total_customers,
-                "total_revenue_from_customers": total_revenue_from_customers,
-                "average_orders_per_customer": round(avg_orders_per_customer, 1)
+            "total_employees": len(performance_data),
+            "averages": {
+                "revenue_per_employee": round(avg_revenue_per_emp, 2),
+                "orders_per_employee": round(avg_orders_per_emp, 1),
+                "average_order_value": round(avg_order_value_all, 2)
             },
-            "customer_segments": {
-                "high_value": {
-                    "count": len(high_value),
-                    "percentage": round((len(high_value) / total_customers) * 100, 1) if total_customers > 0 else 0,
-                    "customers": high_value[:10]
-                },
-                "medium_value": {
-                    "count": len(medium_value),
-                    "percentage": round((len(medium_value) / total_customers) * 100, 1) if total_customers > 0 else 0,
-                    "customers": medium_value[:10]
-                },
-                "low_value": {
-                    "count": len(low_value),
-                    "percentage": round((len(low_value) / total_customers) * 100, 1) if total_customers > 0 else 0,
-                    "customers": low_value[:10]
-                }
-            },
-            "top_customers": customer_analysis[:20],
+            "employee_performance": performance_data,
+            "top_performers": performance_data[:5] if performance_data else [],
             "generated_at": datetime.utcnow().isoformat()
         }
         
         return success_response(data=report_data)
         
     except Exception as e:
-        return handle_generic_exception(e)
-
-# ==================== ANALYTICS ENDPOINTS ====================
-
-@router.get("/analytics/dashboard", response_model=StandardResponse[dict])
-async def get_dashboard_analytics(
-    period: str = Query("week", regex="^(day|week|month|quarter|year)$"),
-    store_id: Optional[str] = Query(None)
-):
-    """Get dashboard analytics with KPIs from real data"""
-    try:
-        # Get collections
-        orders_collection = get_collection("orders")
-        customers_collection = get_collection("customers")
-        employees_collection = get_collection("employees")
-        inventory_collection = get_collection("inventory_products")
-        
-        # Fetch all data (simpler approach for analytics)
-        orders_cursor = orders_collection.find({})
-        customers_cursor = customers_collection.find({})
-        employees_cursor = employees_collection.find({})
-        inventory_cursor = inventory_collection.find({})
-        
-        orders, customers, employees, inventory = await asyncio.gather(
-            orders_cursor.to_list(None),
-            customers_cursor.to_list(None),
-            employees_cursor.to_list(None),
-            inventory_cursor.to_list(None)
+        return error_response(
+            message=f"Error generating employee performance report: {str(e)}",
+            code=500
         )
-        
-        # Process dashboard analytics
-        processed_data = await AnalyticsProcessor.process_dashboard_analytics(
-            orders, customers, employees, inventory, period
-        )
-        
-        # Add store_id filter if provided
-        if store_id:
-            processed_data["store_id"] = store_id
-            # Filter orders by store_id
-            processed_data["kpis"]["total_revenue"] = sum(
-                o.get("total_amount", 0) for o in orders 
-                if o.get("store_id") == store_id
-            )
-            processed_data["kpis"]["total_orders"] = len([
-                o for o in orders 
-                if o.get("store_id") == store_id
-            ])
-        
-        return success_response(data=processed_data)
-        
-    except Exception as e:
-        return handle_generic_exception(e)
-
-@router.get("/analytics/realtime", response_model=StandardResponse[dict])
-async def get_realtime_analytics(
-    store_id: Optional[str] = Query(None)
-):
-    """Get real-time analytics for the current day from real data"""
-    try:
-        # Today's date range
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        today_end = datetime.utcnow()
-        
-        # Build query
-        query = {
-            "created_at": {
-                "$gte": today_start,
-                "$lte": today_end
-            }
-        }
-        if store_id:
-            query["store_id"] = store_id
-        
-        # Get collections
-        orders_collection = get_collection("orders")
-        tables_collection = get_collection("tables")
-        
-        # Fetch data
-        orders_cursor = orders_collection.find(query)
-        tables_cursor = tables_collection.find({"status": "occupied"})
-        
-        orders, active_tables = await asyncio.gather(
-            orders_cursor.to_list(None),
-            tables_cursor.to_list(None)
-        )
-        
-        # Calculate metrics
-        current_hour = datetime.utcnow().hour
-        
-        # Today's metrics
-        today_revenue = sum(o.get("total_amount", 0) for o in orders)
-        today_orders = len(orders)
-        today_avg_order = today_revenue / today_orders if today_orders > 0 else 0
-        
-        # Current hour metrics
-        current_hour_orders = [
-            o for o in orders 
-            if AnalyticsProcessor._parse_datetime(o.get("created_at")) and
-            AnalyticsProcessor._parse_datetime(o.get("created_at")).hour == current_hour
-        ]
-        
-        current_hour_revenue = sum(o.get("total_amount", 0) for o in current_hour_orders)
-        current_hour_orders_count = len(current_hour_orders)
-        
-        # Calculate trend (compare to previous hour)
-        previous_hour = (current_hour - 1) % 24
-        previous_hour_orders = [
-            o for o in orders 
-            if AnalyticsProcessor._parse_datetime(o.get("created_at")) and
-            AnalyticsProcessor._parse_datetime(o.get("created_at")).hour == previous_hour
-        ]
-        
-        previous_hour_revenue = sum(o.get("total_amount", 0) for o in previous_hour_orders)
-        
-        revenue_trend = "up" if current_hour_revenue > previous_hour_revenue else "down"
-        revenue_change_pct = abs(
-            (current_hour_revenue - previous_hour_revenue) / previous_hour_revenue * 100
-        ) if previous_hour_revenue > 0 else 0
-        
-        # Get pending orders
-        pending_orders = [o for o in orders if o.get("status") in ["new", "preparing"]]
-        
-        # Calculate peak hour
-        hourly_revenue = defaultdict(float)
-        for order in orders:
-            order_date = AnalyticsProcessor._parse_datetime(order.get("created_at"))
-            if order_date:
-                hour = order_date.hour
-                hourly_revenue[hour] += order.get("total_amount", 0)
-        
-        peak_hour = max(hourly_revenue.items(), key=lambda x: x[1])[0] if hourly_revenue else None
-        
-        # Prepare response
-        response_data = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "store_id": store_id,
-            "today": {
-                "revenue": today_revenue,
-                "orders": today_orders,
-                "average_order_value": today_avg_order
-            },
-            "current_hour": {
-                "hour": current_hour,
-                "revenue": current_hour_revenue,
-                "orders": current_hour_orders_count,
-                "trend": revenue_trend,
-                "change_percentage": round(revenue_change_pct, 1)
-            },
-            "active_tables": len(active_tables),
-            "pending_orders": len(pending_orders),
-            "peak_hour_today": peak_hour
-        }
-        
-        return success_response(data=response_data)
-        
-    except Exception as e:
-        return handle_generic_exception(e)
 
 # ==================== OTHER ENDPOINTS ====================
 
-@router.get("/reports/available")
+@router.get("/available")
 async def get_available_reports():
     """Get list of available report types"""
     reports = [
@@ -707,36 +629,7 @@ async def get_available_reports():
             "description": "Employee productivity and performance metrics",
             "endpoint": "/api/reports/employee/performance",
             "parameters": ["start_date", "end_date", "store_id"]
-        },
-        {
-            "id": "customer_analysis",
-            "name": "Customer Analysis Report",
-            "description": "Customer behavior and segmentation analysis",
-            "endpoint": "/api/reports/customer/analysis",
-            "parameters": ["start_date", "end_date", "store_id", "min_orders"]
         }
     ]
     
     return success_response(data=reports)
-
-@router.get("/analytics/available")
-async def get_available_analytics():
-    """Get list of available analytics types"""
-    analytics = [
-        {
-            "id": "dashboard",
-            "name": "Dashboard Analytics",
-            "description": "Key performance indicators and metrics for dashboard",
-            "endpoint": "/api/analytics/dashboard",
-            "parameters": ["period", "store_id"]
-        },
-        {
-            "id": "realtime",
-            "name": "Real-time Analytics",
-            "description": "Live metrics for the current day",
-            "endpoint": "/api/analytics/realtime",
-            "parameters": ["store_id"]
-        }
-    ]
-    
-    return success_response(data=analytics)
