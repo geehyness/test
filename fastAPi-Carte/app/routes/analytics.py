@@ -1,4 +1,4 @@
-# app/routes/analytics.py - FIXED VERSION
+# app/routes/analytics.py - COMPLETELY FIXED VERSION
 from fastapi import APIRouter, Query
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -8,6 +8,16 @@ from app.utils.response_helpers import success_response, error_response
 from collections import defaultdict
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+
+# Helper function for safe ObjectId conversion
+def safe_objectid(id_str):
+    """Safely convert string to ObjectId, return None if invalid"""
+    try:
+        if id_str and isinstance(id_str, str) and len(id_str) == 24:
+            return ObjectId(id_str)
+    except:
+        pass
+    return None
 
 @router.get("/dashboard")
 async def get_dashboard_analytics(
@@ -37,16 +47,20 @@ async def get_dashboard_analytics(
             }
         }
         if store_id:
-            query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections
+        # Get collections - FIXED: No await on get_collection()
         orders_collection = get_collection("orders")
         customers_collection = get_collection("customers")
         employees_collection = get_collection("employees")
         inventory_collection = get_collection("inventory_products")
         tables_collection = get_collection("tables")
         
-        # Fetch data - FIXED
+        # Fetch data - FIXED: Use await on collection methods
         orders_cursor = orders_collection.find(query)
         customers_cursor = customers_collection.find({})
         employees_cursor = employees_collection.find({})
@@ -60,21 +74,21 @@ async def get_dashboard_analytics(
         tables = await tables_cursor.to_list(None)
         
         # Calculate KPIs
-        total_revenue = sum(o.get("total_amount", 0) for o in orders)
+        total_revenue = sum(o.get("total_amount", 0) or 0 for o in orders)
         total_orders = len(orders)
         avg_order_value = total_revenue / total_orders if total_orders > 0 else 0
         
         # Customer metrics
-        active_customers = len(set(o.get("customer_id") for o in orders if o.get("customer_id")))
+        active_customers = len(set(str(o.get("customer_id")) for o in orders if o.get("customer_id")))
         total_customers = len(customers)
         customer_growth = (active_customers / total_customers * 100) if total_customers > 0 else 0
         
         # Employee metrics
-        active_employees = len(set(o.get("employee_id") for o in orders if o.get("employee_id")))
+        active_employees = len(set(str(o.get("employee_id")) for o in orders if o.get("employee_id")))
         
         # Inventory metrics
-        inventory_value = sum(p.get("quantity_in_stock", 0) * p.get("unit_cost", 0) for p in inventory)
-        low_stock_items = [p for p in inventory if p.get("quantity_in_stock", 0) <= p.get("reorder_level", 0)]
+        inventory_value = sum((p.get("quantity_in_stock", 0) or 0) * (p.get("unit_cost", 0) or 0) for p in inventory)
+        low_stock_items = [p for p in inventory if (p.get("quantity_in_stock", 0) or 0) <= (p.get("reorder_level", 0) or 0)]
         
         # Calculate hourly performance for today
         today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -93,7 +107,7 @@ async def get_dashboard_analytics(
                 except:
                     hour = 0
             
-            hourly_performance[hour]["revenue"] += order.get("total_amount", 0)
+            hourly_performance[hour]["revenue"] += order.get("total_amount", 0) or 0
             hourly_performance[hour]["orders"] += 1
         
         # Format hourly data
@@ -111,8 +125,8 @@ async def get_dashboard_analytics(
         for order in orders:
             for item in order.get("items", []):
                 item_name = item.get("name", "Unknown")
-                item_sales[item_name]["quantity"] += item.get("quantity", 0)
-                item_sales[item_name]["revenue"] += item.get("sub_total", 0)
+                item_sales[item_name]["quantity"] += item.get("quantity", 0) or 0
+                item_sales[item_name]["revenue"] += item.get("sub_total", 0) or 0
         
         top_items = sorted(
             [{"name": k, **v} for k, v in item_sales.items()],
@@ -124,7 +138,7 @@ async def get_dashboard_analytics(
         payment_methods = defaultdict(float)
         for order in orders:
             method = order.get("payment_method", "unknown")
-            payment_methods[method] += order.get("total_amount", 0)
+            payment_methods[method] += order.get("total_amount", 0) or 0
         
         # Get active tables
         active_tables = [t for t in tables if t.get("status") == "occupied"]
@@ -185,13 +199,17 @@ async def get_realtime_analytics(
             }
         }
         if store_id:
-            query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections
+        # Get collections - FIXED: No await on get_collection()
         orders_collection = get_collection("orders")
         tables_collection = get_collection("tables")
         
-        # Fetch data - FIXED
+        # Fetch data - FIXED: Use await on collection methods
         orders_cursor = orders_collection.find(query)
         active_tables_cursor = tables_collection.find({"status": "occupied"})
         
@@ -202,7 +220,7 @@ async def get_realtime_analytics(
         current_hour = datetime.utcnow().hour
         
         # Today's metrics
-        today_revenue = sum(o.get("total_amount", 0) for o in orders)
+        today_revenue = sum(o.get("total_amount", 0) or 0 for o in orders)
         today_orders = len(orders)
         today_avg_order = today_revenue / today_orders if today_orders > 0 else 0
         
@@ -212,7 +230,7 @@ async def get_realtime_analytics(
             if (isinstance(o.get("created_at"), datetime) and o["created_at"].hour == current_hour)
         ]
         
-        current_hour_revenue = sum(o.get("total_amount", 0) for o in current_hour_orders)
+        current_hour_revenue = sum(o.get("total_amount", 0) or 0 for o in current_hour_orders)
         current_hour_orders_count = len(current_hour_orders)
         
         # Calculate trend (compare to previous hour)
@@ -222,7 +240,7 @@ async def get_realtime_analytics(
             if (isinstance(o.get("created_at"), datetime) and o["created_at"].hour == previous_hour)
         ]
         
-        previous_hour_revenue = sum(o.get("total_amount", 0) for o in previous_hour_orders)
+        previous_hour_revenue = sum(o.get("total_amount", 0) or 0 for o in previous_hour_orders)
         
         revenue_trend = "up" if current_hour_revenue > previous_hour_revenue else "down"
         revenue_change_pct = abs((current_hour_revenue - previous_hour_revenue) / previous_hour_revenue * 100) if previous_hour_revenue > 0 else 0
@@ -236,7 +254,7 @@ async def get_realtime_analytics(
             order_date = order.get("created_at")
             if isinstance(order_date, datetime):
                 hour = order_date.hour
-                hourly_revenue[hour] += order.get("total_amount", 0)
+                hourly_revenue[hour] += order.get("total_amount", 0) or 0
         
         peak_hour = max(hourly_revenue.items(), key=lambda x: x[1])[0] if hourly_revenue else None
         

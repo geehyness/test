@@ -10,6 +10,16 @@ from collections import defaultdict
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
 
+# Helper function for safe ObjectId conversion
+def safe_objectid(id_str):
+    """Safely convert string to ObjectId, return None if invalid"""
+    try:
+        if id_str and isinstance(id_str, str) and len(id_str) == 24:
+            return ObjectId(id_str)
+    except:
+        pass
+    return None
+
 # ==================== TEST ENDPOINT ====================
 
 @router.get("/test")
@@ -62,24 +72,34 @@ async def get_financial_report(
             }
         }
         
-        # Add filters
+        # Add filters with ObjectId validation
         if store_id:
-            query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
+        
         if employee_id:
-            query["employee_id"] = employee_id
+            emp_obj_id = safe_objectid(employee_id)
+            if emp_obj_id:
+                query["employee_id"] = emp_obj_id
+            else:
+                return error_response(message="Invalid employee ID format", code=400)
+        
         if payment_method:
             query["payment_method"] = payment_method
         if status:
             query["status"] = status
         
-        # Get collections - FIXED: Handle async get_collection
-        orders_collection = await get_collection("orders")
-        foods_collection = await get_collection("foods")
-        customers_collection = await get_collection("customers")
-        employees_collection = await get_collection("employees")
-        inventory_collection = await get_collection("inventory_products")
+        # Get collections - FIXED: No await on get_collection()
+        orders_collection = get_collection("orders")
+        foods_collection = get_collection("foods")
+        customers_collection = get_collection("customers")
+        employees_collection = get_collection("employees")
+        inventory_collection = get_collection("inventory_products")
         
-        # Fetch data
+        # Fetch data - Use await on collection methods
         orders_cursor = orders_collection.find(query)
         foods_cursor = foods_collection.find({})
         customers_cursor = customers_collection.find({})
@@ -322,10 +342,14 @@ async def get_daily_sales_report(
             }
         }
         if store_id:
-            query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
         
-        # Get collection - FIXED: Handle async get_collection
-        orders_collection = await get_collection("orders")
+        # Get collection - FIXED: No await on get_collection()
+        orders_collection = get_collection("orders")
         
         # Fetch orders
         cursor = orders_collection.find(query)
@@ -413,10 +437,14 @@ async def get_inventory_report(
         # Build query
         query = {}
         if store_id:
-            query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
         
-        # Get collection - FIXED: Handle async get_collection
-        inventory_collection = await get_collection("inventory_products")
+        # Get collection - FIXED: No await on get_collection()
+        inventory_collection = get_collection("inventory_products")
         
         # Fetch inventory data
         cursor = inventory_collection.find(query)
@@ -539,17 +567,21 @@ async def get_employee_performance_report(
             }
         }
         if store_id:
-            orders_query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                orders_query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections - FIXED: Handle async get_collection
-        orders_collection = await get_collection("orders")
-        employees_collection = await get_collection("employees")
+        # Get collections - FIXED: No await on get_collection()
+        orders_collection = get_collection("orders")
+        employees_collection = get_collection("employees")
         
         # Fetch data
         orders_cursor = orders_collection.find(orders_query)
-        orders = await orders_cursor.to_list(None)
-        
         employees_cursor = employees_collection.find({})
+        
+        orders = await orders_cursor.to_list(None)
         employees = await employees_cursor.to_list(None)
         
         # Group orders by employee
@@ -653,11 +685,15 @@ async def get_customer_analysis_report(
             "customer_id": {"$ne": None}
         }
         if store_id:
-            query["store_id"] = store_id
+            store_obj_id = safe_objectid(store_id)
+            if store_obj_id:
+                query["store_id"] = store_obj_id
+            else:
+                return error_response(message="Invalid store ID format", code=400)
         
-        # Get collections - FIXED: Handle async get_collection
-        orders_collection = await get_collection("orders")
-        customers_collection = await get_collection("customers")
+        # Get collections - FIXED: No await on get_collection()
+        orders_collection = get_collection("orders")
+        customers_collection = get_collection("customers")
         
         # Fetch data
         orders_cursor = orders_collection.find(query)
