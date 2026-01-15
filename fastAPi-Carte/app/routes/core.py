@@ -281,6 +281,27 @@ async def get_order(order_id: str):
 async def create_order(order: Order):
     """Create a new order with inventory management"""
     try:
+        # Set defaults for missing required fields
+        if order.subtotal_amount is None:
+            order.subtotal_amount = sum(item.price * item.quantity for item in order.items)
+        
+        if order.tax_amount is None:
+            order.tax_amount = order.subtotal_amount * 0.15  # Default 15% tax
+        
+        if order.discount_amount is None:
+            order.discount_amount = 0
+            
+        if order.total_amount is None:
+            order.total_amount = order.subtotal_amount + order.tax_amount - order.discount_amount
+            
+        # Set default status if not provided
+        if not order.status:
+            order.status = "new"
+            
+        # Set default notes if not provided
+        if order.notes is None:
+            order.notes = ""
+            
         orders_collection = get_collection("orders")
         inventory_collection = get_collection("inventory_products")
         
