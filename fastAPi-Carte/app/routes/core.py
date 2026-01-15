@@ -725,7 +725,25 @@ async def restore_order_inventory(order_id: str):
     except Exception as e:
         print(f"Error restoring inventory for order {order_id}: {e}")
 
+@router.options("/orders")
+async def orders_options():
+    """Handle OPTIONS requests for orders endpoint (CORS preflight)"""
+    return {
+        "allow": "POST, GET, OPTIONS",
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "POST, GET, OPTIONS",
+        "access-control-allow-headers": "*"
+    }
 
+@router.options("/orders/{order_id}")
+async def orders_id_options():
+    """Handle OPTIONS requests for orders/{id} endpoint (CORS preflight)"""
+    return {
+        "allow": "GET, PUT, DELETE, OPTIONS",
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET, PUT, DELETE, OPTIONS",
+        "access-control-allow-headers": "*"
+    }
 
 
 # --------------------------
