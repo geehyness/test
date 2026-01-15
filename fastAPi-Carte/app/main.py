@@ -29,26 +29,7 @@ app = FastAPI(
     }
 )
 
-# Add this BEFORE your CORS middleware
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    print(f"🔥 VALIDATION ERROR: {exc.errors()}")
-    print(f"🔥 Request body: {await request.body()}")
-    
-    return JSONResponse(
-        status_code=422,
-        content={
-            "code": 422,
-            "message": "Validation error",
-            "details": exc.errors(),
-            "body_received": await request.body()
-        },
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*"
-        }
-    )
+
 
 # CORS Configuration
 origins_env = os.getenv("ALLOWED_ORIGINS", "")

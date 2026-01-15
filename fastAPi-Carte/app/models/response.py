@@ -156,6 +156,13 @@ class OrderResponse(BaseModel):
     transaction_id: Optional[str] = None
     payment_details: Optional[Dict[str, Any]] = None
 
+        # Add a validator to convert datetime to string
+    @validator('created_at', 'updated_at', pre=True)
+    def convert_datetime_to_string(cls, v):
+        if isinstance(v, datetime):
+            return v.isoformat()
+        return v
+
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
